@@ -43,12 +43,12 @@ if handles.useblank
             signal_filename = sprintf(signalformat,channel,tp);
             blank_filename = sprintf(blankformat,channel,tp);
             
-            if exist(fullfile(handles.ndpathname,signal_filename),'file') 
+            if exist(signal_filename,'file') 
                 signalim = im2double(imread(fullfile(handles.ndpathname,signal_filename)));
-                if exist(fullfile(handles.ndpathname,blank_filename),'file')
+                if exist(blank_filename,'file')
                     blankim = im2double(imread(fullfile(handles.ndpathname,blank_filename)));
                     smoothed = fftolamopt2(blankim,handles.gaussian,handles.smooth_opt,'same');
-                    normim =(smoothed./median(smoothed(:)));
+                    normim =(smoothed./mean(smoothed(:)));
                     clear blankim smoothed;
                     outputim = signalim./normim;
                 else 
@@ -62,7 +62,7 @@ if handles.useblank
             
         case 2
             set(handles.edit_commu,'String','This function is not available for tiff stack input.');
-            if exist(fullfile(handles.ndpathname,signalformat),'file')
+            if exist(signalformat,'file')
                 outputim = im2double(imread(fullfile(handles.ndpathname,signalformat),'Index',totalCHs*(tp-1)+channel));
             else
                 set(handles.edit_commu,'String',[signalformat ' does not exist.']);
@@ -70,12 +70,12 @@ if handles.useblank
         case 3
             signal_filename = sprintf(signalformat,channelnames{channel},tp);
             blank_filename = sprintf(blankformat,channelnames{channel},tp);
-            if exist(fullfile(handles.ndpathname,signal_filename),'file') 
+            if exist(signal_filename,'file') 
                 signalim = im2double(imread(fullfile(handles.ndpathname,signal_filename)));
-                if exist(fullfile(handles.ndpathname,blank_filename),'file')
+                if exist(blank_filename,'file')
                     blankim = im2double(imread(fullfile(handles.ndpathname,blank_filename)));
                     smoothed = fftolamopt2(blankim,handles.gaussian,handles.smooth_opt,'same');
-                    normim =(smoothed./median(smoothed(:)));
+                    normim =(smoothed./mean(smoothed(:)));
                     clear blankim smoothed;
                     outputim = signalim./normim;
                 else 
@@ -392,7 +392,7 @@ set(handles.edit_outputname,'String','signals');
 handles.celltrackpathname = [];
 handles.fcn1 = makeConstrainToRectFcn('impoint',get(handles.axes1,'XLim'),get(handles.axes1,'YLim'));
 handles.useblank = 0;
-handles.gaussian = 1/273*[1 4 7 4 1;4 16 26 26 4;7 26 41 26 7;4 16 26 16 4;1 4 7 4 1];
+
 
 guidata(hObject, handles);
 handles = guidata(hObject);
@@ -439,7 +439,8 @@ if filetype~=0
     
     template = loadsignal(handles,templateCH,tp);
     load fftexecutiontimes;
-    handles.smooth_opt = detbestlength2(FFTrv,FFTiv,IFFTiv,size(template),size(handles.gaussian),isreal(template),isreal(handles.gaussian));
+    h= 1/273*[1 4 7 4 1;4 16 26 26 4;7 26 41 26 7;4 16 26 16 4;1 4 7 4 1];
+    handles.smooth_opt = detbestlength2(FFTrv,FFTiv,IFFTiv,size(template),size(h),isreal(template),isreal(h));
     switch startImageIndex
         
         case 3
@@ -505,27 +506,24 @@ switch get(handles.popupmenu_denomin,'Value')
     case 4
         denominCH=-1;
 end
-handles.gaussian = 1/273*[1 4 7 4 1;4 16 26 26 4;7 26 41 26 7;4 16 26 16 4;1 4 7 4 1];
-guidata(hObject, handles);
-handles = guidata(hObject);
+
+filetype = handles.filetype;
+channelnames = handles.channelnames;
 template = loadsignal(handles,templateCH,c_tp);
-load fftexecutiontimes;
-handles.smooth_opt = detbestlength2(FFTrv,FFTiv,IFFTiv,size(template),size(handles.gaussian),isreal(template),isreal(handles.gaussian));
-clear FFTrv FFTiv IFFTiv;
-guidata(hObject, handles);
-handles = guidata(hObject);
 
 startImageIndex = 1;
 handles.ImageIndex = startImageIndex;
 handles.overlayIndex = startImageIndex;
 set(handles.togglebutton_math,'Value',1);
 set(handles.radiobutton_mathoverlay,'Value',1);
+
+fftw('planner', 'hybrid');
 load MyColormaps;
 handles.mycmap1 = mycmap1;
 handles.mycmap2 = mycmap2;
 handles.mycmap3 = mycmap3;
 handles.mycmap4 = mycmap4;
-clear mycmap1 mycmap2 mycmap3 mycmap4
+
 switch startImageIndex
     case 3
         displayIM = loadsignal(handles,CH1,c_tp);
@@ -570,51 +568,38 @@ cellpathinfo = h5info(fullfile(handles.ndpathname,H5filename), cellpath_name);
 sisterListinfo = h5info(fullfile(handles.ndpathname,H5filename), sisterList_name);
 bginfo = h5info(fullfile(handles.ndpathname,H5filename), bg_name);
 
-if exist(fullfile(handles.ndpathname,H5filename),'file')
+fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    cellpath_mat = h5read(fullfile(handles.ndpathname,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
 
-    fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-    if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
-        H5F.close(fid);
-        cellpath_mat = h5read(fullfile(handles.ndpathname,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
-        
-        for tp=first_tp:last_tp
-            cellpath{tp} = cellpath_mat(:,:,tp);
-        end
-        handles.cellpath=cellpath;
-    else
-        handles.cellpath=[];
-        
+    for tp=first_tp:last_tp
+        cellpath{tp} = cellpath_mat(:,:,tp);
     end
+    handles.cellpath=cellpath;
     
-    fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-    if H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
-        H5F.close(fid);
-        sisterList_mat = h5read(fullfile(handles.ndpathname,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
-        
-        for tp=first_tp:last_tp
-            sisterList{tp} = sisterList_mat(:,:,tp);
-        end
-        handles.sisterList=sisterList;
-    else
-        handles.sisterList = [];
+end
+
+fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    sisterList_mat = h5read(fullfile(handles.ndpathname,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
+
+    for tp=first_tp:last_tp
+        sisterList{tp} = sisterList_mat(:,:,tp);
     end
-    
-    fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-    if H5L.exists(fid,bg_name,'H5P_DEFAULT')
-        H5F.close(fid);
-        bg_mat = h5read(fullfile(handles.ndpathname,H5filename),bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
-        
-        for tp=first_tp:last_tp
-            bg{tp} = bg_mat(:,:,tp);
-        end
-        handles.bg = bg;
-    else
-        handles.bg=[];
+    handles.sisterList=sisterList;
+end
+
+fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if H5L.exists(fid,bg_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    bg_mat = h5read(fullfile(handles.ndpathname,H5filename),bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
+
+    for tp=first_tp:last_tp
+        bg{tp} = bg_mat(:,:,tp);
     end
-else
-    handles.cellpath=[];
-    handles.sisterList = [];
-    handles.bg=[];
+    handles.bg = bg;
 end
 
 guidata(hObject, handles);
@@ -4557,17 +4542,21 @@ if get(hObject,'Value')
     if ~isempty(blackIm)
         handles.useblank = 1;
         load fftexecutiontimes;
-        handles.smooth_opt = detbestlength2(FFTrv,FFTiv,IFFTiv,size(blackIm),size(handles.gaussian),isreal(blackIm),isreal(handles.gaussian));
-        set(handles.edit_commu,'String','Blank assigned');
+        h = 1/273*[1 4 7 4 1;4 16 26 26 4;7 26 41 26 7;4 16 26 16 4;1 4 7 4 1];
+        handles.gaussian = h;
+        handles.smooth_opt = detbestlength2(FFTrv,FFTiv,IFFTiv,size(blackIm),size(h),isreal(blackIm),isreal(h));
+        set(handles.edit_commu,'String',['Blank assigned');
         
     else
         
         handles.useblank = 0;
+        handles.smooth_opt = [];
         set(handles.edit_commu,'String','Blank image does not exist');
     end
     
 else
     handles.useblank = 0;
+    handles.smooth_opt = [];
     set(handles.edit_commu,'String','Blank removed');
 end
 

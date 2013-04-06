@@ -4710,7 +4710,7 @@ function pushbutton_autothres_template_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_autothres_template (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-tp = get(handles.edit_currentFrame,'String');
+tp = str2num(get(handles.edit_currentFrame,'String'));
 channel = handles.templateCH;
 displayIM = loadsignal(handles,channel,tp);
 set(handles.edit_templateL,'String',num2str(min(displayIM(:))));
@@ -4774,7 +4774,7 @@ function pushbutton_autothres_ch1_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_autothres_ch1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-tp = get(handles.edit_currentFrame,'String');
+tp = str2num(get(handles.edit_currentFrame,'String'));
 channel = handles.CH1;
 displayIM = loadsignal(handles,channel,tp);
 set(handles.edit_ch1L,'String',num2str(min(displayIM(:))));
@@ -4837,7 +4837,7 @@ function pushbutton_autothres_ch2_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_autothres_ch2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-tp = get(handles.edit_currentFrame,'String');
+tp = str2num(get(handles.edit_currentFrame,'String'));
 channel = handles.CH2;
 displayIM = loadsignal(handles,channel,tp);
 set(handles.edit_ch2L,'String',num2str(min(displayIM(:))));
@@ -4900,7 +4900,7 @@ function pushbutton_autothres_ch3_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_autothres_ch3 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-tp = get(handles.edit_currentFrame,'String');
+tp = str2num(get(handles.edit_currentFrame,'String'));
 channel = handles.CH3;
 displayIM = loadsignal(handles,channel,tp);
 set(handles.edit_ch3L,'String',num2str(min(displayIM(:))));

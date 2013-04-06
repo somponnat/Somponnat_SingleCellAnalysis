@@ -2309,16 +2309,18 @@ cellpath_name = ['/field' num2str(field) '/cellpath'];
 sisterList_name = ['/field' num2str(field) '/sisterList'];
 bg_name = ['/field' num2str(field) '/bg'];
 
-fileattrib(fullfile(handles.SourceF,H5filename),'+w');
-
-fid = H5F.open(fullfile(handles.SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-if ~H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
-    H5F.close(fid);
-    display(['Initializing ' H5filename ':' cellpath_name]);
-else
-    H5L.delete(fid,cellpath_name,'H5P_DEFAULT');
-    display(['Overwriting ' H5filename ':' cellpath_name]);
-    H5F.close(fid);
+if exist(fullfile(handles.SourceF,H5filename),'file')
+    fileattrib(fullfile(handles.SourceF,H5filename),'+w');
+    
+    fid = H5F.open(fullfile(handles.SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    if ~H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
+        H5F.close(fid);
+        display(['Initializing ' H5filename ':' cellpath_name]);
+    else
+        H5L.delete(fid,cellpath_name,'H5P_DEFAULT');
+        display(['Overwriting ' H5filename ':' cellpath_name]);
+        H5F.close(fid);
+    end
 end
 
 h5create(fullfile(handles.SourceF,H5filename), cellpath_name, [size(cellpath_mat,1), size(cellpath_mat,2), size(cellpath_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(cellpath_mat,2), size(cellpath_mat,3)], 'Deflate', 9);

@@ -3965,40 +3965,52 @@ H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
 signal_name = ['/field' num2str(field) '/' get(handles.edit_outputname,'String')];
 timestamp_name = ['/field' num2str(field) '/timestamp'];
 
-signalinfo = h5info(fullfile(handles.ndpathname,H5filename), signal_name);
 
-legendList=cell(1);
+
 if exist(fullfile(handles.ndpathname,H5filename),'file')
-    
-    startind = double([1 1 1]);
-    countind = [signalinfo.Dataspace.Size(1) signalinfo.Dataspace.Size(2) 4];
-    signal = permute(h5read(fullfile(handles.ndpathname,H5filename),signal_name,startind, countind),[2 1 3]);
-    timestamp = double(h5read(fullfile(handles.ndpathname,H5filename),timestamp_name));
-    
-    scell = str2num(get(handles.edit_cellNo,'String'));
-    PosTime = find(signal(:,scell,1));
-    figure;
-    signalNames = get(handles.popupmenu_regionVar1,'String');
-    hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,1)/median(signal(PosTime,scell,1)),'b');
-    s1Loc = get(handles.popupmenu_regionVar1,'Value');
-    legendList{1} = signalNames{s1Loc};
-    if get(handles.checkbox_variable2,'Value')
-        hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,2)/median(signal(PosTime,scell,2)),'r');
-        s2Loc = get(handles.popupmenu_regionVar2,'Value');
-        legendList{2} = signalNames{s2Loc};
+    fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    if H5L.exists(fid,signal_name,'H5P_DEFAULT')
+        H5F.close(fid);
+        legendList=cell(1);
+        signalinfo = h5info(fullfile(handles.ndpathname,H5filename), signal_name);
+        startind = double([1 1 1]);
+        countind = [signalinfo.Dataspace.Size(1) signalinfo.Dataspace.Size(2) 4];
+        signal = permute(h5read(fullfile(handles.ndpathname,H5filename),signal_name,startind, countind),[2 1 3]);
+        timestamp = double(h5read(fullfile(handles.ndpathname,H5filename),timestamp_name));
+        
+        scell = str2num(get(handles.edit_cellNo,'String'));
+        PosTime = find(signal(:,scell,1));
+        figure;
+        signalNames = get(handles.popupmenu_regionVar1,'String');
+        hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,1)/median(signal(PosTime,scell,1)),'b');
+        s1Loc = get(handles.popupmenu_regionVar1,'Value');
+        legendList{1} = signalNames{s1Loc};
+        if get(handles.checkbox_variable2,'Value')
+            hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,2)/median(signal(PosTime,scell,2)),'r');
+            s2Loc = get(handles.popupmenu_regionVar2,'Value');
+            legendList{2} = signalNames{s2Loc};
+        end
+        if get(handles.checkbox_variable3,'Value')
+            hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,3)/median(signal(PosTime,scell,3)),'g');
+            s3Loc = get(handles.popupmenu_regionVar3,'Value');
+            legendList{3} =  signalNames{s3Loc};
+        end
+        if get(handles.checkbox_variable4,'Value')
+            hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,4)/median(signal(PosTime,scell,4)),'k');
+            s4Loc = get(handles.popupmenu_regionVar4,'Value');
+            legendList{4} = signalNames{s4Loc};
+        end
+        legend(legendList);
+        xlabel('Time(hour)');
+    else
+        set(handles.edit_commu,'String',[signal_name ' does not exist']);
+        return;
+        
     end
-    if get(handles.checkbox_variable3,'Value')
-        hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,3)/median(signal(PosTime,scell,3)),'g');
-        s3Loc = get(handles.popupmenu_regionVar3,'Value');
-        legendList{3} =  signalNames{s3Loc};
-    end
-    if get(handles.checkbox_variable4,'Value')
-        hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,4)/median(signal(PosTime,scell,4)),'k');
-        s4Loc = get(handles.popupmenu_regionVar4,'Value');
-        legendList{4} = signalNames{s4Loc};
-    end
-    legend(legendList);
-    xlabel('Time(hour)');
+
+else
+    set(handles.edit_commu,'String','Check to make sure that H5 file exists');
+    return;
 end
 
 function text_ch1_Callback(hObject, eventdata, handles)

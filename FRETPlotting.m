@@ -1,7 +1,7 @@
 function varargout = FRETPlotting(varargin)
 % Edit the above text to modify the response to help mytab
 
-% Last Modified by GUIDE v2.5 05-Apr-2013 21:00:07
+% Last Modified by GUIDE v2.5 07-Apr-2013 19:48:51
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -388,7 +388,6 @@ set(handles.edit_ch2L,'String',num2str(0));
 set(handles.edit_ch2H,'String',num2str(1));
 set(handles.edit_ch3L,'String',num2str(0));
 set(handles.edit_ch3H,'String',num2str(1));
-set(handles.edit_outputname,'String','signals');
 handles.celltrackpathname = [];
 handles.fcn1 = makeConstrainToRectFcn('impoint',get(handles.axes1,'XLim'),get(handles.axes1,'YLim'));
 handles.useblank = 0;
@@ -620,7 +619,7 @@ end
 guidata(hObject, handles);
 handles = guidata(hObject);
 updatecurrentImage(handles,c_tp);
-
+updateOutputList(handles);
 handles.greenflag=1;
 handles.nucmask = [];
 handles.cytomask = [];
@@ -3050,8 +3049,6 @@ mysignal = zeros(size(cellpath{last_tp},1),last_tp-first_tp+1,4);
 
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
 maskdatasetname = ['/field' num2str(field) '/segmentsCH' num2str(templateCH)];
-signal_name = ['/field' num2str(field) '/' get(handles.edit_outputname,'String')];
-timestamp_name = ['/field' num2str(field) '/timestamp'];
 selectedcells_name = ['/field' num2str(field) '/selectedcells'];
 selected_cells = h5read(fullfile(handles.ndpathname,H5filename),selectedcells_name);
 timestamp = 1:(last_tp-first_tp+1);
@@ -3202,9 +3199,29 @@ for tp=first_tp:last_tp
     clear  ratioIm CH1im CH2im CH3im
 end
 
+info = h5info(fullfile(handles.ndpathname,H5filename),['/field' num2str(field)]);
+basename='outputsignal';
+cindex = 1;
+outputcounts=[];
+if length(info.Datasets)>0 %#ok<*ISMT>
+    for i=1:length(info.Datasets)
+        tmp = regexp(info.Datasets(i).Name, ['(?<=' basename ')\d+'], 'match');
+        if ~isempty(tmp)
+            outputcounts(cindex) = str2num(tmp{1});
+            cindex=cindex+1;
+        end
+    end
+end
+
+if isempty(outputcounts)
+    signal_name = ['/field' num2str(field) '/outputsignal1'];
+    timestamp_name = ['/field' num2str(field) '/timestamp1'];
+else
+    signal_name = ['/field' num2str(field) '/outputsignal' num2str(max(outputcounts)+1)];
+    timestamp_name = ['/field' num2str(field) '/timestamp' num2str(max(outputcounts)+1)];
+end
 
 fileattrib(fullfile(handles.ndpathname,H5filename),'+w');
-% 
 fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 
 if ~H5L.exists(fid,signal_name,'H5P_DEFAULT')
@@ -3218,6 +3235,37 @@ end
 
 h5create(fullfile(handles.ndpathname,H5filename), signal_name, [size(mysignal,1), size(mysignal,2), 4], 'Datatype', 'double', 'ChunkSize', [size(mysignal,1), size(mysignal,2), 1], 'Deflate', 9);
 h5write(fullfile(handles.ndpathname,H5filename), signal_name, mysignal, [1 1 1], [size(mysignal,1) size(mysignal,2) 4]);
+h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'outputsignal_name',get(handles.edit_outputname,'String'));
+
+if get(handles.checkbox_variable1,'Value') == 1
+    regions1 = get(handles.popupmenu_regionVar1,'String');
+    region1 = regions1{get(handles.popupmenu_regionVar1,'Value')};
+    signals1 = get(handles.popupmenu_signal1,'String');
+    signal1 = signals1{get(handles.popupmenu_signal1,'Value')};
+    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal1',[region1 '_' signal1]);
+end
+if get(handles.checkbox_variable2,'Value') == 1
+    regions2 = get(handles.popupmenu_regionVar2,'String');
+    region2 = regions2{get(handles.popupmenu_regionVar2,'Value')};
+    signals2 = get(handles.popupmenu_signal2,'String');
+    signal2 = signals2{get(handles.popupmenu_signal2,'Value')};
+    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal2',[region2 '_' signal2]);
+end
+if get(handles.checkbox_variable3,'Value') == 1
+    regions3 = get(handles.popupmenu_regionVar3,'String');
+    region3 = regions3{get(handles.popupmenu_regionVar3,'Value')};
+    signals3 = get(handles.popupmenu_signal3,'String');
+    signal3 = signals3{get(handles.popupmenu_signal3,'Value')};
+    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal3',[region3 '_' signal3]);
+end
+if get(handles.checkbox_variable4,'Value') == 1
+    regions4 = get(handles.popupmenu_regionVar4,'String');
+    region4 = regions4{get(handles.popupmenu_regionVar4,'Value')};
+    signals4 = get(handles.popupmenu_signal4,'String');
+    signal4 = signals4{get(handles.popupmenu_signal4,'Value')};
+    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal4',[region4 '_' signal4]);
+end
+
 
 fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 if ~H5L.exists(fid,timestamp_name,'H5P_DEFAULT')
@@ -3231,8 +3279,36 @@ end
 
 h5create(fullfile(handles.ndpathname,H5filename), timestamp_name, last_tp-first_tp+1, 'Datatype', 'double');
 h5write(fullfile(handles.ndpathname,H5filename), timestamp_name, timestamp);
-
+updateOutputList(handles)
 guidata(hObject, handles);
+handles = guidata(hObject);
+set(handles.edit_commu,'String','finished collecting data');
+updateOutputList(handles)
+
+function updateOutputList(handles)
+row = str2num(get(handles.edit_row,'String'));
+col = str2num(get(handles.edit_col,'String'));
+field = str2num(get(handles.edit_field,'String'));
+H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
+info = h5info(fullfile(handles.ndpathname,H5filename),['/field' num2str(field)]);
+basename='signal';
+cindex = 1;
+outputcounts=[];
+outputList=[];
+if length(info.Datasets)>0 %#ok<*ISMT>
+    for i=1:length(info.Datasets)
+        tmp = regexp(info.Datasets(i).Name,basename, 'match');
+        if ~isempty(tmp)
+            outputList{cindex}= info.Datasets(i).Name;
+            cindex=cindex+1;
+        end
+    end
+end
+if isempty(outputList)
+    outputList = '<not present>';
+end
+set(handles.popupmenu_output,'String',outputList);
+set(handles.popupmenu_output,'Value',1);
 
 function outputsignal = signalOutputing(regiontype,signaltype,mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y)
 switch regiontype
@@ -5018,3 +5094,107 @@ function pushbutton_locatendfile_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to pushbutton_locatendfile (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
+
+
+% --- Executes on selection change in popupmenu_outputlist.
+function popupmenu_outputlist_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_outputlist (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_outputlist contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_outputlist
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu_outputlist_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_outputlist (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in pushbutton_removeoutputsignal.
+function pushbutton_removeoutputsignal_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_removeoutputsignal (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+row = str2num(get(handles.edit_row,'String'));
+col = str2num(get(handles.edit_col,'String'));
+field = str2num(get(handles.edit_field,'String'));
+plane = str2num(get(handles.edit_plane,'String'));
+allOutputs = get(handles.popupmenu_output,'String');
+if ~strcmp(allOutputs,'<not present>')
+    
+    signal_name = ['/field' num2str(field)  '/' allOutputs{get(handles.popupmenu_output,'Value')}];
+    outputNo = regexp(signal_name, ['(?<=.outputsignal)\d+'], 'match');
+    if ~isempty(outputNo)
+        timestamp_name = ['/field' num2str(field) '/timestamp' outputNo{1}];
+    else
+        timestamp_name = ['/field' num2str(field) '/timestamp'];
+    end
+    
+    H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
+    fileattrib(fullfile(handles.ndpathname,H5filename),'+w');
+    fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    
+    if H5L.exists(fid,signal_name,'H5P_DEFAULT')
+        H5L.delete(fid,signal_name,'H5P_DEFAULT');
+        display(['Deleting output dataset ' H5filename ':' signal_name]);
+    end
+    if H5L.exists(fid,timestamp_name,'H5P_DEFAULT')
+        H5L.delete(fid,timestamp_name,'H5P_DEFAULT');
+        display(['Deleting output dataset ' H5filename ':' timestamp_name]);
+    end
+    
+    H5F.close(fid);
+    updateOutputList(handles);
+end
+
+% --- Executes on selection change in popupmenu_output.
+function popupmenu_output_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_output (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_output contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_output
+row = str2num(get(handles.edit_row,'String'));
+col = str2num(get(handles.edit_col,'String'));
+field = str2num(get(handles.edit_field,'String'));
+plane = str2num(get(handles.edit_plane,'String'));
+allOutputs = get(hObject,'String');
+if ~strcmp(allOutputs,'<not present>')
+    currentoutput_name = ['/field' num2str(field)  '/' allOutputs{get(hObject,'Value')}];
+    H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
+    
+    myinfo=h5info(fullfile(handles.ndpathname,H5filename),currentoutput_name);
+    %tmp = regexp(info.Datasets(i).Name, ['(?<=' basename ')\d+'], 'match');
+    attLength = length(myinfo.Attributes);
+    if attLength>0
+        for i=1:attLength
+            if strcmp(myinfo.Attributes(i).Name,'outputsignal_name')
+                current_outname = myinfo.Attributes(i).Value;
+                set(handles.edit_outputname,'String',current_outname);
+            end
+        end
+    else
+        set(handles.edit_outputname,'String','no name');
+    end
+end
+% --- Executes during object creation, after setting all properties.
+function popupmenu_output_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_output (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

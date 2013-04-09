@@ -3432,28 +3432,28 @@ if get(handles.checkbox_variable1,'Value') == 1
     region1 = regions1{get(handles.popupmenu_regionVar1,'Value')};
     signals1 = get(handles.popupmenu_signal1,'String');
     signal1 = signals1{get(handles.popupmenu_signal1,'Value')};
-    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal1',[region1 '_' signal1]);
+    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal1',[region1 '-' signal1]);
 end
 if get(handles.checkbox_variable2,'Value') == 1
     regions2 = get(handles.popupmenu_regionVar2,'String');
     region2 = regions2{get(handles.popupmenu_regionVar2,'Value')};
     signals2 = get(handles.popupmenu_signal2,'String');
     signal2 = signals2{get(handles.popupmenu_signal2,'Value')};
-    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal2',[region2 '_' signal2]);
+    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal2',[region2 '-' signal2]);
 end
 if get(handles.checkbox_variable3,'Value') == 1
     regions3 = get(handles.popupmenu_regionVar3,'String');
     region3 = regions3{get(handles.popupmenu_regionVar3,'Value')};
     signals3 = get(handles.popupmenu_signal3,'String');
     signal3 = signals3{get(handles.popupmenu_signal3,'Value')};
-    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal3',[region3 '_' signal3]);
+    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal3',[region3 '-' signal3]);
 end
 if get(handles.checkbox_variable4,'Value') == 1
     regions4 = get(handles.popupmenu_regionVar4,'String');
     region4 = regions4{get(handles.popupmenu_regionVar4,'Value')};
     signals4 = get(handles.popupmenu_signal4,'String');
     signal4 = signals4{get(handles.popupmenu_signal4,'Value')};
-    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal4',[region4 '_' signal4]);
+    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal4',[region4 '-' signal4]);
 end
 
 
@@ -4250,48 +4250,43 @@ if ~strcmp(allOutputs,'<not present>')
             timestamp = double(h5read(fullfile(handles.ndpathname,H5filename),timestamp_name));
             
             scell = str2num(get(handles.edit_cellNo,'String'));
-            regionNames = get(handles.popupmenu_regionVar1,'String');
-            signalNames = get(handles.popupmenu_signal1,'String');
             
             figure;
             
             
-            if get(handles.checkbox_variable2,'Value')
+            if get(handles.checkbox_variable1,'Value')
                 PosTime = find(signal(:,scell,1));
                 plot(timestamp(PosTime)/60,signal(PosTime,scell,1)/median(signal(PosTime,scell,1)),'b');
-                r1Loc = get(handles.popupmenu_regionVar1,'Value');
-                s1Loc = get(handles.popupmenu_signal1,'Value');
-                legendList{1} = [regionNames{r1Loc} '-' signalNames{s1Loc}];
+                legendList{1} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal1');
                 assignin('base','signal1',signal(PosTime,scell,1));
                 assignin('base','timestamp1',timestamp(PosTime));
+                
+                
             end
             if get(handles.checkbox_variable2,'Value')
                 PosTime = find(signal(:,scell,2));
                 hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,2)/median(signal(PosTime,scell,2)),'r');hold off;
-                r2Loc = get(handles.popupmenu_regionVar2,'Value');
-                s2Loc = get(handles.popupmenu_signal2,'Value');
-                legendList{2} = [regionNames{r2Loc} '-' signalNames{s2Loc}];
+                legendList{2} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal2');
                 assignin('base','signal2',signal(PosTime,scell,2));
                 assignin('base','timestamp2',timestamp(PosTime));
             end
             if get(handles.checkbox_variable3,'Value')
                 PosTime = find(signal(:,scell,3));
                 hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,3)/median(signal(PosTime,scell,3)),'g');hold off
-                r3Loc = get(handles.popupmenu_regionVar3,'Value');
-                s3Loc = get(handles.popupmenu_signal3,'Value');
-                legendList{3} = [regionNames{r3Loc} '-' signalNames{s3Loc}];
+                legendList{3} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal3');
                 assignin('base','signal3',signal(PosTime,scell,3));
                 assignin('base','timestamp3',timestamp(PosTime));
             end
             if get(handles.checkbox_variable4,'Value')
                 PosTime = find(signal(:,scell,4));
                 hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,4)/median(signal(PosTime,scell,4)),'k');hold off
-                r4Loc = get(handles.popupmenu_regionVar4,'Value');
-                s4Loc = get(handles.popupmenu_signal4,'Value');
-                legendList{4} = [regionNames{r4Loc} '-' signalNames{s4Loc}];
+                legendList{4} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal4');
                 assignin('base','signal4',signal(PosTime,scell,4));
                 assignin('base','timestamp4',timestamp(PosTime));
             end
+            
+            title(h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'outputsignal_name'));
+
             legend(legendList);
             xlabel('Time(hour)');
         else

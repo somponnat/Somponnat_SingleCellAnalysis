@@ -2248,7 +2248,7 @@ cellpath = cell(last_tp,1);
 sisterList = cell(last_tp,1);
 bg = cell(last_tp,1);
 
-for tp=first_tp:last_tp
+for tp=first_tp:size(cellpath_mat,3)
     cellpath{tp} = cellpath_mat(:,:,tp);
     sisterList{tp} = sisterList_mat(:,:,tp);
     bg{tp} = bg_mat(:,:,tp);
@@ -2293,15 +2293,18 @@ bg = handles.bg;
 
 first_tp   = str2num(get(handles.edit_firstframe,'String'));
 last_tp   = str2num(get(handles.edit_lastframe,'String'));
+c_tp = str2num(get(handles.edit_currentFrame,'String'));
 
-cellpath_mat = -1*(ones(size(cellpath{last_tp},1),2,last_tp));
-sisterList_mat = -1*(ones(size(sisterList{last_tp},1),size(sisterList{last_tp},2),last_tp));
-bg_mat = -1*(ones(size(bg{last_tp},1),2,last_tp));
+cellpath_mat = -1*(ones(size(cellpath{c_tp},1),2,length(cellpath)));
+sisterList_mat = -1*(ones(size(sisterList{c_tp},1),size(sisterList{c_tp},2),length(sisterList)));
+bg_mat = -1*(ones(size(bg{c_tp},1),2,length(bg)));
 
-for tp=first_tp:last_tp
-    cellpath_mat(:,:,tp) = cellpath{tp};
-    sisterList_mat(:,:,tp) = sisterList{tp};
-    bg_mat(:,:,tp) = bg{tp};
+for tp=1:length(cellpath)
+    if ~isempty(cellpath{tp})
+        cellpath_mat(:,:,tp) = cellpath{tp};
+        sisterList_mat(:,:,tp) = sisterList{tp};
+        bg_mat(:,:,tp) = bg{tp};
+    end
 end
 
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];

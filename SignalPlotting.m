@@ -22,7 +22,7 @@ function varargout = SignalPlotting(varargin)
 
 % edit_celltrackmatfilename the above text to modify the response to help SignalPlotting
 
-% Last Modified by GUIDE v2.5 24-Jan-2013 17:02:19
+% Last Modified by GUIDE v2.5 07-Apr-2013 14:34:09
 
 % Begin initialization code - DO NOT EDIT_CELLTRACKMATFILENAME
 gui_Singleton = 1;
@@ -154,6 +154,103 @@ handles.bg = bg;
 handles.mark = mark;
 guidata(hObject, handles); 
 
+
+
+
+% --- Executes on selection change in popupmenu_stagePos.
+function popupmenu_stagePos_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_stagePos (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+set(handles.edit_stageInfo,'String',handles.stageName{get(hObject,'Value')});
+tokens   = regexp(handles.stageName{get(hObject,'Value')}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
+if ~isempty(tokens)
+    row = tokens{1}{1};
+    col = tokens{1}{2};
+    set(handles.edit_row,'String',row);
+    set(handles.edit_col,'String',col);
+else
+    set(handles.edit_row,'String',num2str(get(hObject,'Value')));
+    set(handles.edit_col,'String','1');
+    row = get(hObject,'Value');
+    col = 1;
+end
+
+field = get(handles.edit_field,'String');
+
+H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
+signal_name = ['/field' num2str(field) '/signals'];
+timestamp_name = ['/field' num2str(field) '/timestamp'];
+selectedcells_name = ['/field' num2str(field) '/selectedcells'];
+
+
+if exist(fullfile(handles.SourceF,H5filename),'file')
+    fid = H5F.open(fullfile(handles.SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    if H5L.exists(fid,signal_name,'H5P_DEFAULT')
+        H5F.close(fid);
+        signalinfo = h5info(fullfile(handles.SourceF,H5filename), signal_name);
+        startind = double([1 1 1]);
+        countind = [signalinfo.Dataspace.Size(1) signalinfo.Dataspace.Size(2) 4];
+        signals = h5read(fullfile(handles.SourceF,H5filename),signal_name,startind, countind);
+        timestamp = h5read(fullfile(handles.SourceF,H5filename),timestamp_name);
+        handles.signals = signals; %  CellNo,Time,Signal
+        handles.timestamp = timestamp;
+        
+    end
+    fid = H5F.open(fullfile(handles.SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    if H5L.exists(fid,selectedcells_name,'H5P_DEFAULT')
+        H5F.close(fid);
+        
+        selected_cells = h5read(fullfile(handles.SourceF,H5filename),selectedcells_name);
+        handles.selected_cells=selected_cells;
+    end
+    
+    if ~isempty(selected_cells)
+        for scell = selected_cells'
+            PosInd = find(signals(scell,:,1));
+            axes(handles.axes1);
+            if scell==selected_cells(1)
+                plot(timestamp(PosInd)/60,signals(scell,PosInd,1),'color',[0.7 0.7 0.7]);
+            else
+                hold on;
+                plot(timestamp(PosInd)/60,signals(scell,PosInd,1),'color',[0.7 0.7 0.7]);
+                hold off;
+                
+            end
+        end
+        
+        for tp=1:length(timestamp)
+            PosInd = find(signals(:,tp,1));
+            median_Signal(tp) = median(signals(PosInd,tp,1));
+        end
+        axes(handles.axes1);
+        hold on;
+        plot(timestamp/60,median_Signal,'k');
+        hold off;
+    end
+    
+    %signalNames = get(handles.popupmenu_regionVar1,'String');
+    
+else
+    set(handles.edit_commu,'String','Check to make sure that H5 file exists');
+    return;
+end
+
+% cind = 1;
+% for i=1:length(s)
+%     varsize = s(i).size;
+%     if varsize(1)~=0 & varsize(1)~=1
+%         newString{cind} = s(i).name;
+%         cind=cind+1;
+%         clear(s(i).name);
+%     end
+% end
+% 
+% set(handles.popupmenu_signal,'String',newString);
+guidata(hObject, handles);  
+
+
 % --- Executes on selection change in popupmenu_signal.
 function popupmenu_signal_Callback(hObject, eventdata, handles)
 % hObject    handle to popupmenu_signal (see GCBO)
@@ -163,227 +260,81 @@ function popupmenu_signal_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_signal contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_signal
 
+
+scell = str2num(get(handles.edit_cellNo,'String'));
+PosTime = find(signal(:,scell,1));
+figure;
+signalNames = get(handles.popupmenu_regionVar1,'String');
+hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,1)/median(signal(PosTime,scell,1)),'b');
+s1Loc = get(handles.popupmenu_regionVar1,'Value');
+legendList{1} = signalNames{s1Loc};
+xlabel('Time(hour)');
+
+
 % --- Executes on button press in pushbutton_plot.
 function pushbutton_plot_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_plot (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-sisterList = handles.sisterList;
-cellpath = handles.cellpath;
-varind = get(handles.popupmenu_signal,'Value');
-varnames = get(handles.popupmenu_signal,'String');
-varname = varnames{varind};
-eval(['myvar=' 'handles.' varname ';']);
 
-timeframes = str2num(get(handles.edit_timeframe,'String'));
+row = str2num(get(handles.edit_row,'String'));
+col = str2num(get(handles.edit_col,'String'));
+field = str2num(get(handles.edit_field,'String'));
+plane = str2num(get(handles.edit_plane,'String'));
 
-switch get(handles.popupmenu_datatype,'Value')
-    case 1 %all
-        plotind = handles.selected_cells;
-        pairdata = 0;
-    case 2 %non-dividing
-        plotind = find(sisterList{end}(:,1)==-1);
-        pairdata = 0;
-    case 3 %dividing
-        sind = find(sisterList{end}(:,1)~=-1);
-        cind = 1;
-        plotind = [];
-        for sl=1:length(sind)
-            tempind = find(handles.selected_cells == sind(sl));
-            if isempty(tempind)
-                plotind(cind) = sind(sl);
-                plotind(cind+1) = sisterList{end}(sind(sl),1);
-                cind = cind+2;
-            end
-        end
-        pairdata = 1;
+
+
+H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
+signal_name = ['/field' num2str(field) '/' get(handles.edit_outputname,'String')];
+timestamp_name = ['/field' num2str(field) '/timestamp'];
+
+
+
+if exist(fullfile(handles.SourceF,H5filename),'file')
+    fid = H5F.open(fullfile(handles.SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    if H5L.exists(fid,signal_name,'H5P_DEFAULT')
+        H5F.close(fid);
+        legendList=cell(1);
+        signalinfo = h5info(fullfile(handles.SourceF,H5filename), signal_name);
+        startind = double([1 1 1]);
+        countind = [signalinfo.Dataspace.Size(1) signalinfo.Dataspace.Size(2) 4];
+        signal = permute(h5read(fullfile(handles.SourceF,H5filename),signal_name,startind, countind),[2 1 3]);
+        timestamp = double(h5read(fullfile(handles.SourceF,H5filename),timestamp_name));
         
-end
-plotInd=1;
-switch get(handles.popupmenu_normalization,'Value')
-    case 1
-        if pairdata==1
-            for c=plotind
-                if get(handles.checkbox_commonNorm,'Value')
-                    sigmax = str2num(get(handles.edit_maxI,'String'));
-                    sigmin = str2num(get(handles.edit_minI,'String'));
-                else
-                    sigmax = max(myvar{c}(timeframes,2));
-                    posInds = find(myvar{c}(timeframes,2)>0);
-                    sigmin = min(myvar{c}(posInds,2));
-                end
-                normvar(:,c) = (myvar{c}(timeframes,2)-sigmin)/(sigmax-sigmin);
-                normvar(:,c+1) = (myvar{c+1}(timeframes,2)-sigmin)/(sigmax-sigmin);
-            end
-        else
-            for c=plotind
-                if get(handles.checkbox_commonNorm,'Value')
-                    sigmax = str2num(get(handles.edit_maxI,'String'));
-                    sigmin = str2num(get(handles.edit_minI,'String'));
-                    normvar(:,plotInd) = (myvar(timeframes,c)-sigmin)/(sigmax-sigmin);
-                    plotInd=plotInd+1;
-                else
-                    sigmax = max(myvar{c}(timeframes,2));
-                    posInds = find(myvar{c}(timeframes,2)>0);
-                    sigmin = min(myvar{c}(posInds,2));
-                    normvar(:,plotInd) = (myvar{c}(timeframes,2)-sigmin)/(sigmax-sigmin);
-                    negInds = find(normvar(:,plotInd)<0);
-                    normvar(negInds,plotInd) = 0;
-                    plotInd=plotInd+1;
-                end
-            end
+        scell = str2num(get(handles.edit_cellNo,'String'));
+        PosTime = find(signal(:,scell,1));
+        figure;
+        signalNames = get(handles.popupmenu_regionVar1,'String');
+        hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,1)/median(signal(PosTime,scell,1)),'b');
+        s1Loc = get(handles.popupmenu_regionVar1,'Value');
+        legendList{1} = signalNames{s1Loc};
+        if get(handles.checkbox_variable2,'Value')
+            hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,2)/median(signal(PosTime,scell,2)),'r');
+            s2Loc = get(handles.popupmenu_regionVar2,'Value');
+            legendList{2} = signalNames{s2Loc};
         end
-    case 2
-        if pairdata==1
-            for c=plotind
-                if get(handles.checkbox_commonNorm,'Value')
-                    sigmax = str2num(get(handles.edit_maxI,'String'));
-                    sigmin = str2num(get(handles.edit_minI,'String'));
-                else
-                    sigmax = max(myvar{c}(timeframes,2));
-                    posInds = find(myvar{c}(timeframes,2)>0);
-                    sigmin = min(myvar{c}(posInds,2));
-                end
-                normvar(:,plotInd) = (myvar{c}(timeframes,2)-sigmin)/(sigmax-sigmin);
-                normvar(:,plotInd+1) = (myvar{c+1}(timeframes,2)-sigmin)/(sigmax-sigmin);
-            end
-        else
-            for c=plotind
-                if get(handles.checkbox_commonNorm,'Value')
-                    sigmax = str2num(get(handles.edit_maxI,'String'));
-                    sigmin = str2num(get(handles.edit_minI,'String'));
-                else
-                    sigmax = max(myvar{c}(timeframes,2));
-                    posInds = find(myvar{c}(timeframes,2)>0);
-                    sigmin = min(myvar{c}(posInds,2));
-                end
-                normvar(:,plotInd) = (myvar{c}(timeframes,2)-sigmin)/(sigmax-sigmin);
-                negInds = find(normvar(:,plotInd)<0);
-                normvar(negInds,plotInd) = 0;
-                plotInd=plotInd+1;
-            end
+        if get(handles.checkbox_variable3,'Value')
+            hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,3)/median(signal(PosTime,scell,3)),'g');
+            s3Loc = get(handles.popupmenu_regionVar3,'Value');
+            legendList{3} =  signalNames{s3Loc};
         end
-        
-    case 3
-        if pairdata==1
-            for c=1:2:length(plotind)
-                if get(handles.checkbox_commonNorm,'Value')
-                    sigmin = str2num(get(handles.edit_minI,'String'));
-                else
-                    sigmax = max(myvar{c}(timeframes,2));
-                end
-                normvar(:,plotInd) = (myvar{c}(timeframes,2)-sigmin);
-                normvar(:,plotInd) = (myvar{c+1}(timeframes,2)-sigmin);
-            end
-        else
-            for c=plotind
-                if get(handles.checkbox_commonNorm,'Value')
-                    sigmin = str2num(get(handles.edit_minI,'String'));
-                else
-                    posInds = find(myvar{c}(timeframes,2)>0);
-                    sigmin = min(myvar{c}(posInds,2));
-
-                end
-                normvar(:,plotInd) = (myvar{c}(timeframes,2)-sigmin);
-                negInds = find(normvar(:,plotInd)<0);
-                normvar(negInds,plotInd) = 0;
-                plotInd=plotInd+1;
-            end
+        if get(handles.checkbox_variable4,'Value')
+            hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,4)/median(signal(PosTime,scell,4)),'k');
+            s4Loc = get(handles.popupmenu_regionVar4,'Value');
+            legendList{4} = signalNames{s4Loc};
         end
-        
-        
-    case 4
-        if pairdata==1
-            for c=1:2:length(plotind)
-                if get(handles.checkbox_commonNorm,'Value')
-                    sigmin = str2num(get(handles.edit_minI,'String'));
-                else
-                    posInds = find(myvar{c}(timeframes,2)>0);
-                    sigmin = min(myvar{c}(posInds,2));
-                end
-                normvar(:,plotInd) = (myvar{c}(timeframes,2)-sigmin);
-                normvar(:,plotInd) = (myvar{c+1}(timeframes,2)-sigmin);
-            end
-        else
-            for c=plotind
-                
-                if get(handles.checkbox_commonNorm,'Value')
-                    sigmin = str2num(get(handles.edit_minI,'String'));
-                else
-                    posInds = find(myvar{c}(timeframes,2)>0);
-                    sigmin = min(myvar{c}(posInds,2));
-                end
-                normvar(:,plotInd) = (myvar{c}(timeframes,2)-sigmin);
-                negInds = find(normvar(:,plotInd)<0);
-                normvar(negInds,plotInd) = 0;
-                plotInd=plotInd+1;
-            end
-        end
-end
-
-kgrouping = kmeans(cellpath{end}(plotind,:),str2num(get(handles.edit_clusterno,'String')));
-
-for c=1:size(normvar,2)
-    if get(handles.popupmenu_plottype,'Value')==2;
-        normvar(:,c) = smooth(normvar(:,c),str2num(get(handles.edit_framerange,'String')));
-    end
-    
-    rankvalue(c,1) = c;
-    [pks,locs] = findpeaks(normvar(:,c),'MINPEAKHEIGHT',0.03,'MINPEAKDISTANCE',10,'THRESHOLD',0.7);
-    rankvalue(c,2) = length(locs);
-    rankvalue(c,3) = trapz(normvar(:,c));
-    %rankvalue(c,4) = kgrouping(c);
-
-end
-
-neworder = sortrows(rankvalue,[3 2]);
-
-load MyColormaps2
-switch get(handles.popupmenu_colormap,'Value')
-    case 1
-        currentcmap = mycmap1;
-    case 2
-        currentcmap = mycmap2;
-    case 3
-        currentcmap = mycmap3;
-    case 4
-        currentcmap = mycmap4;
-end
-
-ind=1;
-for t=timeframes
-    ctime=round(myvar{plotind(1)}(t,1));
-    if ~isempty(find(mod(ctime,60)==[0:6],1))
-        plottime{ind,1} = num2str(round(ctime/60));
+        legend(legendList);
+        xlabel('Time(hour)');
     else
-        plottime{ind,1} = ' ';
+        set(handles.edit_commu,'String',[signal_name ' does not exist']);
+        return;
+        
     end
-    ind=ind+1;
-end
 
-if ~get(handles.checkbox_rank,'Value')
-    hmo = HeatMap((normvar)','Symmetric','false','ColumnLabels',plottime,...
-        'RowLabels',plotind,'ColumnLabelsLocation','bottom','Colormap',currentcmap,...
-        'ColumnLabelsRotate',0,'DisplayRange',str2num(get(handles.edit_maxnormI,'String')));
 else
-    %figure(),scatter(cellpath{end}(plotind,1),cellpath{end}(plotind,2),100,kgrouping,'filled');
-    
-    %for i=1:length(plotind)
-    %    text(cellpath{end}(plotind(i),1)+15,cellpath{end}(plotind(i),2)+15,num2str(plotind(i)));hold on;
-    %end
-    hmo = HeatMap((normvar(:,neworder(:,1)))','Symmetric','false','ColumnLabels',plottime,...
-        'RowLabels',plotind(neworder(:,1)),'ColumnLabelsLocation','bottom','Colormap',currentcmap,...
-        'ColumnLabelsRotate',0,'DisplayRange',str2num(get(handles.edit_maxnormI,'String')));
-    
+    set(handles.edit_commu,'String','Check to make sure that H5 file exists');
+    return;
 end
-addYLabel(hmo,'Cell No.');
-addXLabel(hmo,'Time(hours)');
-
-%cgo = clustergram((normvar'),'Symmetric','true','ColumnLabels',(handles.timestep),'RowLabels',plotind);
-%get(cgo)
-%datatypeInd = get(handles.popupmenu_datatype,'Value');
-%availdatatypes = get(handles.popupmenu_datatype,'String');
-%addTitle(hmo,['Cell population :' availdatatypes{datatypeInd}]);
 
 % --- Executes during object creation, after setting all properties.
 function popupmenu_signal_CreateFcn(hObject, eventdata, handles)
@@ -783,6 +734,309 @@ function edit_maxnormI_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function edit_maxnormI_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit_maxnormI (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_row_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_row (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_row as text
+%        str2double(get(hObject,'String')) returns contents of edit_row as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_row_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_row (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_col_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_col (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_col as text
+%        str2double(get(hObject,'String')) returns contents of edit_col as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_col_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_col (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_field_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_field (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_field as text
+%        str2double(get(hObject,'String')) returns contents of edit_field as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_field_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_field (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_plane_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_plane (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_plane as text
+%        str2double(get(hObject,'String')) returns contents of edit_plane as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_plane_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_plane (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_ndfilename_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_ndfilename (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_ndfilename as text
+%        str2double(get(hObject,'String')) returns contents of edit_ndfilename as a double
+handles.ndfilename = get(hObject,'String');
+guidata(hObject, handles);  
+
+% --- Executes during object creation, after setting all properties.
+function edit_ndfilename_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_ndfilename (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+% --- Executes on button press in pushbutton_locatendfile.
+function pushbutton_locatendfile_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_locatendfile (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+[filename,SourceF,FilterIndex] = uigetfile('*.nd', 'Choose metamorph ND file','C:\computation\02-03-2013\02032013-r1.nd');
+if FilterIndex~=0
+    set(handles.edit_ndfilename,'String',filename);
+    handles.ndfilename = filename;
+    
+    handles.SourceF = SourceF;
+    set(handles.edit_sourceF,'String',SourceF);
+end
+
+guidata(hObject, handles);  
+
+
+% --- Executes on button press in pushbutton_loadbyndfile.
+function pushbutton_loadbyndfile_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_loadbyndfile (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[notp stagePos stageName waveName] = readndfile(fullfile(handles.SourceF,handles.ndfilename));
+
+if notp==-1
+    return;
+end
+
+set(handles.popupmenu_stagePos,'String',stagePos);
+set(handles.popupmenu_stagePos,'Value',1);
+set(handles.edit_stageInfo,'String',stageName{1});
+handles.stageName = stageName;
+handles.channelnames = waveName;
+handles.prefix = handles.ndfilename(1:(end-3));
+tokens   = regexp(stageName{1}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
+if ~isempty(tokens)
+    
+    row = tokens{1}{1};
+    col = tokens{1}{2};
+    set(handles.edit_row,'String',row);
+    set(handles.edit_col,'String',col);
+else
+    set(handles.edit_row,'String','1');
+    set(handles.edit_col,'String','1');
+end
+
+guidata(hObject, handles);  
+
+
+
+function [notp stagePos stageName waveName] = readndfile(filename)
+% Search for number of string matches per line.  
+notp=-1;
+stagePos = [];
+stageName = [];
+waveName = [];
+
+
+if exist(filename,'file')
+    fid = fopen(filename);
+    y = 0;
+    tline = fgetl(fid);
+    sind = 1;
+    wind = 1;
+    notp=0;
+    while ischar(tline)
+        
+        % Find number of time points
+        
+        testInd = regexp(tline,'NTimePoints');
+        num = length(testInd);
+        if num > 0
+            tp  = regexp(tline, '(?<="NTimePoints", )\d+', 'match');
+            notp = str2num(tp{1});
+        end
+        
+        
+        % Find stage naming
+        testInd = regexp(tline,'Stage\d+');
+        num = length(testInd);
+        if num > 0
+            stage  = regexp(tline, '(?<=")\w+(?=",)', 'match');
+            stagePos{sind,1} = stage{1};
+            stagename  = regexp(tline, '(?<="Stage\d+", ")\w+(?=")', 'match');
+            stageName{sind,1} = stagename{1};
+            sind=sind+1;
+        end
+        
+        % Find stage naming
+        testInd = regexp(tline,'WaveName\d+');
+        num = length(testInd);
+        if num > 0
+            wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match');
+            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_)\w+(?=")', 'match');
+            waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
+            wind=wind+1;
+        end
+        
+        tline = fgetl(fid);
+    end
+    fclose(fid);
+end
+
+function edit_sourceF_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_sourceF (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_sourceF as text
+%        str2double(get(hObject,'String')) returns contents of edit_sourceF as a double
+handles.SourceF = get(hObject,'String');
+guidata(hObject, handles);  
+
+% --- Executes during object creation, after setting all properties.
+function edit_sourceF_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_sourceF (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu_stagePos_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_stagePos (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_stageInfo_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_stageInfo (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_stageInfo as text
+%        str2double(get(hObject,'String')) returns contents of edit_stageInfo as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_stageInfo_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_stageInfo (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_commu_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_commu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_commu as text
+%        str2double(get(hObject,'String')) returns contents of edit_commu as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_commu_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_commu (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 

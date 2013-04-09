@@ -2,27 +2,26 @@ function do_lsf_celltrackingND_test()
 clc;
 clear all;
 % Define information about input images and necessary parameters-----------
-ndfilename = '02032013-r1.nd';
-templateCH = 4;
-increment = -1;
+ndfilename ='130404.nd';
+templateCH = 2;
+increment = 1;
 cellsize = 40;
 outersize = 65;
 similarityThres = 0.9;
-sourcefolder = '/files/ImStor/sorger/data/NIC/Pat/02-03-2013';
+sourcefolder = 'Z:\sorger\data\NIC\Bernhard\130404';
 %------------------------------------------------
 currentF = pwd;
 cd(sourcefolder);
 prefix = ndfilename(1:(end-3));
 [notp stagePos stageName channelnames] = readndfile(ndfilename);
 cd(currentF);
-tps = [1 notp];
-sites = 2:8;
+tps = [1 3];
+sites = 1;
 
-matlabpool
 
-parfor site = sites
+for site = sites
     
-    fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF']
+    fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
     %tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)f(?<field>\d+)','tokens');
     tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
     

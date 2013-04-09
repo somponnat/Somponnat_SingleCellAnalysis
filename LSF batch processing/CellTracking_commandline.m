@@ -1,30 +1,46 @@
-function CellTracking_commandline(filetype,targetfolder,row,col,field,plane,channel,tps,increment,fileformat,channelnames,cellsize,outersize,similarityThres)
+function CellTracking_commandline(filetype,SourceF,row,col,field,plane,channel,tps,increment,fileformat,channelnames,cellsize,outersize,similarityThres)
 % Example usage: CellTracking_commandline(pwd,2,6,1,1,3,[1 16]);
 % celltrackOUT    =  MAT file that contains initial track points
 % tps             = [<first frame>   <last frame>]
 
-currentF = pwd;
-cd(targetfolder);
+H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
+cellpath_name = ['/field' num2str(field) '/cellpath'];
+sisterList_name = ['/field' num2str(field) '/sisterList'];
+bg_name = ['/field' num2str(field) '/bg'];
+
+if ~exist(fullfile(SourceF,H5filename),'file') 
+    display([H5filename '.mat does not exist.']);
+    return
+end
+
+fileattrib(fullfile(SourceF,H5filename),'+w');
 
 load fftexecutiontimes
-warning('off', 'all');
-
-savefile = ['celltrackOUT_r' num2str(row) '_c' num2str(col) '_f' num2str(field) '_p' num2str(plane) '_ch' num2str(channel)];
-
-if ~exist([savefile '.mat'],'file') 
-    display([savefile '.mat does not exist.']);
-    return
-end
-% file exist, load the file
-load(savefile,'cellpath','sisterList','bg');
-if isempty(cellpath) || isempty(bg) || isempty(sisterList) %#ok<*NODEF>
-    display([savefile '.mat does not contain necessary variables.']);
-    return
-end
-
 % calculate optimal conditions for fft analysis
 fftw('planner', 'hybrid');
 opt = detbestlength2(FFTrv,FFTiv,IFFTiv,2*[outersize outersize],2*[cellsize cellsize],1,1);
+
+cellpathinfo = h5info(fullfile(SourceF,H5filename), cellpath_name);
+sisterListinfo = h5info(fullfile(SourceF,H5filename), sisterList_name);
+bginfo = h5info(fullfile(SourceF,H5filename), bg_name);
+cellpath_mat = h5read(fullfile(SourceF,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
+sisterList_mat = h5read(fullfile(SourceF,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
+bg_mat = h5read(fullfile(SourceF,H5filename),bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
+
+%cellpath = cell(size(cellpath_mat,3),1);
+%sisterList = cell(size(cellpath_mat,3),1);
+%bg = cell(size(cellpath_mat,3),1);
+
+for tp=1:size(cellpath_mat,3)
+    cellpath{tp} = cellpath_mat(:,:,tp);
+    sisterList{tp} = sisterList_mat(:,:,tp);
+    bg{tp} = bg_mat(:,:,tp);
+end
+
+if isempty(cellpath) || isempty(bg) || isempty(sisterList) %#ok<*NODEF>
+    display([H5filename ' does not contain necessary variables.']);
+    return
+end
 
 switch increment
     case 1
@@ -37,12 +53,12 @@ end
 
 for t=firstFrame:increment:endFrame
     
-    clc;display([savefile ' - Currently processing frame: ' num2str(t) ' of ' num2str(tps(end)-tps(1)+1)]);
+    clc;display([H5filename ' - Currently processing frame: ' num2str(t) ' of ' num2str(tps(end)-tps(1)+1)]);
     tp=t; % load previous file
-    previousframe = loadimage(filetype,fileformat,[row col field plane channel],tp,channelnames);
+    previousframe = loadimage(filetype,fileformat,[row col field plane channel],tp,channelnames,SourceF);
 
     tp=t+increment; % load current file
-    currentframe =  loadimage(filetype,fileformat,[row col field plane channel],tp,channelnames);
+    currentframe =  loadimage(filetype,fileformat,[row col field plane channel],tp,channelnames,SourceF);
     
     if length(sisterList) >= tp && ~isempty(sisterList{tp}) && ~isempty(sisterList{1})
         sisExistInd = find(sisterList{tp}(:,1) ~= -1 & sisterList{tp}(:,1) ~= 0);
@@ -52,44 +68,42 @@ for t=firstFrame:increment:endFrame
     
     PosInd = find(cellpath{tp-increment}(:,1)>0 & cellpath{tp-increment}(:,2)>0)';
     
-    for cell=PosInd
+    for c=PosInd
         
-        if isempty(find(cell==sisExistInd,1))
-            sisterList{tp}(cell,:) = sisterList{tp-increment}(cell,:); %#ok<*AGROW>
+        if isempty(find(c==sisExistInd,1))
+            sisterList{tp}(c,:) = sisterList{tp-increment}(c,:); %#ok<*AGROW>
         end
         
-        xL=max(cellpath{tp-increment}(cell,1)-cellsize,1);
-        xR=min(cellpath{tp-increment}(cell,1)+cellsize-1,size(previousframe,2));
-        yL=max(cellpath{tp-increment}(cell,2)-cellsize,1);
-        yR=min(cellpath{tp-increment}(cell,2)+cellsize-1,size(previousframe,1));
+        xL=max(cellpath{tp-increment}(c,1)-cellsize,1);
+        xR=min(cellpath{tp-increment}(c,1)+cellsize-1,size(previousframe,2));
+        yL=max(cellpath{tp-increment}(c,2)-cellsize,1);
+        yR=min(cellpath{tp-increment}(c,2)+cellsize-1,size(previousframe,1));
                 
         template = previousframe(yL:yR,xL:xR);     
         
-        xL=max(cellpath{tp-increment}(cell,1)-outersize,1);
-        xR=min(cellpath{tp-increment}(cell,1)+outersize-1,size(currentframe,2));
-        yL=max(cellpath{tp-increment}(cell,2)-outersize,1);
-        yR=min(cellpath{tp-increment}(cell,2)+outersize-1,size(currentframe,1));
+        xL=max(cellpath{tp-increment}(c,1)-outersize,1);
+        xR=min(cellpath{tp-increment}(c,1)+outersize-1,size(currentframe,2));
+        yL=max(cellpath{tp-increment}(c,2)-outersize,1);
+        yR=min(cellpath{tp-increment}(c,2)+outersize-1,size(currentframe,1));
         
         testframe = currentframe(yL:yR,xL:xR);   
         
-        
-        
         [x1 y1 maxVal] = corrMatching2(testframe, template, opt);
         if isempty(x1) || maxVal<similarityThres
-            x1 = cellpath{tp-increment}(cell,1)-xL;
-            y1 = cellpath{tp-increment}(cell,2)-yL;
+            x1 = cellpath{tp-increment}(c,1)-xL;
+            y1 = cellpath{tp-increment}(c,2)-yL;
         end
         
         [x1 y1 ~] = templateToCentroid(testframe,x1,y1);
 
-        cellpath{tp}(cell,:) = [xL+x1 yL+y1]; 
+        cellpath{tp}(c,:) = [xL+x1 yL+y1];
     end
     
     DeathInd = find(cellpath{tp-increment}(:,1)==-2)';
     
-    for cell=DeathInd
-        sisterList{tp}(cell,:) = sisterList{tp-increment}(cell,:);
-        cellpath{tp}(cell,:) = cellpath{tp-increment}(cell,:);
+    for c=DeathInd
+        sisterList{tp}(c,:) = sisterList{tp-increment}(c,:);
+        cellpath{tp}(c,:) = cellpath{tp-increment}(c,:);
     end
     
     
@@ -101,14 +115,57 @@ for t=firstFrame:increment:endFrame
         bg{tp}(:,1) = bg{tp-increment}(:,1)+round(xshift);
         bg{tp}(:,2) = bg{tp-increment}(:,2)+round(yshift);
     end
-    save(savefile,'cellpath','sisterList','bg','-v7.3');
+    
+    cellpath_mat = -1*(ones(size(cellpath{tp},1),2,length(cellpath)));
+    sisterList_mat = -1*(ones(size(sisterList{tp},1),size(sisterList{tp},2),length(sisterList)));
+    bg_mat = -1*(ones(size(bg{tp},1),2,length(bg)));
+    
+    
+    for s_tp=1:length(cellpath)
+        if ~isempty(cellpath{s_tp})
+            cellpath_mat(:,:,s_tp) = cellpath{s_tp};
+            sisterList_mat(:,:,s_tp) = sisterList{s_tp};
+            bg_mat(:,:,s_tp) = bg{s_tp};
+        end
+    end
+    
+    fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    if ~H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
+        H5F.close(fid);
+    else
+        H5L.delete(fid,cellpath_name,'H5P_DEFAULT');
+        H5F.close(fid);
+    end
+    
+    h5create(fullfile(SourceF,H5filename), cellpath_name, [size(cellpath_mat,1), size(cellpath_mat,2), size(cellpath_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(cellpath_mat,2), size(cellpath_mat,3)], 'Deflate', 9);
+    h5write(fullfile(SourceF,H5filename), cellpath_name, cellpath_mat, [1 1 1], [size(cellpath_mat,1) size(cellpath_mat,2) size(cellpath_mat,3)]);
+    
+    fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    if ~H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
+        H5F.close(fid);
+    else
+        H5L.delete(fid,sisterList_name,'H5P_DEFAULT');
+        H5F.close(fid);
+    end
+    
+    h5create(fullfile(SourceF,H5filename), sisterList_name, [size(sisterList_mat,1), size(sisterList_mat,2), size(sisterList_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(sisterList_mat,2), size(sisterList_mat,3)], 'Deflate', 9);
+    h5write(fullfile(SourceF,H5filename), sisterList_name, sisterList_mat, [1 1 1], [size(sisterList_mat,1) size(sisterList_mat,2) size(sisterList_mat,3)]);
+    
+    fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    if ~H5L.exists(fid,bg_name,'H5P_DEFAULT')
+        H5F.close(fid);
+    else
+        H5L.delete(fid,bg_name,'H5P_DEFAULT');
+        H5F.close(fid);
+    end
+    
+    h5create(fullfile(SourceF,H5filename), bg_name, [size(bg_mat,1), size(bg_mat,2), size(bg_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(bg_mat,2), size(bg_mat,3)], 'Deflate', 9);
+    h5write(fullfile(SourceF,H5filename), bg_name, bg_mat, [1 1 1], [size(bg_mat,1) size(bg_mat,2) size(bg_mat,3)]);
 end
 
-% finishing jobs, returning to original path
-display(['Successfully tracked frame' num2str(tps(1)) ':' num2str(tps(end)) ' and saved in ' savefile]);
-cd(currentF);
+display(['Successfully tracked frame' num2str(tps(1)) ':' num2str(tps(end)) ' and saved in ' H5filename]);
 
-function outputim = loadimage(filetype,fileformat,imlocation,tp,channelnames)
+function outputim = loadimage(filetype,fileformat,imlocation,tp,channelnames,SourceF)
 row = imlocation(1);
 col = imlocation(2);
 field = imlocation(3);
@@ -121,17 +178,17 @@ switch filetype
     case 1
         
         filename = sprintf(fileformat,row,col,field,plane,channel,tp);
-        if exist(filename,'file')
-        outputim = imread(filename);
+        if exist(fullfile(SourceF,filename),'file')
+            outputim = imread(fullfile(SourceF,filename));
         end
     case 2
         if exist(fileformat,'file')
-        outputim = imread(fileformat,'Index',totalCH*(tp-1)+channel);
+            outputim = imread(fileformat,'Index',totalCH*(tp-1)+channel);
         end
     case 3
         filename = sprintf(fileformat,channelnames{channel},tp);
-        if exist(filename,'file');
-            outputim = imread(filename);
+        if exist(fullfile(SourceF,filename),'file');
+            outputim = imread(fullfile(SourceF,filename));
         end
         
 end

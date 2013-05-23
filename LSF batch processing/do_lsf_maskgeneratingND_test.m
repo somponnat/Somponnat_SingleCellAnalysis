@@ -5,15 +5,15 @@ ndfilename = '02032013-r1.nd';
 templateCH = 4;
 cellsize = 40;
 celldilatesize = 4;
-%sourcefolder = 'c:\computation\02-03-2013\s1';
-sourcefolder = 'Q:\sorger\data\NIC\Pat\02-03-2013\';
+sourcefolder = 'c:\computation\02-03-2013';
+%sourcefolder = 'Q:\sorger\data\NIC\Pat\02-03-2013\';
 %sourcefolder = '/files/ImStor/sorger/data/NIC/Pat/02-03-2013';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
 [notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename);
 
 tps = [1 notp];
-sites = 1;%1:length(stagePos);
+sites = 27;%1:length(stagePos);
 
 for i=1:length(sites)
     site = sites(i);

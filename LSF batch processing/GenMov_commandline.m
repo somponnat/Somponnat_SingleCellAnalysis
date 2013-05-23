@@ -147,14 +147,14 @@ for tp=first_tp:last_tp
                     case 3
                         filename = sprintf(fileformat,channelnames{nominCH},tp);
                 end
-                nominIM = double(imread(fullfile(targetfolder,filename)));
+                nominIM = im2double(imread(fullfile(targetfolder,filename)));
                 switch filetype
                     case 1
                         filename = sprintf(fileformat,row,col,field,plane,denominCH,tp);
                     case 3
                         filename = sprintf(fileformat,channelnames{denominCH},tp);
                 end
-                denomIM = double(imread(fullfile(targetfolder,filename)));
+                denomIM = im2double(imread(fullfile(targetfolder,filename)));
                 if isempty(bg)
                     displayIM = calculateFRET(nominIM,denomIM,bg,cellsize,filterParam,displaygate,signalshift,0,illumcorlogic);
                 else
@@ -264,8 +264,8 @@ displaygateL = displaygate(1);
 displaygateH = displaygate(2);
 
 if illumcorlogic
-    normN = double(ifft2(ifftshift(fftshift(fft2(nominIM)).*hbutter(nominIM,filterParam(1),filterParam(2)))));
-    normD = double(ifft2(ifftshift(fftshift(fft2(denomIM)).*hbutter(denomIM,filterParam(1),filterParam(2)))));
+    normN = ifft2(ifftshift(fftshift(fft2(nominIM)).*hbutter(nominIM,filterParam(1),filterParam(2))));
+    normD = ifft2(ifftshift(fftshift(fft2(denomIM)).*hbutter(denomIM,filterParam(1),filterParam(2))));
 else
     normN = nominIM;
     normD = denomIM;

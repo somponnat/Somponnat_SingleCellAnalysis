@@ -1,11 +1,11 @@
 
 function varargout = CellTracking(varargin)
 %  varargin{1} - filetype 1 = PE export, 2 = tifstack, 3 = custom images
-%  varargin{2} - trackinginfo  - [templateCH tp_1 tp_end]       
+%  varargin{2} - trackinginfo  - [templateCH tp_1 tp_end]
 %  varargin{3} - imagelocation - [row col field plane]
 %  varargin{4} - channelnames eg. {'CFP';'FRET';'RFP'};
-%  varargin{5} - fileformat or tiffstack file name  
-%  examples: 
+%  varargin{5} - fileformat or tiffstack file name
+%  examples:
 %  CellTracking(1,[templateCH tp_1 tp_end],[row col field plane])
 %  CellTracking(2,[templateCH tp_1 tp_end],[],{'1';'2';'3'},<tiff stack file>)
 %  CellTracking(3,[templateCH tp_1 tp_end],[],{'CFP';'YFP';'RFP'},'2012-11-16_%s_xy087_t%03g.tif')
@@ -15,11 +15,11 @@ function varargout = CellTracking(varargin)
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @CellTracking_OpeningFcn, ...
-                   'gui_OutputFcn',  @CellTracking_OutputFcn, ...
-                   'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @CellTracking_OpeningFcn, ...
+    'gui_OutputFcn',  @CellTracking_OutputFcn, ...
+    'gui_LayoutFcn',  [] , ...
+    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -46,11 +46,11 @@ switch filetype
         
         filename = sprintf(fileformat,row,col,field,plane,channel,tp);
         if exist(fullfile(SourceF,filename),'file')
-        outputim = imread(fullfile(SourceF,filename));
+            outputim = imread(fullfile(SourceF,filename));
         end
     case 2
         if exist(fullfile(SourceF,fileformat),'file')
-        outputim = imread(fullfile(SourceF,fileformat),'Index',totalCH*(tp-1)+channel);
+            outputim = imread(fullfile(SourceF,fileformat),'Index',totalCH*(tp-1)+channel);
         end
     case 3
         filename = sprintf(fileformat,channelnames{channel},tp);
@@ -72,36 +72,36 @@ function CellTracking_OpeningFcn(hObject, eventdata, handles, varargin) %#ok<*IN
 
 handles.output = hObject;
 
-filetype = []; 
-trackinginfo = [];  
-imagelocation = []; 
-channelnames = []; 
-fileformat = [];   
+filetype = [];
+trackinginfo = [];
+imagelocation = [];
+channelnames = [];
+fileformat = [];
 
 switch length(varargin)
     case 1
-        filetype = varargin{1}; 
+        filetype = varargin{1};
     case 2
-        filetype = varargin{1}; 
+        filetype = varargin{1};
         if ischar(varargin{2}) && filetype == 3
             fileformat = varargin{2};
         else
             trackinginfo = varargin{2};  % [templateCH tp_1 tp_end]
         end
     case 3
-        filetype = varargin{1}; 
-        trackinginfo = varargin{2}; 
+        filetype = varargin{1};
+        trackinginfo = varargin{2};
         imagelocation = varargin{3}; %[row col field plane]
     case 4
-        filetype = varargin{1}; 
-        trackinginfo = varargin{2}; 
+        filetype = varargin{1};
+        trackinginfo = varargin{2};
         imagelocation = varargin{3};
         channelnames = varargin{4};  %{'CFP';'FRET';'RFP'};
     case 5
-        filetype = varargin{1}; 
-        trackinginfo = varargin{2}; 
+        filetype = varargin{1};
+        trackinginfo = varargin{2};
         imagelocation = varargin{3};
-        channelnames = varargin{4}; 
+        channelnames = varargin{4};
         fileformat = varargin{5};%
     case 0
         filetype = 0;
@@ -115,13 +115,13 @@ end
 
 switch filetype
     case 1 % PE tiff input
-
+        
         if isempty(imagelocation)
             display('Required image location (input#3) for PE-tiff format');
             return;
         end
         filetype = 1;
-        set(handles.radiobutton_petiffs,'Value',1);           
+        set(handles.radiobutton_petiffs,'Value',1);
         row = imagelocation(1);
         col = imagelocation(2);
         field = imagelocation(3);
@@ -129,7 +129,7 @@ switch filetype
         
         if isempty(fileformat)
             fileformat = 'r%02.0fc%02.0ff%02.0fp%02.0frc%1.0f-ch1sk%ufk1fl1.tiff';
-        end    
+        end
         
         if ~isempty(channelnames)
             totalCHs = length(channelnames);
@@ -150,7 +150,7 @@ switch filetype
         set(handles.edit_plane,'String',num2str(plane));
         set(handles.edit_fileformat,'String',fileformat);
     case 2 % Tiff stack input
-
+        
         if isempty(channelnames)
             display('Required channelnames (input#4) for tiffstack input');
             return;
@@ -262,7 +262,7 @@ switch filetype
             set(handles.edit_lastframe,'String',num2str(trackinginfo(3)));
             set(handles.edit_currentFrame,'String',num2str(trackinginfo(2)));
         end
-
+        
 end
 
 handles.filetype = filetype;
@@ -409,7 +409,7 @@ if ~isempty(initialframe)
 else
     set(handles.edit_commu,'String',{'Make sure the image path is correct.'});
 end
-    
+
 handles.cellpath = [];
 handles.bg = [];
 handles.sisterList = [];
@@ -582,7 +582,7 @@ for s = 1:length(testSet)
         nucEquiDiameter < maxNucDiameter & ...
         nucFormfactor>minFormfactor));
     
-    %if sum(BW2(:)) > 0 
+    %if sum(BW2(:)) > 0
     combined_bw = combined_bw | BW2;
     %end
 end
@@ -609,7 +609,7 @@ for i=1.2:0.6:3
     BW = bwselect(BW,xg,yg);
     
     BWc = BWc | BW;
-
+    
 end
 
 BW = BWc;
@@ -618,7 +618,7 @@ S  = regionprops(BW, 'centroid');
 if isempty(find(BW==0, 1)) || isempty(find(BW==1, 1))
     x = xg;
     y = yg;
-
+    
 else
     x = round(S.Centroid(1));
     y = round(S.Centroid(2));
@@ -643,7 +643,7 @@ S  = regionprops(outBW, 'centroid');
 if ~isfield(S,'Centroid') || length(S)>1
     x = xg;
     y = yg;
-
+    
 else
     x = round(S.Centroid(1));
     y = round(S.Centroid(2));
@@ -689,7 +689,7 @@ for n=1:num_iter
     % sum Image Force on all components (used for vector image)
     % if 'chan' is applied, this loop become one sigle code as a
     % result of layer = 1
-
+    
     
     % calculate the external force of the image
     force = mu*kappa(phi0)./max(max(abs(kappa(phi0))))+force_image;
@@ -717,7 +717,7 @@ for n=1:num_iter
         
         %make mask from SDF
         seg = phi0<=0; %-- Get mask from levelset
-
+        
         midY = round(size(seg,1)/2);
         midX = round(size(seg,2)/2);
         if seg(midY,midX) > 0
@@ -756,37 +756,37 @@ seg = imresize(seg,1/s);
 function showphi(I, phi, i)
 % show curve evolution of phi
 
-% Copyright (c) 2009, 
+% Copyright (c) 2009,
 % Yue Wu @ ECE Department, Tufts University
-% All Rights Reserved  
+% All Rights Reserved
 
 for j = 1:size(phi,3)
     phi_{j} = phi(:,:,j); %#ok<*AGROW>
 end
-  imshow(I,'initialmagnification','fit','displayrange',[0 255]);
-  hold on;
+imshow(I,'initialmagnification','fit','displayrange',[0 255]);
+hold on;
 
-  if size(phi,3) == 1
-      contour(phi_{1}, [0 0], 'r','LineWidth',4);
-      contour(phi_{1}, [0 0], 'g','LineWidth',1.3);
-  else
-      contour(phi_{1}, [0 0], 'r','LineWidth',4);
-      contour(phi_{1}, [0 0], 'x','LineWidth',1.3);
-      contour(phi_{2}, [0 0], 'g','LineWidth',4);
-      contour(phi_{2}, [0 0], 'x','LineWidth',1.3);
-  end
-  hold off; 
-  title([num2str(i) ' Iterations']); 
-  drawnow;
-  
+if size(phi,3) == 1
+    contour(phi_{1}, [0 0], 'r','LineWidth',4);
+    contour(phi_{1}, [0 0], 'g','LineWidth',1.3);
+else
+    contour(phi_{1}, [0 0], 'r','LineWidth',4);
+    contour(phi_{1}, [0 0], 'x','LineWidth',1.3);
+    contour(phi_{2}, [0 0], 'g','LineWidth',4);
+    contour(phi_{2}, [0 0], 'x','LineWidth',1.3);
+end
+hold off;
+title([num2str(i) ' Iterations']);
+drawnow;
+
 function KG = kappa(I)
 % get curvature information of input image
 % input: 2D image I
 % output: curvature matrix KG
 
-% Copyright (c) 2009, 
+% Copyright (c) 2009,
 % Yue Wu @ ECE Department, Tufts University
-% All Rights Reserved  
+% All Rights Reserved
 
 I = double(I);
 [m,n] = size(I);
@@ -811,9 +811,9 @@ KG = KG./max(max(abs(KG)));
 function indicator = checkstop(old,new,dt)
 % indicate whether we should performance further iteraions or stop
 
-% Copyright (c) 2009, 
+% Copyright (c) 2009,
 % Yue Wu @ ECE Department, Tufts University
-% All Rights Reserved  
+% All Rights Reserved
 
 layer = size(new,3);
 
@@ -849,9 +849,9 @@ return
 
 function H=Heaviside(z)
 % Heaviside step function (smoothed version)
-% Copyright (c) 2009, 
+% Copyright (c) 2009,
 % Yue Wu @ ECE Department, Tufts University
-% All Rights Reserved  
+% All Rights Reserved
 
 Epsilon=10^(-5);
 H=zeros(size(z,1),size(z,2));
@@ -903,7 +903,7 @@ S  = regionprops(outBW, 'centroid');
 if isempty(find(outBW==0, 1)) || isempty(find(outBW==1, 1))
     x = xg;
     y = yg;
-
+    
 else
     x = round(S.Centroid(1));
     y = round(S.Centroid(2));
@@ -1038,7 +1038,7 @@ if button_state == get(hObject,'Max')
     cell = get(handles.listbox_cells,'Value');
     fcn = makeConstrainToRectFcn('imrect',get(handles.axes1,'XLim'),get(handles.axes1,'YLim'));
     h1 = imrect(handles.axes1, [cellpath{tp}(cell,1)-cellsize cellpath{tp}(cell,2)-cellsize 2*cellsize-1 2*cellsize-1]);
-
+    
     setPositionConstraintFcn(h1,fcn);
     h2 = imrect(handles.axes1, [cellpath{tp}(cell,1)-outersize cellpath{tp}(cell,2)-outersize 2*outersize-1 2*outersize-1]);
     setResizable(h1,0);
@@ -1123,9 +1123,9 @@ set(handles.axes2,'NextPlot','replace');
 guidata(hObject, handles);
 drawnow;
 
-    
+
 % --- Outputs from this function are returned to the command line.
-function varargout = CellTracking_OutputFcn(hObject, eventdata, handles) 
+function varargout = CellTracking_OutputFcn(hObject, eventdata, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1161,7 +1161,7 @@ if get(handles.togglebutton_editable,'Value') == get(handles.togglebutton_editab
     for i=1:length(bg_p)
         xy_bg(i,:) = getPosition(bg_p{i});
     end
-
+    
     if ~isempty(bg) && ~isempty(bg{c_tp})
         bg{c_tp} = round([xy_bg(:,1) xy_bg(:,2)]);
         set(handles.listbox_bgs,'String',num2str( [(1:size(bg{c_tp},1))' bg{c_tp}] ));
@@ -1199,12 +1199,12 @@ fileformat = get(handles.edit_fileformat,'String');
 tp = str2num(get(handles.edit_firstframe,'String'));
 set(handles.slider_frames,'Value',tp);
 firstframe = loadimage(handles.filetype,fileformat,[row col field plane channel],tp,handles.channelnames,handles.SourceF);
-set(handles.edit_currentFrame,'String',num2str(tp));    
+set(handles.edit_currentFrame,'String',num2str(tp));
 
 set(handles.slider_frames,'Value',tp);
 if handles.filetype == 3
     filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
-    first_info = imfinfo(fullfile(handles.SourceF,filename));    
+    first_info = imfinfo(fullfile(handles.SourceF,filename));
     
     filename = sprintf(fileformat,handles.channelnames{channel},tp);
     current_info = imfinfo(fullfile(handles.SourceF,filename));
@@ -1237,11 +1237,11 @@ if get(handles.togglebutton_editable,'Value')
         PosInd = find(cellpath{tp}(:,1)>0)';
         for cell=PosInd
             if cell ~= selected_cell
-            %    p{cell} = coordtopoint(cellpath{tp}(cell,:),cell,'r',handles.fcn1,handles.axes1,get(handles.checkbox_cellnostring,'Value'));
-            %    addNewPositionCallback(p{cell},@(h) set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',h(1),h(2)))));
-            %    addNewPositionCallback(p{cell},@(h) set(handles.edit_cellNo,'String',num2str(cell)));
-            %    addNewPositionCallback(p{cell},@(h) set(handles.listbox_cells,'Value',cell));
-            %    addNewPositionCallback(p{cell},@(h) set(handles.edit_sister,'String',num2str(sisterList{tp}(cell,:))));
+                %    p{cell} = coordtopoint(cellpath{tp}(cell,:),cell,'r',handles.fcn1,handles.axes1,get(handles.checkbox_cellnostring,'Value'));
+                %    addNewPositionCallback(p{cell},@(h) set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',h(1),h(2)))));
+                %    addNewPositionCallback(p{cell},@(h) set(handles.edit_cellNo,'String',num2str(cell)));
+                %    addNewPositionCallback(p{cell},@(h) set(handles.listbox_cells,'Value',cell));
+                %    addNewPositionCallback(p{cell},@(h) set(handles.edit_sister,'String',num2str(sisterList{tp}(cell,:))));
             else
                 p{cell} = coordtopoint(cellpath{tp}(cell,:),cell,'b',handles.fcn1,handles.axes1,get(handles.checkbox_cellnostring,'Value'));
                 addNewPositionCallback(p{cell},@(h) set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',h(1),h(2)))));
@@ -1252,7 +1252,7 @@ if get(handles.togglebutton_editable,'Value')
         end
         
     end
-
+    
     if ~isempty(bg)
         for b=1:size(bg{tp},1)
             bg_p{b} = coordtopoint(bg{tp}(b,:),b,'g',handles.fcn1,handles.axes1,get(handles.checkbox_cellnostring,'Value'));
@@ -1268,10 +1268,14 @@ else
     if ~isempty(cellpath) && ~isempty(cellpath{tp})
         PosInd = find(cellpath{tp}(:,1)>0);
         nosisterInd = find(sisterList{tp}(PosInd,1)==-1);
-        sister1Ind = find(sisterList{tp}(PosInd,1)~=-1);
-        plot(cellpath{tp}(PosInd(nosisterInd),1),cellpath{tp}(PosInd(nosisterInd),2),'x','MarkerFaceColor','g','MarkerEdgeColor','g'); hold on;
-        plot(cellpath{tp}(PosInd(sister1Ind),1),cellpath{tp}(PosInd(sister1Ind),2),'o','MarkerFaceColor','r','MarkerEdgeColor','r'); hold on;
+        sister1Ind = find(sisterList{tp}(PosInd,1)~=-1 & sisterList{tp}(PosInd,2)==-1 & sisterList{tp}(PosInd,3)==-1 );
+        sister2Ind = find(sisterList{tp}(PosInd,1)~=-1 & sisterList{tp}(PosInd,2)~=-1 & sisterList{tp}(PosInd,3)==-1 );
+        sister3Ind = find(sisterList{tp}(PosInd,1)~=-1 & sisterList{tp}(PosInd,2)~=-1 & sisterList{tp}(PosInd,3)~=-1 );
         
+        plot(cellpath{tp}(PosInd(nosisterInd),1),cellpath{tp}(PosInd(nosisterInd),2),'x','MarkerFaceColor','c','MarkerEdgeColor','c'); hold on;
+        plot(cellpath{tp}(PosInd(sister1Ind),1),cellpath{tp}(PosInd(sister1Ind),2),'o','MarkerFaceColor','r','MarkerEdgeColor','r'); hold on;
+        plot(cellpath{tp}(PosInd(sister2Ind),1),cellpath{tp}(PosInd(sister2Ind),2),'o','MarkerFaceColor','g','MarkerEdgeColor','g'); hold on;
+        plot(cellpath{tp}(PosInd(sister3Ind),1),cellpath{tp}(PosInd(sister3Ind),2),'o','MarkerFaceColor','b','MarkerEdgeColor','b'); hold on;
         
         if get(handles.checkbox_cellnostring,'Value')
             text(cellpath{tp}(PosInd,1)+5,cellpath{tp}(PosInd,2)+5,num2str(PosInd),'HorizontalAlignment','left',...
@@ -1371,7 +1375,7 @@ if handles.filetype == 3
     set(handles.edit_commu,'String',[num2str(hour,'%02.0f') ':' num2str(minute,'%02.0f') ':' num2str(second,'%02.0f')]);
 end
 
-set(handles.edit_currentFrame,'String',num2str(pre_tp));    
+set(handles.edit_currentFrame,'String',num2str(pre_tp));
 imshow(imadjust((previousframe),[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
 if get(handles.checkbox_cellmarking,'Value')
     [p bg_p] = plotTrackpoints(handles,cellpath,sisterList,handles.res_cellpath,handles.res_sisterList,bg,pre_tp,str2num(get(handles.edit_cellNo,'String')));
@@ -1412,7 +1416,7 @@ end
 if handles.filetype == 3
     filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
     first_info = imfinfo(fullfile(handles.SourceF,filename));
-end    
+end
 set(handles.slider_frames,'Value',post_tp);
 nextframe = loadimage(handles.filetype,fileformat,[row col field plane channel],post_tp,handles.channelnames,handles.SourceF);
 if handles.filetype == 3
@@ -1466,7 +1470,7 @@ set(handles.edit_currentFrame,'String',num2str(tp));
 
 if handles.filetype == 3
     filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
-    first_info = imfinfo(fullfile(handles.SourceF,filename));    
+    first_info = imfinfo(fullfile(handles.SourceF,filename));
     
     filename = sprintf(fileformat,handles.channelnames{channel},tp);
     current_info = imfinfo(fullfile(handles.SourceF,filename));
@@ -1571,13 +1575,13 @@ switch handles.increment
     case 1
         endFrame = last_tp;
         for tp=first_tp:1:last_tp
-            if ~isempty(cellpath) 
+            if ~isempty(cellpath)
                 if length(cellpath)>=tp
                     endFrame = tp;
                 else
                     break;
                 end
-                    
+                
             end
         end
     case -1
@@ -1616,9 +1620,9 @@ if c_tp~=endFrame+handles.increment
             set(handles.edit_commu,'String',[num2str(hour,'%02.0f') ':' num2str(minute,'%02.0f') ':' num2str(second,'%02.0f')]);
         end
         
-        imshow(imadjust((currentframe),[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
+        imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
         set(handles.edit_currentFrame,'String',num2str(tp));
-
+        
         if get(handles.checkbox_cellmarking,'Value')
             [p bg_p] = plotTrackpoints(handles,cellpath,sisterList,handles.res_cellpath,handles.res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
             handles.p = p;
@@ -1674,7 +1678,7 @@ channel= str2num(get(handles.edit_CH,'String'));
 cellsize = str2num(get(handles.edit_cellsize,'String'));
 
 currentFrame = str2num(get(handles.edit_currentFrame,'String'));
-lastframe   = str2num(get(handles.edit_lastframe,'String')); 
+lastframe   = str2num(get(handles.edit_lastframe,'String'));
 
 nextframe = currentFrame+1;
 if nextframe>lastframe
@@ -1683,7 +1687,7 @@ end
 if nextframe == currentFrame
     return;
 end
-    
+
 
 FFTiv=handles.FFTiv;
 FFTrv=handles.FFTrv;
@@ -1725,7 +1729,7 @@ drawnow;
 
 % --- Executes when selected object is changed in uibuttongroup_cellrecogmethod.
 function uibuttongroup_cellrecogmethod_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in uibuttongroup_cellrecogmethod 
+% hObject    handle to the selected object in uibuttongroup_cellrecogmethod
 % eventdata  structure with the following fields (see UIBUTTONGROUP)
 %	EventName: string 'SelectionChanged' (read only)
 %	OldValue: handle of the previously selected object or empty if none was selected
@@ -1735,13 +1739,13 @@ function uibuttongroup_cellrecogmethod_SelectionChangeFcn(hObject, eventdata, ha
 switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
     case 'radiobutton_method1'
         set(handles.edit_commu,'String','Cell edging1 (Canny) chosen');
-        handles.cellrecogmethod = 1; 
+        handles.cellrecogmethod = 1;
     case 'radiobutton_method2'
         set(handles.edit_commu,'String','Cell edging2 (Sobel with multiple thresholding params) chosen');
         handles.cellrecogmethod = 2;
     otherwise
 end
-guidata(hObject, handles);      
+guidata(hObject, handles);
 
 % --- Executes on button press in pushbutton_correlationthru.
 function pushbutton_correlationthru_Callback(hObject, eventdata, handles)
@@ -1772,13 +1776,13 @@ IFFTiv=handles.IFFTiv;
 cFrame = str2num(get(handles.edit_currentFrame,'String'));
 switch handles.increment
     case 1
-        endFrame   = str2num(get(handles.edit_lastframe,'String'))-1; 
+        endFrame   = str2num(get(handles.edit_lastframe,'String'))-1;
     case -1
-        endFrame   = str2num(get(handles.edit_firstframe,'String'))+1; 
+        endFrame   = str2num(get(handles.edit_firstframe,'String'))+1;
 end
 
 if cFrame~=endFrame+handles.increment
-
+    
     opt = detbestlength2(FFTrv,FFTiv,IFFTiv,2*[outersize outersize],2*[cellsize cellsize],1,1);
     
     handles.greenflag = 1;
@@ -1787,7 +1791,7 @@ if cFrame~=endFrame+handles.increment
     
     set(handles.edit_commu,'String',{'Processing...'});
     for t=cFrame:handles.increment:endFrame
-
+        
         tp=t;
         previousframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
         tp=t+handles.increment;
@@ -1810,7 +1814,7 @@ if cFrame~=endFrame+handles.increment
             if isempty(find(cell==sisExistInd,1))
                 sisterList{tp}(cell,:) = sisterList{tp-handles.increment}(cell,:);
             end
-
+            
             xL=max(cellpath{tp-handles.increment}(cell,1)-cellsize,1);
             xR=min(cellpath{tp-handles.increment}(cell,1)+cellsize-1,size(previousframe,2));
             yL=max(cellpath{tp-handles.increment}(cell,2)-cellsize,1);
@@ -1834,7 +1838,7 @@ if cFrame~=endFrame+handles.increment
             if get(handles.checkbox_autooptimize,'Value')==1
                 [x1 y1 BW] = templateToCentroid(testframe,x1,y1,handles.maxI,handles.invertedLog);
             end
-
+            
             cellpath{tp}(cell,:) = [xL+x1 yL+y1];
         end
         
@@ -1844,7 +1848,7 @@ if cFrame~=endFrame+handles.increment
             sisterList{tp}(cell,:) = sisterList{tp-handles.increment}(cell,:);
             cellpath{tp}(cell,:) = cellpath{tp-handles.increment}(cell,:);
         end
-
+        
         if ~isempty(bg)
             %updating bg points by
             xshift = mean(cellpath{tp}(:,1))-mean(cellpath{tp-handles.increment}(:,1));
@@ -1908,9 +1912,9 @@ cFrame = str2num(get(handles.edit_currentFrame,'String'));
 
 switch handles.increment
     case 1
-        endFrame   = str2num(get(handles.edit_lastframe,'String')); 
+        endFrame   = str2num(get(handles.edit_lastframe,'String'));
     case -1
-        endFrame   = str2num(get(handles.edit_firstframe,'String')); 
+        endFrame   = str2num(get(handles.edit_firstframe,'String'));
 end
 
 if cFrame~=endFrame
@@ -1925,13 +1929,13 @@ if cFrame~=endFrame
     imshow(imadjust((currentframe),[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
     
     opt = detbestlength2(FFTrv,FFTiv,IFFTiv,2*[outersize outersize],2*[cellsize cellsize],1,1);
-
+    
     if  length(sisterList) >= tp && ~isempty(sisterList{tp}) && ~isempty(sisterList{1})
         sisExistInd = find(sisterList{tp}(:,1) ~= -1 & sisterList{tp}(:,1) ~= 0);
     else
         sisExistInd = [];
     end
-
+    
     
     PosInd = find(cellpath{tp-handles.increment}(:,1)>0 & cellpath{tp-handles.increment}(:,2)>0)';
     
@@ -1945,14 +1949,14 @@ if cFrame~=endFrame
         yL=max(cellpath{tp-handles.increment}(cell,2)-cellsize,1);
         yR=min(cellpath{tp-handles.increment}(cell,2)+cellsize,size(previousframe,1));
         
-        template = previousframe(yL:yR,xL:xR);     
+        template = previousframe(yL:yR,xL:xR);
         
         xL=max(cellpath{tp-handles.increment}(cell,1)-outersize,1);
         xR=min(cellpath{tp-handles.increment}(cell,1)+outersize,size(currentframe,2));
         yL=max(cellpath{tp-handles.increment}(cell,2)-outersize,1);
         yR=min(cellpath{tp-handles.increment}(cell,2)+outersize,size(currentframe,1));
         
-        testframe = currentframe(yL:yR,xL:xR);   
+        testframe = currentframe(yL:yR,xL:xR);
         
         [x1 y1 maxVal] = corrMatching2(testframe, template,opt);
         if isempty(x1) || maxVal<str2num(get(handles.edit_similarityThres,'String'))
@@ -1974,10 +1978,10 @@ if cFrame~=endFrame
         sisterList{tp}(cell,:) = sisterList{tp-handles.increment}(cell,:);
         cellpath{tp}(cell,:) = cellpath{tp-handles.increment}(cell,:);
     end
-
+    
     handles.sisterList = sisterList;
     handles.cellpath = cellpath;
-
+    
     if ~isempty(bg)
         xshift = mean(cellpath{tp}(:,1))-mean(cellpath{tp-handles.increment}(:,1));
         yshift = mean(cellpath{tp}(:,2))-mean(cellpath{tp-handles.increment}(:,2));
@@ -2031,9 +2035,9 @@ cellsize = str2num(get(handles.edit_cellsize,'String'));
 cFrame = str2num(get(handles.edit_currentFrame,'String'));
 switch handles.increment
     case 1
-        endFrame   = str2num(get(handles.edit_lastframe,'String'))-1; 
+        endFrame   = str2num(get(handles.edit_lastframe,'String'))-1;
     case -1
-        endFrame   = str2num(get(handles.edit_firstframe,'String'))+1; 
+        endFrame   = str2num(get(handles.edit_firstframe,'String'))+1;
 end
 
 if cFrame~=endFrame
@@ -2043,7 +2047,7 @@ if cFrame~=endFrame
     imshow(imadjust((nextframe),[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
     set(handles.edit_currentFrame,'String',num2str(tp));
     set(handles.slider_frames,'Value',tp);
-
+    
     if length(sisterList) >= tp && ~isempty(sisterList{tp}) && ~isempty(sisterList{1})
         sisExistInd = find(sisterList{tp}(:,1) ~= -1 & sisterList{tp}(:,1) ~= 0);
     else
@@ -2055,7 +2059,7 @@ if cFrame~=endFrame
         if isempty(find(cell==sisExistInd,1))
             sisterList{tp}(cell,:) = sisterList{tp-handles.increment}(cell,:);
         end
-    
+        
         xL=max(cellpath{tp-handles.increment}(cell,1)-cellsize,1);
         xR=min(cellpath{tp-handles.increment}(cell,1)+cellsize,size(nextframe,2));
         yL=max(cellpath{tp-handles.increment}(cell,2)-cellsize,1);
@@ -2063,9 +2067,9 @@ if cFrame~=endFrame
         template = nextframe(yL:yR,xL:xR);
         switch handles.cellrecogmethod
             case 1
-            [x1 y1 BW] = templateToCentroid(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
+                [x1 y1 BW] = templateToCentroid(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
             case 2
-            [x1 y1 BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
+                [x1 y1 BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
         end
         cellpath{tp}(cell,:) = [xL+x1 yL+y1];
         clear xL xR yL yR x1 x1 BW
@@ -2077,7 +2081,7 @@ if cFrame~=endFrame
         sisterList{tp}(cell,:) = sisterList{tp-handles.increment}(cell,:);
         cellpath{tp}(cell,:) = cellpath{tp-handles.increment}(cell,:);
     end
-
+    
     handles.cellpath = cellpath;
     handles.sisterList = sisterList;
     
@@ -2195,7 +2199,7 @@ if cFrame~=endFrame+handles.increment
             bg{tp}(:,2) = bg{tp-handles.increment}(:,2)+round(yshift);
             handles.bg = bg;
         end
-
+        
         updateLists(cellpath,sisterList,res_cellpath,res_sisterList,bg,handles,tp);
         guidata(hObject, handles);
         handles = guidata(hObject);
@@ -2843,7 +2847,7 @@ function edit_thresstep_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of edit_thresstep as text
 %        str2double(get(hObject,'String')) returns contents of edit_thresstep as a double
-handles.thresstep = str2num(get(hObject,'String')); 
+handles.thresstep = str2num(get(hObject,'String'));
 guidata(hObject, handles);
 
 
@@ -2858,7 +2862,7 @@ function edit_thresstep_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-handles.thresstep = str2num(get(hObject,'String')); 
+handles.thresstep = str2num(get(hObject,'String'));
 guidata(hObject, handles);
 
 function edit_cellareathres_Callback(hObject, eventdata, handles)
@@ -3292,7 +3296,7 @@ function checkbox_randomized_Callback(hObject, eventdata, handles)
 
 % --- Executes when selected object is changed in uibuttongroup_filetype.
 function uibuttongroup_filetype_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in uibuttongroup_filetype 
+% hObject    handle to the selected object in uibuttongroup_filetype
 % eventdata  structure with the following fields (see UIBUTTONGROUP)
 %	EventName: string 'SelectionChanged' (read only)
 %	OldValue: handle of the previously selected object or empty if none was selected
@@ -3307,10 +3311,10 @@ switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
         set(handles.edit_commu,'String','DV stacked tiff chosen for input. Please locate your file.');
         handles.filetype = 2;
     case 'radiobutton_customtiff'
-        set(handles.edit_commu,'String','Metamorph tiff chosen for inputs. Edit file structure if needed.');       
+        set(handles.edit_commu,'String','Metamorph tiff chosen for inputs. Edit file structure if needed.');
         handles.filetype = 3;
 end
-guidata(hObject, handles);   
+guidata(hObject, handles);
 
 % --- Executes on button press in pushbutton_locatefile.
 function pushbutton_locatefile_Callback(hObject, eventdata, handles)
@@ -3318,13 +3322,13 @@ function pushbutton_locatefile_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 [filename,pathname,FilterIndex] = uigetfile(...
-{'*.tif;*.fig;*.mat;*.mdl','stacked tiff Files (*.tif)';
-   '*.*',  'All Files (*.*)'}, 'Pick a file');
+    {'*.tif;*.fig;*.mat;*.mdl','stacked tiff Files (*.tif)';
+    '*.*',  'All Files (*.*)'}, 'Pick a file');
 if FilterIndex~=0
     set(handles.edit_fileformat,'String',filename);
     handles.tiffstackname = fullfile(pathname, filename);
 end
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 
 
@@ -3355,7 +3359,7 @@ function uibuttongroup_filetype_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to uibuttongroup_filetype (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -3364,7 +3368,7 @@ function uibuttongroup_cellrecogmethod_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 handles.cellrecogmethod =1 ;
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 
 
@@ -3438,7 +3442,7 @@ if del_b<oldsize
     temp(del_b:(oldsize-1),:) = bg{tp}((del_b+1):oldsize,:);
 else
     temp(1:(del_b-1),:) = bg{tp}(1:(del_b-1),:);
-
+    
 end
 bg{tp} = temp;
 
@@ -3596,7 +3600,7 @@ channel= str2num(get(handles.edit_CH,'String'));
 cellsize = str2num(get(handles.edit_cellsize,'String'));
 
 currentFrame = str2num(get(handles.edit_currentFrame,'String'));
-firstframe   = str2num(get(handles.edit_firstframe,'String')); 
+firstframe   = str2num(get(handles.edit_firstframe,'String'));
 
 nextframe = currentFrame-1;
 if nextframe<firstframe
@@ -3605,7 +3609,7 @@ end
 if nextframe == currentFrame
     return;
 end
-    
+
 FFTiv=handles.FFTiv;
 FFTrv=handles.FFTrv;
 IFFTiv=handles.IFFTiv;
@@ -3789,7 +3793,7 @@ function edit_ndfilename_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of edit_ndfilename as text
 %        str2double(get(hObject,'String')) returns contents of edit_ndfilename as a double
 handles.ndfilename = get(hObject,'String');
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -3819,11 +3823,11 @@ if FilterIndex~=0
     set(handles.edit_sourceF,'String',SourceF);
 end
 
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 
 function [notp stagePos stageName waveName] = readndfile(filename)
-% Search for number of string matches per line.  
+% Search for number of string matches per line.
 notp=-1;
 stagePos = [];
 stageName = [];
@@ -3916,7 +3920,7 @@ end
 handles.filetype = 3;
 set(handles.radiobutton_customtiff,'Value',1);
 
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 
 % --- Executes on selection change in popupmenu_stagePos.
@@ -3947,7 +3951,7 @@ else
     set(handles.edit_col,'String','1');
 end
 
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_stagePos contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_stagePos
@@ -4014,8 +4018,8 @@ channel= str2num(get(handles.edit_CH,'String'));
 cellsize = str2num(get(handles.edit_cellsize,'String'));
 
 currentFrame = str2num(get(handles.edit_currentFrame,'String'));
-firstframe = str2num(get(handles.edit_firstframe,'String')); 
-lastframe   = str2num(get(handles.edit_lastframe,'String')); 
+firstframe = str2num(get(handles.edit_firstframe,'String'));
+lastframe   = str2num(get(handles.edit_lastframe,'String'));
 
 nextframe = currentFrame+handles.increment;
 
@@ -4189,7 +4193,7 @@ if currentFrame~=endframe+handles.increment
         
         set(handles.edit_currentFrame,'String',num2str(tp));
         set(handles.slider_frames,'Value',tp);
-
+        
         if ~isempty(cellpath) && ~isempty(cellpath{tp})
             set(handles.listbox_cells,'String',num2str( [(1:size(cellpath{tp},1))' cellpath{tp} sisterList{tp}] ));
         end
@@ -4234,7 +4238,7 @@ if currentFrame~=endframe+handles.increment
 end
 % --- Executes when selected object is changed in uibuttongroup_trackdirection.
 function uibuttongroup_trackdirection_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in uibuttongroup_trackdirection 
+% hObject    handle to the selected object in uibuttongroup_trackdirection
 % eventdata  structure with the following fields (see UIBUTTONGROUP)
 %	EventName: string 'SelectionChanged' (read only)
 %	OldValue: handle of the previously selected object or empty if none was selected
@@ -4246,7 +4250,7 @@ switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
     case 'togglebutton_forward'
         handles.increment = 1;
 end
-guidata(hObject, handles);   
+guidata(hObject, handles);
 
 
 % --- Executes on button press in pushbutton_autolevel.
@@ -4341,7 +4345,7 @@ end
 
 % --- Executes when selected object is changed in uipanel_createmovie.
 function uipanel_createmovie_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in uipanel_createmovie 
+% hObject    handle to the selected object in uipanel_createmovie
 % eventdata  structure with the following fields (see UIBUTTONGROUP)
 %	EventName: string 'SelectionChanged' (read only)
 %	OldValue: handle of the previously selected object or empty if none was selected
@@ -4354,7 +4358,7 @@ switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
         handles.framestamp = 2;
     otherwise
 end
-guidata(hObject, handles);   
+guidata(hObject, handles);
 
 
 % --- Executes on button press in pushbutton_terminate.
@@ -4554,7 +4558,7 @@ if length(moveLists)==1
         for t = first_tp:last_tp
             %get rid of selected cells
             cellListsize = size(cellpath{t},1);
-
+            
             if selected_cell>1
                 belowL_cellpath = cellpath{t}(1:(selected_cell-1),:);
                 belowL_sisterList = sisterList{t}(1:(selected_cell-1),:);
@@ -4646,7 +4650,7 @@ if ~isempty(cellpath)
         else
             restListsize = 0;
         end
-
+        
         cellListsize = size(cellpath{t},1);
         for cell = 1 : cellListsize
             new_cellpath{t}(restListsize+cell,:)   =  cellpath{t}(cell,:);
@@ -4658,12 +4662,12 @@ if ~isempty(cellpath)
                     new_sisterList{t}(restListsize+cell,PosSis(ss)) = old_sisters(PosSis(ss))+restListsize;
                 end
             end
-
+            
         end
     end
     res_cellpath = new_cellpath;
     res_sisterList = new_sisterList;
-
+    
     cellpath = [];
     sisterList = [];
 end
@@ -4732,7 +4736,7 @@ if length(moveLists)==1
         for t = first_tp:last_tp
             %get rid of selected cells
             restListsize = size(res_cellpath{t},1);
-
+            
             if selected_cell>1
                 belowL_rescellpath = res_cellpath{t}(1:(selected_cell-1),:);
                 belowL_ressisterList = res_sisterList{t}(1:(selected_cell-1),:);
@@ -4770,7 +4774,7 @@ if length(moveLists)==1
         
         res_cellpath = new_rescellpath;
         res_sisterList = new_ressisterList;
-
+        
     end
     handles.cellpath = cellpath;
     handles.sisterList = sisterList;
@@ -4827,7 +4831,7 @@ if ~isempty(res_cellpath)
         else
             cellListsize = 0;
         end
-
+        
         restListsize = size(res_cellpath{t},1);
         for cell = 1 : restListsize
             new_cellpath{t}(cellListsize+cell,:)   =  res_cellpath{t}(cell,:);
@@ -4891,7 +4895,7 @@ bg=handles.bg;
 
 if ~isempty(cellpath)
     
-
+    
     sis_cellpath = cell(last_tp,1);
     sis_sisterList = cell(last_tp,1);
     % Determine cells with sisters
@@ -4997,7 +5001,7 @@ if ~isempty(cellpath)
     end
     
     [single_cellpath single_sisterList couple_cellpath couple_sisterList] = massWedding(nosis_cellpath,nosis_sisterList,first_tp,last_tp);
-
+    
     if ~isempty(couple_cellpath)
         for t = first_tp:last_tp
             if ~isempty(sis_cellpath)
@@ -5024,9 +5028,9 @@ if ~isempty(cellpath)
         end
         sis_cellpath = new_cellpath;
         sis_sisterList = new_sisterList;
-
+        
     end
-
+    
     
     for t = first_tp:last_tp
         new_cellpath{t} =[sis_cellpath{t};single_cellpath{t}];
@@ -5101,9 +5105,9 @@ while ~isempty(leftInd)
             SisList = [SisList;leftInd(1);sis1Ind(sisInd(1))];
             cList = [leftInd(1);sis1Ind(sisInd(1))];
             out_Ind=out_Ind+2;
+            
         elseif length(sisInd) == 2
             
-            
             ind_dist = zeros(1,last_tp);
             c_disMat = zeros(length(sisInd)+1,length(sisInd)+1,last_tp-1);
             for t=first_tp:(last_tp-1)
@@ -5129,11 +5133,8 @@ while ~isempty(leftInd)
             DivTime = unique(TimeDistance(TimeDistance~=0));
             cellNos = [leftInd(1) sis1Ind(sisInd)];
             switch length(DivTime)
-                case 1
-                    
-                    splitF = DivTime;
-                    
-                    for t=first_tp:splitF-1
+                case 1               
+                    for t=first_tp:DivTime
                         couple_sisterList{t}(out_Ind,:) = [-1 -1 -1];
                         couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(cellNos(1),:);
                         for i=2:length(cellNos)
@@ -5142,7 +5143,7 @@ while ~isempty(leftInd)
                         end
                         
                     end
-                    for t=splitF:last_tp
+                    for t=DivTime+1:last_tp
                         couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
                         couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(cellNos(1),:);
                         
@@ -5160,40 +5161,38 @@ while ~isempty(leftInd)
                     Div1Ind = find(TCounts==max(TCounts));
                     Div1Cell = cellNos(Div1Ind);
                     Div2Cells = setdiff(cellNos,Div1Cell);
-
-                        for t=first_tp:(DivTime1-1)
-                            couple_sisterList{t}(out_Ind,:) = [-1 -1 -1];
-                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
-                            couple_sisterList{t}(out_Ind+1,:) = [-1 -1 -1];
-                            couple_cellpath{t}(out_Ind+1,:) = [-1 -1];
-                            couple_sisterList{t}(out_Ind+2,:) = [-1 -1 -1];
-                            couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
-                            
-                        end
-                        for t=DivTime1:(DivTime2-1)
-                            couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
-                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
-                            couple_sisterList{t}(out_Ind+1,:) = [out_Ind -1 -1];
-                            couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Div2Cells(1),:);
-                            couple_sisterList{t}(out_Ind+2,:) = [out_Ind -1 -1];
-                            couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
-                        end
+                    
+                    for t=first_tp:(DivTime1)
+                        couple_sisterList{t}(out_Ind,:) = [-1 -1 -1];
+                        couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
+                        couple_sisterList{t}(out_Ind+1,:) = [-1 -1 -1];
+                        couple_cellpath{t}(out_Ind+1,:) = [-1 -1];
+                        couple_sisterList{t}(out_Ind+2,:) = [-1 -1 -1];
+                        couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
                         
-                        for t=DivTime2:last_tp
-                            couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
-                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
-                            couple_sisterList{t}(out_Ind+1,:) = [out_Ind out_Ind+2 -1];
-                            couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Div2Cells(1),:);
-                            couple_sisterList{t}(out_Ind+2,:) = [out_Ind out_Ind+1 -1];
-                            couple_cellpath{t}(out_Ind+2,:) = nosis_cellpath{t}(Div2Cells(2),:);
-                        end  
-                        
+                    end
+                    for t=(DivTime1+1):(DivTime2)
+                        couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
+                        couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
+                        couple_sisterList{t}(out_Ind+1,:) = [out_Ind -1 -1];
+                        couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Div2Cells(1),:);
+                        couple_sisterList{t}(out_Ind+2,:) = [out_Ind -1 -1];
+                        couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
+                    end
+                    
+                    for t = (DivTime2+1):last_tp
+                        couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
+                        couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
+                        couple_sisterList{t}(out_Ind+1,:) = [out_Ind out_Ind+2 -1];
+                        couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Div2Cells(1),:);
+                        couple_sisterList{t}(out_Ind+2,:) = [out_Ind out_Ind+1 -1];
+                        couple_cellpath{t}(out_Ind+2,:) = nosis_cellpath{t}(Div2Cells(2),:);
+                    end
+                    
             end
             out_Ind=out_Ind+3;
-            
+            cList = [leftInd(1);sis1Ind(sisInd(1));sis1Ind(sisInd(2))];
         elseif length(sisInd) == 3
-            
-            
             ind_dist = zeros(1,last_tp);
             c_disMat = zeros(length(sisInd)+1,length(sisInd)+1,last_tp-1);
             for t=first_tp:(last_tp-1)
@@ -5220,19 +5219,15 @@ while ~isempty(leftInd)
             cellNos = [leftInd(1) sis1Ind(sisInd)];
             switch length(DivTime)
                 case 1
-                    
-                    splitF = DivTime;
-                    
-                    for t=first_tp:splitF-1
+                    for t=first_tp:DivTime
                         couple_sisterList{t}(out_Ind,:) = [-1 -1 -1];
                         couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(cellNos(1),:);
                         for i=2:length(cellNos)
                             couple_sisterList{t}(out_Ind+i-1,:) = [-1 -1 -1];
                             couple_cellpath{t}(out_Ind+i-1,:) = [-1 -1];
                         end
-                        
                     end
-                    for t=splitF:last_tp
+                    for t=DivTime+1:last_tp
                         couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
                         couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(cellNos(1),:);
                         
@@ -5250,37 +5245,161 @@ while ~isempty(leftInd)
                     Div1Ind = find(TCounts==max(TCounts));
                     Div1Cell = cellNos(Div1Ind);
                     Div2Cells = setdiff(cellNos,Div1Cell);
-
-                        for t=first_tp:(DivTime1-1)
+                    
+                    for t=first_tp:(DivTime1)
+                        couple_sisterList{t}(out_Ind,:) = [-1 -1 -1];
+                        couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
+                        couple_sisterList{t}(out_Ind+1,:) = [-1 -1 -1];
+                        couple_cellpath{t}(out_Ind+1,:) = [-1 -1];
+                        couple_sisterList{t}(out_Ind+2,:) = [-1 -1 -1];
+                        couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
+                    end
+                    for t=(DivTime1+1):(DivTime2)
+                        couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
+                        couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
+                        couple_sisterList{t}(out_Ind+1,:) = [out_Ind -1 -1];
+                        couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Div2Cells(1),:);
+                        couple_sisterList{t}(out_Ind+2,:) = [out_Ind -1 -1];
+                        couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
+                    end
+                    for t=(DivTime2+1):last_tp
+                        couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
+                        couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
+                        couple_sisterList{t}(out_Ind+1,:) = [out_Ind out_Ind+2 -1];
+                        couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Div2Cells(1),:);
+                        couple_sisterList{t}(out_Ind+2,:) = [out_Ind out_Ind+1 -1];
+                        couple_cellpath{t}(out_Ind+2,:) = nosis_cellpath{t}(Div2Cells(2),:);
+                    end
+                    
+                case 3
+                    DivTime1 = min(DivTime);
+                    DivTime3 = max(DivTime);
+                    DivTime2 = setdiff(DivTime,[DivTime1 DivTime3]);
+                    [r,c] = find(TimeDistance==DivTime1);
+                    TCounts = histc(r,1:size(c_disMat,1));
+                    
+                    Div1Ind = find(TCounts==max(TCounts));
+                    
+                    if length(Div1Ind) ~= 1
+                        
+                        [r,c] = find(TimeDistance==DivTime2);
+                        TCounts = histc(r,1:size(c_disMat,1));
+                        Div2Ind = find(TCounts==max(TCounts));
+                        Div2Cells = cellNos(Div2Ind);
+                        
+                        [r,c] = find(TimeDistance==DivTime3);
+                        TCounts = histc(r,1:size(c_disMat,1));
+                        Div3Ind = find(TCounts==max(TCounts));
+                        Div3Cells = cellNos(Div3Ind);
+                        
+                        ParentCell  = Div2Cells(1);
+                        Sister1Cell = Div3Cells(1);
+                        Sister2Cell = Div2Cells(2);
+                        Sister3Cell = Div3Cells(2);
+                        
+                        for t=first_tp:DivTime1
                             couple_sisterList{t}(out_Ind,:) = [-1 -1 -1];
-                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
+                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(ParentCell,:);
                             couple_sisterList{t}(out_Ind+1,:) = [-1 -1 -1];
                             couple_cellpath{t}(out_Ind+1,:) = [-1 -1];
                             couple_sisterList{t}(out_Ind+2,:) = [-1 -1 -1];
                             couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
-                            
+                            couple_sisterList{t}(out_Ind+3,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+3,:) = [-1 -1];
                         end
-                        for t=DivTime1:(DivTime2-1)
+                        for t=(DivTime1+1):DivTime2
                             couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
-                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
+                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(ParentCell,:);
                             couple_sisterList{t}(out_Ind+1,:) = [out_Ind -1 -1];
-                            couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Div2Cells(1),:);
-                            couple_sisterList{t}(out_Ind+2,:) = [out_Ind -1 -1];
+                            couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Sister1Cell,:);
+                            couple_sisterList{t}(out_Ind+2,:) = [-1 -1 -1];
                             couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
+                            couple_sisterList{t}(out_Ind+3,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+3,:) = [-1 -1];
+                        end
+                        for t=(DivTime2+1):DivTime3
+                            couple_sisterList{t}(out_Ind,:) = [out_Ind+1 out_Ind+2 -1];
+                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(ParentCell,:);
+                            couple_sisterList{t}(out_Ind+1,:) = [out_Ind -1 -1];
+                            couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Sister1Cell,:);
+                            couple_sisterList{t}(out_Ind+2,:) = [out_Ind+1 out_Ind -1];
+                            couple_cellpath{t}(out_Ind+2,:) = nosis_cellpath{t}(Sister2Cell,:);
+                            couple_sisterList{t}(out_Ind+3,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+3,:) = [-1 -1];
+                        end
+                        for t=(DivTime3+1):last_tp
+                            couple_sisterList{t}(out_Ind,:) = [out_Ind+1 out_Ind+2 -1];
+                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(ParentCell,:);
+                            couple_sisterList{t}(out_Ind+1,:) = [out_Ind out_Ind+3 -1];
+                            couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Sister1Cell,:);
+                            couple_sisterList{t}(out_Ind+2,:) = [out_Ind+1 out_Ind -1];
+                            couple_cellpath{t}(out_Ind+2,:) = nosis_cellpath{t}(Sister2Cell,:);
+                            couple_sisterList{t}(out_Ind+3,:) = [out_Ind out_Ind+1 -1];
+                            couple_cellpath{t}(out_Ind+3,:) = nosis_cellpath{t}(Sister3Cell,:);
                         end
                         
-                        for t=DivTime2:last_tp
-                            couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
-                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
-                            couple_sisterList{t}(out_Ind+1,:) = [out_Ind out_Ind+2 -1];
-                            couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Div2Cells(1),:);
-                            couple_sisterList{t}(out_Ind+2,:) = [out_Ind out_Ind+1 -1];
-                            couple_cellpath{t}(out_Ind+2,:) = nosis_cellpath{t}(Div2Cells(2),:);
+                    else
+                        ParentCell = cellNos(Div1Ind);
+                        
+                        [r,c] = find(TimeDistance==DivTime2);
+                        TCounts = histc(r,1:size(c_disMat,1));
+                        Div2Ind = find(TCounts==max(TCounts));
+                        Sister1Cell = cellNos(Div2Ind);
+                        
+                        [r,c] = find(TimeDistance==DivTime3);
+                        TCounts = histc(r,1:size(c_disMat,1));
+                        Div3Ind = find(TCounts==max(TCounts));
+                        Div3Cells = cellNos(Div3Ind);
+                        
+                        Sister2Cell = Div3Cells(1);
+                        Sister3Cell = Div3Cells(2);
+                        
+                        
+                        for t=first_tp:DivTime1
+                            couple_sisterList{t}(out_Ind,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(ParentCell,:);
+                            couple_sisterList{t}(out_Ind+1,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+1,:) = [-1 -1];
+                            couple_sisterList{t}(out_Ind+2,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
+                            couple_sisterList{t}(out_Ind+3,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+3,:) = [-1 -1];
                         end
-
+                        for t=(DivTime1+1):DivTime2
+                            couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
+                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(ParentCell,:);
+                            couple_sisterList{t}(out_Ind+1,:) = [out_Ind -1 -1];
+                            couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Sister1Cell,:);
+                            couple_sisterList{t}(out_Ind+2,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
+                            couple_sisterList{t}(out_Ind+3,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+3,:) = [-1 -1];
+                        end
+                        for t=(DivTime2+1):DivTime3
+                            couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
+                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(ParentCell,:);
+                            couple_sisterList{t}(out_Ind+1,:) = [out_Ind out_Ind+2 -1];
+                            couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Sister1Cell,:);
+                            couple_sisterList{t}(out_Ind+2,:) = [out_Ind out_Ind+1 -1];
+                            couple_cellpath{t}(out_Ind+2,:) = nosis_cellpath{t}(Sister2Cell,:);
+                            couple_sisterList{t}(out_Ind+3,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+3,:) = [-1 -1];
+                        end
+                        for t=(DivTime3+1):last_tp
+                            couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
+                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(ParentCell,:);
+                            couple_sisterList{t}(out_Ind+1,:) = [out_Ind out_Ind+2 -1];
+                            couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Sister1Cell,:);
+                            couple_sisterList{t}(out_Ind+2,:) = [out_Ind out_Ind+1 out_Ind+3];
+                            couple_cellpath{t}(out_Ind+2,:) = nosis_cellpath{t}(Sister2Cell,:);
+                            couple_sisterList{t}(out_Ind+3,:) = [out_Ind out_Ind+1 out_Ind+2];
+                            couple_cellpath{t}(out_Ind+3,:) = nosis_cellpath{t}(Sister3Cell,:);
+                        end
+                    end
 
             end
             out_Ind=out_Ind+4;
+            cList = [leftInd(1);sis1Ind(sisInd(1));sis1Ind(sisInd(2));sis1Ind(sisInd(3))];
         end
     end
     leftInd = setdiff(leftInd,cList);
@@ -5375,7 +5494,7 @@ function edit_sourceF_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of edit_sourceF as text
 %        str2double(get(hObject,'String')) returns contents of edit_sourceF as a double
 handles.SourceF = get(hObject,'String');
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
 function edit_sourceF_CreateFcn(hObject, eventdata, handles)
@@ -5411,7 +5530,7 @@ bg=handles.bg;
 
 if ~isempty(cellpath)
     
-
+    
     sis_cellpath = cell(last_tp,1);
     sis_sisterList = cell(last_tp,1);
     % Determine cells with sisters
@@ -5451,7 +5570,7 @@ if ~isempty(cellpath)
         nosis_cellpath{t}   = cellpath{t}(noSisInd,:);
         nosis_sisterList{t} = sisterList{t}(noSisInd,:) ;
     end
-
+    
     for t = first_tp:last_tp
         new_cellpath{t} =[sis_cellpath{t};nosis_cellpath{t}];
         new_sisterList{t} = [sis_sisterList{t};nosis_sisterList{t}];

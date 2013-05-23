@@ -9,7 +9,7 @@ illumcorlogic = 1; % Algorithmic illumination correction by high-pass filter
 framshift_logic = 0;
 ImageIndex = 1; % 1=nomin/denomin, 2=templateCH, 3=nomin,4=denomin
 intensityrange = [0.0032654 0.004715]; % For other images
-displaygate = [0.84764 1.4034]; % For FRET Only
+displaygate = [0.85 1.6]; % For FRET Only
 filterParam = [2 2]; 
 cellsize = 15;
 timestamplogic = 2; % 1 = frame no, 2 = actual time
@@ -18,17 +18,16 @@ save videoparameters;
 clear all;
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename = '02032013-r1.nd';
-templateCH = 4;
+ndfilename = '05162013-r1.nd';
+templateCH = 1;
 nominCH = 2;
 denominCH = 3;
-sourcefolder = '/files/ImStor/sorger/data/NIC/Pat/02-03-2013';
+sourcefolder = '/files/ImStor/sorger/data/NIC/Pat/05-16-2013';
 %------------------------------------------------
-currentF = pwd;
-cd(sourcefolder);
+
 prefix = ndfilename(1:(end-3));
-[notp stagePos stageName channelnames] = readndfile(ndfilename);
-cd(currentF);
+[notp stagePos stageName channelnames] = readndfile(sourcefolder,filename)
+
 tps = [1 2];
 sites = 1;
 
@@ -43,8 +42,7 @@ for site = sites
     GenMov_commandline(3,sourcefolder, row, col,field,plane,templateCH,nominCH,denominCH, tps,fileformat,channelnames);
 end
 
-
-function [notp stagePos stageName waveName] = readndfile(filename)
+function [notp stagePos stageName waveName] = readndfile(sourcefolder,filename)
 % Search for number of string matches per line.
 notp=-1;
 stagePos = [];
@@ -52,8 +50,8 @@ stageName = [];
 waveName = [];
 
 
-if exist(filename,'file')
-    fid = fopen(filename);
+if exist(fullfile(sourcefolder,filename),'file')
+    fid = fopen(fullfile(sourcefolder,filename));
     y = 0;
     tline = fgetl(fid);
     sind = 1;
@@ -77,7 +75,7 @@ if exist(filename,'file')
         if num > 0
             stage  = regexp(tline, '(?<=")\w+(?=",)', 'match');
             stagePos{sind,1} = stage{1};
-            stagename  = regexp(tline, '(?<="Stage\d+", ")\w+(?=")', 'match');
+            stagename  = regexp(tline, '(?<="Stage\d+", ").+(?=")', 'match');
             stageName{sind,1} = stagename{1};
             sind=sind+1;
         end
@@ -96,5 +94,4 @@ if exist(filename,'file')
     end
     fclose(fid);
 end
-
 

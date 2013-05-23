@@ -8,7 +8,7 @@ illumcorlogic = 1; % Algorithmic illumination correction by high-pass filter
 framshift_logic = 0;
 ImageIndex = 1; % 1=nomin/denomin, 2=templateCH, 3=nomin,4=denomin
 intensityrange = [0.0031281 0.0036622]; % For other images
-displaygate = [0.957 1.15]; % For FRET Only
+displaygate = [0.85 1.6]; % For FRET Only
 filterParam = [2 2]; 
 cellsize = 15;
 timestamplogic = 2; % 1 = frame no, 2 = actual time
@@ -17,17 +17,14 @@ save videoparameters;
 clear all;
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename = '02152013-r1.nd';
+ndfilename = '05162013-r1.nd';
 templateCH = 1;
 nominCH = 2;
 denominCH = 3;
-sourcefolder = '/files/ImStor/sorger/data/NIC/Pat/02-15-2013';
+sourcefolder = '/files/ImStor/sorger/data/NIC/Pat/05-16-2013';
 %------------------------------------------------
-currentF = pwd;
-cd(sourcefolder);
 prefix = ndfilename(1:(end-3));
-[notp stagePos stageName channelnames] = readndfile(ndfilename);
-cd(currentF);
+[notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename);
 tps = [1 notp];
 sites = 1:length(stagePos);
 
@@ -59,7 +56,7 @@ end
 
 job.submit();
 
-function [notp stagePos stageName waveName] = readndfile(filename)
+function [notp stagePos stageName waveName] = readndfile(sourcefolder,filename)
 % Search for number of string matches per line.
 notp=-1;
 stagePos = [];
@@ -67,8 +64,8 @@ stageName = [];
 waveName = [];
 
 
-if exist(filename,'file')
-    fid = fopen(filename);
+if exist(fullfile(sourcefolder,filename),'file')
+    fid = fopen(fullfile(sourcefolder,filename));
     y = 0;
     tline = fgetl(fid);
     sind = 1;

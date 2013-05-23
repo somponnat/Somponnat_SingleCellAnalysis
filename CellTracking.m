@@ -10,7 +10,7 @@ function varargout = CellTracking(varargin)
 %  CellTracking(2,[templateCH tp_1 tp_end],[],{'1';'2';'3'},<tiff stack file>)
 %  CellTracking(3,[templateCH tp_1 tp_end],[],{'CFP';'YFP';'RFP'},'2012-11-16_%s_xy087_t%03g.tif')
 %
-% Last Modified by GUIDE v2.5 05-Apr-2013 14:37:39
+% Last Modified by GUIDE v2.5 02-May-2013 16:29:26
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -405,9 +405,9 @@ set(handles.listbox_cells,'String',[]);
 set(handles.listbox_bgs,'String',[]);
 if ~isempty(initialframe)
     imshow(imadjust(initialframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
-    set(handles.edit_commu,'String',{'Click AUTO for smart initialization. Click MANUAL for manual cell choosing (also possible after AUTO).'})
+    set(handles.edit_commu,'String',{'Click AUTO for smart initialization. Click MANUAL for manual cell choosing (also possible after AUTO).'});
 else
-    set(handles.edit_commu,'String',{'Make sure the image path is correct.'})
+    set(handles.edit_commu,'String',{'Make sure the image path is correct.'});
 end
     
 handles.cellpath = [];
@@ -1571,8 +1571,13 @@ switch handles.increment
     case 1
         endFrame = last_tp;
         for tp=first_tp:1:last_tp
-            if ~isempty(cellpath) && ~isempty(cellpath{tp})
-                endFrame = tp;
+            if ~isempty(cellpath) 
+                if length(cellpath)>=tp
+                    endFrame = tp;
+                else
+                    break;
+                end
+                    
             end
         end
     case -1
@@ -1580,6 +1585,8 @@ switch handles.increment
         for tp=last_tp:-1:first_tp
             if ~isempty(cellpath) && ~isempty(cellpath{tp})
                 endFrame = tp;
+            else
+                break;
             end
         end
 end
@@ -3803,7 +3810,7 @@ function pushbutton_locatendfile_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_locatendfile (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-[filename,SourceF,FilterIndex] = uigetfile('*.nd', 'Choose metamorph ND file');
+[filename,SourceF,FilterIndex] = uigetfile('*.nd', 'Choose metamorph ND file','C:\computation\02-03-2013\02032013-r1.nd');
 if FilterIndex~=0
     set(handles.edit_ndfilename,'String',filename);
     handles.ndfilename = filename;
@@ -4051,7 +4058,7 @@ opt = detbestlength2(FFTrv,FFTiv,IFFTiv,size(imresize(currentframe,1)),size(imre
 xshift = x-round(size(currentframe,2)/2);
 yshift = y-round(size(currentframe,1)/2);
 
-if length(sisterList) >= tp && ~isempty(sisterList{nextframe}) && ~isempty(sisterList{1})
+if length(sisterList) >= currentFrame && ~isempty(sisterList{nextframe}) && ~isempty(sisterList{1})
     sisExistInd = find(sisterList{nextframe}(:,1) ~= -1 & sisterList{nextframe}(:,1) ~= 0);
 else
     sisExistInd = [];
@@ -4385,27 +4392,9 @@ if ~isempty(cellpath)
     end
 end
 
-switch handles.increment
-    case 1
-        endFrame   = last_tp;
-        for tp=first_tp:1:last_tp
-            if ~isempty(cellpath) && ~isempty(cellpath{tp})
-                endFrame = tp;
-            end
-        end
-    case -1
-        endFrame   = first_tp;
-        for tp=last_tp:-1:first_tp
-            if ~isempty(cellpath) && ~isempty(cellpath{tp})
-                endFrame = tp;
-            end
-        end
-end
-
-
-for tp=c_tp:handles.increment:endFrame
+for tp=c_tp:1:last_tp
     cellpath{tp}(selected_cell,:) = [-2 -2];
-    sisterList{tp}(selected_cell,:) = sisterList{tp-handles.increment}(selected_cell,:);
+    sisterList{tp}(selected_cell,:) = sisterList{tp-1}(selected_cell,:);
 end
 set(handles.edit_commu,'String',['Cell#' num2str(selected_cell) ' removed from tracking']);
 
@@ -5069,7 +5058,7 @@ single_sisterList = nosis_sisterList;
 couple_cellpath   = cell(last_tp,1);
 couple_sisterList = cell(last_tp,1);
 
-Rad = 3;
+Rad = 2;
 %create distance matrix for first time point
 D = pdist(nosis_cellpath{first_tp},'euclidean');
 disMat = squareform(D);
@@ -5085,73 +5074,217 @@ while ~isempty(leftInd)
         noSisList = [noSisList;leftInd(1)];
         cList = [leftInd(1)];
     else
-        switch length(sisInd)
-            case 1
-                ind_dist = zeros(1,last_tp);
-                for t=first_tp:last_tp
-                    ind_dist(t) = pdist([nosis_cellpath{t}(leftInd(1),:);nosis_cellpath{t}(sis1Ind(sisInd(1)),:)]);
+        if length(sisInd) == 1
+            ind_dist = zeros(1,last_tp);
+            for t=first_tp:last_tp
+                ind_dist(t) = pdist([nosis_cellpath{t}(leftInd(1),:);nosis_cellpath{t}(sis1Ind(sisInd(1)),:)]);
+            end
+            diff_dist = diff(ind_dist);
+            jumpInd = find(diff_dist>0,1,'first');
+            if isempty(jumpInd)
+                splitF = 1;
+            else
+                splitF = jumpInd+1;
+            end
+            for t=first_tp:splitF-1
+                couple_sisterList{t}(out_Ind,:) = [-1 -1 -1];
+                couple_sisterList{t}(out_Ind+1,:) = [-1 -1 -1];
+                couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(leftInd(1),:);
+                couple_cellpath{t}(out_Ind+1,:) = [-1 -1];
+            end
+            for t=splitF:last_tp
+                couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
+                couple_sisterList{t}(out_Ind+1,:) = [out_Ind -1 -1];
+                couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(leftInd(1),:);
+                couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(sis1Ind(sisInd(1)),:);
+            end
+            SisList = [SisList;leftInd(1);sis1Ind(sisInd(1))];
+            cList = [leftInd(1);sis1Ind(sisInd(1))];
+            out_Ind=out_Ind+2;
+        elseif length(sisInd) == 2
+            
+            
+            ind_dist = zeros(1,last_tp);
+            c_disMat = zeros(length(sisInd)+1,length(sisInd)+1,last_tp-1);
+            for t=first_tp:(last_tp-1)
+                c_mat1 = [nosis_cellpath{t}(leftInd(1),:)];
+                for s = 1:length(sisInd)
+                    c_mat1 = [c_mat1;nosis_cellpath{t}(sis1Ind(sisInd(s)),:)];
                 end
-                diff_dist = diff(ind_dist);
-                jumpInd = find(diff_dist>0,1,'first');
-                if isempty(jumpInd)
-                    splitF = 1;
-                else
-                    splitF = jumpInd+1;
+                c_mat2 = [nosis_cellpath{t+1}(leftInd(1),:)];
+                for s = 1:length(sisInd)
+                    c_mat2 = [c_mat2;nosis_cellpath{t+1}(sis1Ind(sisInd(s)),:)];
                 end
-                for t=first_tp:splitF-1
-                    couple_sisterList{t}(out_Ind,:) = [-1 -1 -1];
-                    couple_sisterList{t}(out_Ind+1,:) = [-1 -1 -1];
-                    couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(leftInd(1),:);
-                    couple_cellpath{t}(out_Ind+1,:) = [-1 -1];
-                end 
-                for t=splitF:last_tp
-                    couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
-                    couple_sisterList{t}(out_Ind+1,:) = [out_Ind -1 -1];
-                    couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(leftInd(1),:);
-                    couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(sis1Ind(sisInd(1)),:);
+                c_disMat(:,:,t) = squareform(pdist(c_mat2))-squareform(pdist(c_mat1));
+                clear c_mat;
+            end
+            TimeDistance = zeros(size(c_disMat,1),size(c_disMat,2));
+            for i=1:size(c_disMat,1)
+                for j=1:size(c_disMat,2)
+                    if i~=j
+                        TimeDistance(i,j) = find(squeeze(c_disMat(i,j,:)),1,'first');
+                    end
                 end
-                SisList = [SisList;leftInd(1);sis1Ind(sisInd(1))];
-                cList = [leftInd(1);sis1Ind(sisInd(1))];
-                out_Ind=out_Ind+2;
-            case 2
-                ind_dist = zeros(1,last_tp);
-                for t=first_tp:last_tp
-                    ind_dist(t) = pdist([nosis_cellpath{t}(leftInd(1),:);nosis_cellpath{t}(sis1Ind(sisInd(1)),:)]);
+            end
+            DivTime = unique(TimeDistance(TimeDistance~=0));
+            cellNos = [leftInd(1) sis1Ind(sisInd)];
+            switch length(DivTime)
+                case 1
+                    
+                    splitF = DivTime;
+                    
+                    for t=first_tp:splitF-1
+                        couple_sisterList{t}(out_Ind,:) = [-1 -1 -1];
+                        couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(cellNos(1),:);
+                        for i=2:length(cellNos)
+                            couple_sisterList{t}(out_Ind+i-1,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+i-1,:) = [-1 -1];
+                        end
+                        
+                    end
+                    for t=splitF:last_tp
+                        couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
+                        couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(cellNos(1),:);
+                        
+                        for i=2:length(cellNos)
+                            couple_sisterList{t}(out_Ind+i-1,:) = [out_Ind -1 -1];
+                            couple_cellpath{t}(out_Ind+i-1,:) = nosis_cellpath{t}(cellNos(i),:);
+                        end
+                    end
+                    
+                case 2
+                    DivTime1 = min(DivTime);
+                    DivTime2 = max(DivTime);
+                    [r,c] = find(TimeDistance==DivTime1);
+                    TCounts = histc(r,1:size(c_disMat,1));
+                    Div1Ind = find(TCounts==max(TCounts));
+                    Div1Cell = cellNos(Div1Ind);
+                    Div2Cells = setdiff(cellNos,Div1Cell);
+
+                        for t=first_tp:(DivTime1-1)
+                            couple_sisterList{t}(out_Ind,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
+                            couple_sisterList{t}(out_Ind+1,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+1,:) = [-1 -1];
+                            couple_sisterList{t}(out_Ind+2,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
+                            
+                        end
+                        for t=DivTime1:(DivTime2-1)
+                            couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
+                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
+                            couple_sisterList{t}(out_Ind+1,:) = [out_Ind -1 -1];
+                            couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Div2Cells(1),:);
+                            couple_sisterList{t}(out_Ind+2,:) = [out_Ind -1 -1];
+                            couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
+                        end
+                        
+                        for t=DivTime2:last_tp
+                            couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
+                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
+                            couple_sisterList{t}(out_Ind+1,:) = [out_Ind out_Ind+2 -1];
+                            couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Div2Cells(1),:);
+                            couple_sisterList{t}(out_Ind+2,:) = [out_Ind out_Ind+1 -1];
+                            couple_cellpath{t}(out_Ind+2,:) = nosis_cellpath{t}(Div2Cells(2),:);
+                        end  
+                        
+            end
+            out_Ind=out_Ind+3;
+            
+        elseif length(sisInd) == 3
+            
+            
+            ind_dist = zeros(1,last_tp);
+            c_disMat = zeros(length(sisInd)+1,length(sisInd)+1,last_tp-1);
+            for t=first_tp:(last_tp-1)
+                c_mat1 = [nosis_cellpath{t}(leftInd(1),:)];
+                for s = 1:length(sisInd)
+                    c_mat1 = [c_mat1;nosis_cellpath{t}(sis1Ind(sisInd(s)),:)];
                 end
-                diff_dist = diff(ind_dist);
-                jumpInd = find(diff_dist>0,1,'first');
-                if isempty(jumpInd)
-                    splitF = 1;
-                else
-                    splitF = jumpInd+1;
+                c_mat2 = [nosis_cellpath{t+1}(leftInd(1),:)];
+                for s = 1:length(sisInd)
+                    c_mat2 = [c_mat2;nosis_cellpath{t+1}(sis1Ind(sisInd(s)),:)];
                 end
-                
-                for t=first_tp:splitF-1
-                    couple_sisterList{t}(out_Ind,:) = [-1 -1 -1];
-                    couple_sisterList{t}(out_Ind+1,:) = [-1 -1 -1];
-                    couple_sisterList{t}(out_Ind+2,:) = [-1 -1 -1];
-                    couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(leftInd(1),:);
-                    couple_cellpath{t}(out_Ind+1,:) = [-1 -1];
-                    couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
+                c_disMat(:,:,t) = squareform(pdist(c_mat2))-squareform(pdist(c_mat1));
+                clear c_mat;
+            end
+            TimeDistance = zeros(size(c_disMat,1),size(c_disMat,2));
+            for i=1:size(c_disMat,1)
+                for j=1:size(c_disMat,2)
+                    if i~=j
+                        TimeDistance(i,j) = find(squeeze(c_disMat(i,j,:)),1,'first');
+                    end
                 end
-                for t=splitF:last_tp
-                    couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
-                    couple_sisterList{t}(out_Ind+1,:) = [out_Ind -1 -1];
-                    couple_sisterList{t}(out_Ind+2,:) = [out_Ind -1 -1];
-                    couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(leftInd(1),:);
-                    couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(sis1Ind(sisInd(1)),:);
-                    couple_cellpath{t}(out_Ind+2,:) = nosis_cellpath{t}(sis1Ind(sisInd(2)),:);
-                end
-                SisList = [SisList;leftInd(1);sis1Ind(sisInd(1));sis1Ind(sisInd(2))];
-                cList = [leftInd(1);sis1Ind(sisInd(1));sis1Ind(sisInd(2))];
-                out_Ind=out_Ind+3;
-            otherwise
-                noSisList = [noSisList;leftInd(1)];
-                cList = [leftInd(1)];
+            end
+            DivTime = unique(TimeDistance(TimeDistance~=0));
+            cellNos = [leftInd(1) sis1Ind(sisInd)];
+            switch length(DivTime)
+                case 1
+                    
+                    splitF = DivTime;
+                    
+                    for t=first_tp:splitF-1
+                        couple_sisterList{t}(out_Ind,:) = [-1 -1 -1];
+                        couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(cellNos(1),:);
+                        for i=2:length(cellNos)
+                            couple_sisterList{t}(out_Ind+i-1,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+i-1,:) = [-1 -1];
+                        end
+                        
+                    end
+                    for t=splitF:last_tp
+                        couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
+                        couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(cellNos(1),:);
+                        
+                        for i=2:length(cellNos)
+                            couple_sisterList{t}(out_Ind+i-1,:) = [out_Ind -1 -1];
+                            couple_cellpath{t}(out_Ind+i-1,:) = nosis_cellpath{t}(cellNos(i),:);
+                        end
+                    end
+                    
+                case 2
+                    DivTime1 = min(DivTime);
+                    DivTime2 = max(DivTime);
+                    [r,c] = find(TimeDistance==DivTime1);
+                    TCounts = histc(r,1:size(c_disMat,1));
+                    Div1Ind = find(TCounts==max(TCounts));
+                    Div1Cell = cellNos(Div1Ind);
+                    Div2Cells = setdiff(cellNos,Div1Cell);
+
+                        for t=first_tp:(DivTime1-1)
+                            couple_sisterList{t}(out_Ind,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
+                            couple_sisterList{t}(out_Ind+1,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+1,:) = [-1 -1];
+                            couple_sisterList{t}(out_Ind+2,:) = [-1 -1 -1];
+                            couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
+                            
+                        end
+                        for t=DivTime1:(DivTime2-1)
+                            couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
+                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
+                            couple_sisterList{t}(out_Ind+1,:) = [out_Ind -1 -1];
+                            couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Div2Cells(1),:);
+                            couple_sisterList{t}(out_Ind+2,:) = [out_Ind -1 -1];
+                            couple_cellpath{t}(out_Ind+2,:) = [-1 -1];
+                        end
+                        
+                        for t=DivTime2:last_tp
+                            couple_sisterList{t}(out_Ind,:) = [out_Ind+1 -1 -1];
+                            couple_cellpath{t}(out_Ind,:) = nosis_cellpath{t}(Div1Cell,:);
+                            couple_sisterList{t}(out_Ind+1,:) = [out_Ind out_Ind+2 -1];
+                            couple_cellpath{t}(out_Ind+1,:) = nosis_cellpath{t}(Div2Cells(1),:);
+                            couple_sisterList{t}(out_Ind+2,:) = [out_Ind out_Ind+1 -1];
+                            couple_cellpath{t}(out_Ind+2,:) = nosis_cellpath{t}(Div2Cells(2),:);
+                        end
+
+
+            end
+            out_Ind=out_Ind+4;
         end
     end
     leftInd = setdiff(leftInd,cList);
-  
+    
 end
 
 for t=first_tp:last_tp
@@ -5255,3 +5388,150 @@ function edit_sourceF_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in pushbutton_clearsisters.
+function pushbutton_clearsisters_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_clearsisters (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+row = str2num(get(handles.edit_row,'String'));
+col = str2num(get(handles.edit_col,'String'));
+field = str2num(get(handles.edit_field,'String'));
+plane = str2num(get(handles.edit_plane,'String'));
+channel= str2num(get(handles.edit_CH,'String'));
+cellsize = str2num(get(handles.edit_cellsize,'String'));
+tp = str2num(get(handles.edit_currentFrame,'String'));
+first_tp = str2num(get(handles.edit_firstframe,'String'));
+last_tp = str2num(get(handles.edit_lastframe,'String'));
+
+cellpath = handles.cellpath;
+sisterList = handles.sisterList;
+bg=handles.bg;
+
+if ~isempty(cellpath)
+    
+
+    sis_cellpath = cell(last_tp,1);
+    sis_sisterList = cell(last_tp,1);
+    % Determine cells with sisters
+    withSisInd = find(sisterList{last_tp}(:,1)~=-1);
+    if ~isempty(withSisInd)
+        cInd=1;
+        loopInd=1;
+        lastInd(loopInd)=1;
+        while ~isempty(withSisInd)
+            firstSis = withSisInd(1);
+            secondSis = sisterList{last_tp}(withSisInd(1),1);
+            sis_gInd = find(sisterList{last_tp}(:,1)==firstSis | sisterList{last_tp}(:,1)==secondSis);
+            for t = first_tp:last_tp
+                surv_Cells = intersect(find(cellpath{t}(:,1)~=-1),sis_gInd);
+                cInd=lastInd(loopInd);
+                for s=1:length(sis_gInd)
+                    if ~isempty(find(sis_gInd(s)==surv_Cells, 1))
+                        sis_cellpath{t}(cInd,:)   = cellpath{t}(sis_gInd(s),:);
+                        sis_sisterList{t}(cInd,:) = [-1 -1 -1];
+                        cInd = cInd+1;
+                    elseif ~isempty(surv_Cells)
+                        sis_cellpath{t}(cInd,:)   = cellpath{t}(surv_Cells(1),:);
+                        sis_sisterList{t}(cInd,:) = [-1 -1 -1];
+                        cInd = cInd+1;
+                    end
+                end
+            end
+            loopInd=loopInd+1;
+            lastInd(loopInd) = cInd;
+            withSisInd = setdiff(withSisInd,sis_gInd);
+        end
+    end
+    
+    % Determine cells without sisters
+    noSisInd = find(sisterList{last_tp}(:,1)==-1 & cellpath{last_tp}(:,1)~=-1);
+    for t = first_tp:last_tp
+        nosis_cellpath{t}   = cellpath{t}(noSisInd,:);
+        nosis_sisterList{t} = sisterList{t}(noSisInd,:) ;
+    end
+
+    for t = first_tp:last_tp
+        new_cellpath{t} =[sis_cellpath{t};nosis_cellpath{t}];
+        new_sisterList{t} = [sis_sisterList{t};nosis_sisterList{t}];
+    end
+    
+    handles.cellpath   = new_cellpath;
+    handles.sisterList = new_sisterList;
+    
+    guidata(hObject, handles);
+    handles = guidata(hObject);
+    updateLists(new_cellpath,new_sisterList,handles.res_cellpath,handles.res_sisterList,bg,handles,tp);
+end
+
+set(handles.edit_commu,'String','Removed all sister information');
+currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
+if get(handles.checkbox_cellmarking,'Value')
+    [p bg_p] = plotTrackpoints(handles,handles.cellpath,handles.sisterList,handles.res_cellpath,handles.res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+    handles.p = p;
+    handles.bg_p = bg_p;
+    guidata(hObject, handles);
+end
+drawnow;
+
+
+% --- Executes on button press in pushbutton_deleteDup.
+function pushbutton_deleteDup_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_deleteDup (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if isempty(handles.initialframe)
+    set(handles.edit_commu,'String','No input images.');
+    return;
+end
+
+row = str2num(get(handles.edit_row,'String'));
+col = str2num(get(handles.edit_col,'String'));
+field = str2num(get(handles.edit_field,'String'));
+plane = str2num(get(handles.edit_plane,'String'));
+channel= str2num(get(handles.edit_CH,'String'));
+c_tp = str2num(get(handles.edit_currentFrame,'String'));
+
+cellpath = handles.cellpath;
+bg = handles.bg;
+sisterList = handles.sisterList;
+del_cells = [];
+for c = 1:size(cellpath{c_tp},1)
+    if isempty(find(c==del_cells,1))
+        dup_ind = intersect(find(cellpath{c_tp}(c,1)==cellpath{c_tp}(:,1)),find(cellpath{c_tp}(c,2)==cellpath{c_tp}(:,2)));
+        if ~isempty(dup_ind)
+            non_currentInd = find(dup_ind~=c);
+            del_cells = [del_cells dup_ind(non_currentInd)'];
+        end
+    end
+end
+
+first_tp = str2num(get(handles.edit_firstframe,'String'));
+last_tp = str2num(get(handles.edit_lastframe,'String'));
+
+if ~isempty(cellpath)
+    if length(cellpath)<last_tp
+        last_tp = length(cellpath);
+    end
+end
+
+for d = del_cells
+    for tp=first_tp:last_tp
+        cellpath{tp}(d,:) = [-1 -1];
+        sisterList{tp}(d,:) = [-1 -1 -1];
+    end
+end
+set(handles.edit_commu,'String','Done removing duplicates.');
+currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],c_tp,handles.channelnames,handles.SourceF);
+imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
+[p bg_p] = plotTrackpoints(handles,cellpath,sisterList,handles.res_cellpath,handles.res_sisterList,bg,c_tp,1);
+updateLists(cellpath,sisterList,handles.res_cellpath,handles.res_sisterList,bg,handles,c_tp);
+handles.p = p;
+handles.bg_p = bg_p;
+handles.cellpath = cellpath;
+handles.sisterList = sisterList;
+guidata(hObject, handles);
+drawnow;

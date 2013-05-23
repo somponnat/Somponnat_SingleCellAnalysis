@@ -1,36 +1,14 @@
 function do_lsf_celltrackingND()
 
-% Define parameters related to the process---------
 clear all;
-
-nominCH
-denominCH
-outputname = 'signals';
-cytosize = 4;
-cellsize
-filterParam1
-filterParam2
-bgsize
-signalShiftN
-signalShiftD
-regiontype
-signaltype
-minstamp
-secstamp
-useblank_LOG
-bgnomin_LOG
-bgdenomin_LOG
-illumlogic
-image_width 
-image_height
-
-save trackingparameters;
-clear all;
-%-------------------------------------------------
-% Define information about input images-----------
-ndfilename = '02262013-r1.nd';
-templateCH = 1;
-sourcefolder = '/files/ImStor/sorger/data/NIC/Pat/02-15-2013';
+% Define information about input images and necessary parameters-----------
+ndfilename = '130404.nd';
+templateCH = 2;
+increment = 1;
+cellsize = 40;
+outersize = 90;
+similarityThres = 0.9;
+sourcefolder = '/files/ImStor/sorger/data/NIC/Bernhard/130404';
 %------------------------------------------------
 currentF = pwd;
 cd(sourcefolder);
@@ -61,10 +39,10 @@ for site = sites
     
     %field = tokens{1}{3};
     field = 1;
+    plane=1;
+    job.createTask(@CellTracking_commandline, 0, ...
+        {3,sourcefolder,row,col,field,plane,templateCH,tps,increment,fileformat,channelnames,cellsize,outersize,similarityThres});
 
-    job.createTask(@CollectData_commandline, 0, ...
-        {3,sourcefolder,row,col,field,tps,fileformat,channelnames,totalCHs,templateCH});
-    
 end
 
 job.submit();

@@ -745,18 +745,20 @@ handles.cellpath = [];
 handles.bg = [];
 handles.sisterList = [];
 
-
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
-fileattrib(fullfile(handles.ndpathname,H5filename),'+w');
-cellpath_name = ['/field' num2str(field) '/cellpath'];
-sisterList_name = ['/field' num2str(field) '/sisterList'];
-bg_name = ['/field' num2str(field) '/bg'];
 
-cellpathinfo = h5info(fullfile(handles.ndpathname,H5filename), cellpath_name);
-sisterListinfo = h5info(fullfile(handles.ndpathname,H5filename), sisterList_name);
-bginfo = h5info(fullfile(handles.ndpathname,H5filename), bg_name);
 
 if exist(fullfile(handles.ndpathname,H5filename),'file')
+    
+    
+    fileattrib(fullfile(handles.ndpathname,H5filename),'+w');
+    cellpath_name = ['/field' num2str(field) '/cellpath'];
+    sisterList_name = ['/field' num2str(field) '/sisterList'];
+    bg_name = ['/field' num2str(field) '/bg'];
+    
+    cellpathinfo = h5info(fullfile(handles.ndpathname,H5filename), cellpath_name);
+    sisterListinfo = h5info(fullfile(handles.ndpathname,H5filename), sisterList_name);
+    bginfo = h5info(fullfile(handles.ndpathname,H5filename), bg_name);
 
     fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
     if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
@@ -3475,30 +3477,35 @@ set(handles.edit_commu,'String','finished collecting data');
 updateOutputList(handles)
 
 function updateOutputList(handles)
+
+
+
 row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
-info = h5info(fullfile(handles.ndpathname,H5filename),['/field' num2str(field)]);
-basename='signal';
-cindex = 1;
-outputcounts=[];
-outputList=[];
-if length(info.Datasets)>0 %#ok<*ISMT>
-    for i=1:length(info.Datasets)
-        tmp = regexp(info.Datasets(i).Name,basename, 'match');
-        if ~isempty(tmp)
-            outputList{cindex}= info.Datasets(i).Name;
-            cindex=cindex+1;
+if exist(fullfile(handles.ndpathname,H5filename),'file')
+    
+    info = h5info(fullfile(handles.ndpathname,H5filename),['/field' num2str(field)]);
+    basename='signal';
+    cindex = 1;
+    outputcounts=[];
+    outputList=[];
+    if length(info.Datasets)>0 %#ok<*ISMT>
+        for i=1:length(info.Datasets)
+            tmp = regexp(info.Datasets(i).Name,basename, 'match');
+            if ~isempty(tmp)
+                outputList{cindex}= info.Datasets(i).Name;
+                cindex=cindex+1;
+            end
         end
     end
+    if isempty(outputList)
+        outputList = '<not present>';
+    end
+    set(handles.popupmenu_output,'String',outputList);
+    set(handles.popupmenu_output,'Value',1);
 end
-if isempty(outputList)
-    outputList = '<not present>';
-end
-set(handles.popupmenu_output,'String',outputList);
-set(handles.popupmenu_output,'Value',1);
-
 function outputsignal = signalOutputing(regiontype,signaltype,mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y)
 switch regiontype
     case 1
@@ -4219,6 +4226,7 @@ if handles.filetype==0
     set(handles.edit_commu,'String','No input images.');
     return;
 end
+
 row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));

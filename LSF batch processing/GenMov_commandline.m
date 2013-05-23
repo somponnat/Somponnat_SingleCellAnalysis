@@ -3,28 +3,37 @@ function GenMov_commandline(filetype,targetfolder,row,col,field,plane,templateCH
 % Adjustable parameters
 load videoparameters
 load fftexecutiontimes
-
-currentF = pwd;
-cd(targetfolder);
 cellpath = [];
-bg = [];
 sisterList = [];
-% check if necessary file exist, if not quit jobs
+bg = [];
 if framshift_logic
-    if ~exist([celltrackfile '.mat'],'file') %#ok<*NODEF,*UNRCH>
-        display([celltrackfile '.mat does not exist.']);
+    H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
+    cellpath_name = ['/field' num2str(field) '/cellpath'];
+    sisterList_name = ['/field' num2str(field) '/sisterList'];
+    bg_name = ['/field' num2str(field) '/bg'];
+    
+    if ~exist(fullfile(targetfolder,H5filename),'file')
+        display([H5filename '.mat does not exist.']);
         return
     end
-    % file exist, load the file
-    load(celltrackfile,'cellpath','sisterList','bg','mark');
-    if isempty(cellpath) || isempty(bg) || isempty(sisterList)
-        display([savefile '.mat does not contain necessary variables.']);
-        return
+    
+    fileattrib(fullfile(targetfolder,H5filename),'+w');
+    
+    cellpathinfo = h5info(fullfile(targetfolder,H5filename), cellpath_name);
+    sisterListinfo = h5info(fullfile(targetfolder,H5filename), sisterList_name);
+    bginfo = h5info(fullfile(targetfolder,H5filename), bg_name);
+    cellpath_mat = h5read(fullfile(targetfolder,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
+    sisterList_mat = h5read(fullfile(targetfolder,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
+    bg_mat = h5read(fullfile(targetfolder,H5filename),bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
+    
+    for tp=1:size(cellpath_mat,3)
+        cellpath{tp} = cellpath_mat(:,:,tp);
+        sisterList{tp} = sisterList_mat(:,:,tp);
+        bg{tp} = bg_mat(:,:,tp);
     end
 end
 
 warning('off', 'all');
-celltrackfile = ['celltrackOUT_r' num2str(row) '_c' num2str(col) '_f' num2str(field) '_p' num2str(plane) '_ch' num2str(templateCH)]; %#ok<*NASGU>
 
 switch ImageIndex
     case 1
@@ -51,13 +60,13 @@ if framshift_logic && ~isempty(bg) %#ok<*USENS>
     maxshiftY = max(abs(imshift(:,2)));
 end
 
-myVideo = VideoWriter(videoname);
+myVideo = VideoWriter(fullfile(targetfolder,videoname));
 myVideo.FrameRate = 10;
 open(myVideo);
 
 if filetype == 3
     filename = sprintf(fileformat,channelnames{templateCH},first_tp);
-    first_info = imfinfo(filename);
+    first_info = imfinfo(fullfile(targetfolder,filename));
 end
 
 for tp=first_tp:last_tp
@@ -69,178 +78,186 @@ for tp=first_tp:last_tp
             filename = sprintf(fileformat,channelnames{templateCH},tp);
 
     end
-    current_info = imfinfo(filename);
     
-    
-    template = im2double(imread(filename));
-    
-    frameX = [1 size(template,2)];
-    frameY = [1 size(template,1)];
-    
-    if framshift_logic && ~isempty(bg)
-        frameX =  [ maxshiftX size(template,2)-maxshiftX ] + imshift(tp,1) ;
-        frameY =  [ maxshiftY size(template,1)-maxshiftY ] + imshift(tp,2) ;
+    if exist(fullfile(targetfolder,filename),'file')
         
-        if frameX(1) <= 0
-            frameX(1) = 1;
-            frameX(2) = frameX(2)+1;
+        current_info = imfinfo(fullfile(targetfolder,filename));
+        
+        
+        template = im2double(imread(fullfile(targetfolder,filename)));
+        
+        frameX = [1 size(template,2)];
+        frameY = [1 size(template,1)];
+        
+        if framshift_logic && ~isempty(bg)
+            frameX =  [ maxshiftX size(template,2)-maxshiftX ] + imshift(tp,1) ;
+            frameY =  [ maxshiftY size(template,1)-maxshiftY ] + imshift(tp,2) ;
+            
+            if frameX(1) <= 0
+                frameX(1) = 1;
+                frameX(2) = frameX(2)+1;
+            end
+            
+            if frameX(2) > size(template,2)
+                frameX(2) = size(template,2);
+            end
+            
+            
+            if frameY(1) <= 0
+                frameY(1) = 1;
+                frameY(2) = frameY(2)+1;
+            end
+            
+            if frameY(2) > size(template,1)
+                frameY(2) = size(template,1);
+            end
+            
         end
         
-        if frameX(2) > size(template,2)
-            frameX(2) = size(template,2);
-        end
-
+        clc;display(['R' num2str(row) 'C' num2str(col) 'F' num2str(field) '-adding frame ' num2str(tp) ',X:' num2str(frameX(1)) ':' num2str(frameX(2)) '('  num2str(frameX(2)-frameX(1)+1)  '),Y:' num2str(frameY(1)) ':' num2str(frameY(2)) '('  num2str(frameY(2)-frameY(1)+1)  ')']);
         
-        if frameY(1) <= 0
-            frameY(1) = 1;
-            frameY(2) = frameY(2)+1;
-        end
-        
-        if frameY(2) > size(template,1)
-            frameY(2) = size(template,1);
-        end
-
-    end
-    
-    clc;display(['R' num2str(row) 'C' num2str(col) 'F' num2str(field) '-adding frame ' num2str(tp) ',X:' num2str(frameX(1)) ':' num2str(frameX(2)) '('  num2str(frameX(2)-frameX(1)+1)  '),Y:' num2str(frameY(1)) ':' num2str(frameY(2)) '('  num2str(frameY(2)-frameY(1)+1)  ')']);
-    
-    switch ImageIndex
-        
-        case 4
-            switch filetype
-                case 1
-                    filename = sprintf(fileformat,row,col,field,plane,denominCH,tp);
-                case 3
-                    filename = sprintf(fileformat,channelnames{denominCH},tp);
-            end
+        switch ImageIndex
             
-            displayIM = im2double(imread(filename));
-
-        case 3
-            switch filetype
-                case 1
-                    filename = sprintf(fileformat,row,col,field,plane,nominCH,tp);
-                case 3
-                    filename = sprintf(fileformat,channelnames{nominCH},tp);
-            end
-            displayIM = im2double(imread(filename));
-            
-        case 2
-            displayIM = template;
-            
-        case 1
-            switch filetype
-                case 1
-                    filename = sprintf(fileformat,row,col,field,plane,nominCH,tp);
-                case 3
-                    filename = sprintf(fileformat,channelnames{nominCH},tp);
-            end
-            nominIM = double(imread(filename));
-            switch filetype
-                case 1
-                    filename = sprintf(fileformat,row,col,field,plane,denominCH,tp);
-                case 3
-                    filename = sprintf(fileformat,channelnames{denominCH},tp);
-            end
-            denomIM = double(imread(filename));
-            if isempty(bg)
-                displayIM = calculateFRET(nominIM,denomIM,bg,cellsize,filterParam,displaygate,signalshift,0,illumcorlogic);
-            else
-                displayIM = calculateFRET(nominIM,denomIM,bg{tp},cellsize,filterParam,displaygate,signalshift,bgsubstractlogic,illumcorlogic);
-            end
-            
-    end
-    displayIM = displayIM(frameY(1):frameY(2),frameX(1):frameX(2));
-
-    switch timestamplogic
-        case 1
-            if ImageIndex ~= 1
-                textim = intensityrange(2)*double(~text2im( ['frame:' num2str(tp)]));
-            else
-                textim = displaygate(2)*double(~text2im( ['frame:' num2str(tp)]));
-            end
-            
-        case 2
-            switch filetype
-                case 1,2
-                    hour = floor(1/60*(tp-1)*(timestep_min+timestep_sec/60));
-                    minute = mod(floor((tp-1)*(timestep_min+timestep_sec/60)),60);
-                    second = mod((tp-1)*(timestep_min*60+timestep_sec),60);
-                case 3
-                    [Y, M, D, H, MN, S]  = datevec(datenum(current_info.DateTime,'yyyymmdd HH:MM:SS.FFF')-datenum(first_info.DateTime,'yyyymmdd HH:MM:SS.FFF'));
-                    hour = 24*D+round(H);
-                    minute = round(MN);
-                    second = round(S);
-            end
-            
-            if ImageIndex ~= 1
-                textim = intensityrange(2)*double(~text2im([num2str(hour,'%02.0f') ':' num2str(minute,'%02.0f') ':' num2str(second,'%02.0f')]));
-            else
-                textim = displaygate(2)*double(~text2im([num2str(hour,'%02.0f') ':' num2str(minute,'%02.0f') ':' num2str(second,'%02.0f')]));
-            end
-    end
-    displayIM=imresize(displayIM,0.75);
-    textim=imresize(textim,1);
-    mytextsize = size(textim);
-    displayIM(6:mytextsize(1)+5,6:mytextsize(2)+5,1) = textim;
-    if ImageIndex ~= 1
-        displayIM = mat2gray(displayIM,intensityrange);
-    end
-    
-    if framshift_logic && ~isempty(cellpath) && ~isempty(bg) && celllocationlogic
-        
-        
-        maxCell = size(cellpath{end},1);
-        rancolor = lines(maxCell);
-        if get(handles.framshift_logic,'Value')
-            
-            for cell=1:size(cellpath{tp},1)
-                if(cellpath{tp}(cell,1)-frameX(1) > frameX(1)+20 && cellpath{tp}(cell,1)-frameX(1) < frameX(2)-20 && ...
-                        cellpath{tp}(cell,2)-frameY(1) > frameY(1)+20 && cellpath{tp}(cell,2)-frameY(1) < frameY(2)-20)
-                    if sisterList{tp}(cell)==-1
-                        plot(cellpath{tp}(cell,1)-frameX(1),cellpath{tp}(cell,2)-frameY(1),'rx');
-                    else
-                        plot(cellpath{tp}(cell,1)-frameX(1),cellpath{tp}(cell,2)-frameY(1),'o','MarkerFaceColor',rancolor(1+mod(cell,maxCell),:),'MarkerEdgeColor',rancolor(1+mod(cell,maxCell),:));
-                        plot(cellpath{tp}(sisterList{tp}(cell),1)-frameX(1),cellpath{tp}(sisterList{tp}(cell),2)-frameY(1),'o','MarkerFaceColor',rancolor(1+mod(cell,maxCell),:),'MarkerEdgeColor',rancolor(1+mod(cell,maxCell),:));
-                    end
-                    
-                    text(cellpath{tp}(cell,1)+10-frameX(1),cellpath{tp}(cell,2)-10-frameY(1),num2str(cell),'HorizontalAlignment','left',...
-                        'VerticalAlignment','middle','color',[0 .9 .5]);
-                end
-            end
-            
-        else
-            for cell=1:size(cellpath{tp},1)
-                if sisterList{tp}(cell)==-1
-                    
-                    plot(cellpath{tp}(cell,1),cellpath{tp}(cell,2),'rx');
-                else
-                    plot(cellpath{tp}(cell,1),cellpath{tp}(cell,2),'o','MarkerFaceColor',rancolor(1+mod(cell,maxCell),:),'MarkerEdgeColor',rancolor(1+mod(cell,maxCell),:));
-                    plot(cellpath{tp}(sisterList{tp}(cell),1),cellpath{tp}(sisterList{tp}(cell),2),'o','MarkerFaceColor',rancolor(1+mod(cell,maxCell),:),'MarkerEdgeColor',rancolor(1+mod(cell,maxCell),:));
+            case 4
+                switch filetype
+                    case 1
+                        filename = sprintf(fileformat,row,col,field,plane,denominCH,tp);
+                    case 3
+                        filename = sprintf(fileformat,channelnames{denominCH},tp);
                 end
                 
-                text(cellpath{tp}(cell,1)+10,cellpath{tp}(cell,2)+10,num2str(cell),'HorizontalAlignment','left',...
-                    'VerticalAlignment','middle','color',[0 .9 .5]);
+                displayIM = im2double(imread(fullfile(targetfolder,filename)));
+                
+            case 3
+                switch filetype
+                    case 1
+                        filename = sprintf(fileformat,row,col,field,plane,nominCH,tp);
+                    case 3
+                        filename = sprintf(fileformat,channelnames{nominCH},tp);
+                end
+                displayIM = im2double(imread(fullfile(targetfolder,filename)));
+                
+            case 2
+                displayIM = template;
+                
+            case 1
+                switch filetype
+                    case 1
+                        filename = sprintf(fileformat,row,col,field,plane,nominCH,tp);
+                    case 3
+                        filename = sprintf(fileformat,channelnames{nominCH},tp);
+                end
+                nominIM = double(imread(fullfile(targetfolder,filename)));
+                switch filetype
+                    case 1
+                        filename = sprintf(fileformat,row,col,field,plane,denominCH,tp);
+                    case 3
+                        filename = sprintf(fileformat,channelnames{denominCH},tp);
+                end
+                denomIM = double(imread(fullfile(targetfolder,filename)));
+                if isempty(bg)
+                    displayIM = calculateFRET(nominIM,denomIM,bg,cellsize,filterParam,displaygate,signalshift,0,illumcorlogic);
+                else
+                    displayIM = calculateFRET(nominIM,denomIM,bg{tp},cellsize,filterParam,displaygate,signalshift,bgsubstractlogic,illumcorlogic);
+                end
+                
+        end
+        displayIM = displayIM(frameY(1):frameY(2),frameX(1):frameX(2));
+        
+        switch timestamplogic
+            case 1
+                if ImageIndex ~= 1
+                    textim = intensityrange(2)*double(~text2im( ['frame:' num2str(tp)]));
+                else
+                    textim = displaygate(2)*double(~text2im( ['frame:' num2str(tp)]));
+                end
+                
+            case 2
+                switch filetype
+                    case 1,2
+                        hour = floor(1/60*(tp-1)*(timestep_min+timestep_sec/60));
+                        minute = mod(floor((tp-1)*(timestep_min+timestep_sec/60)),60);
+                        second = mod((tp-1)*(timestep_min*60+timestep_sec),60);
+                    case 3
+                        [Y, M, D, H, MN, S]  = datevec(datenum(current_info.DateTime,'yyyymmdd HH:MM:SS.FFF')-datenum(first_info.DateTime,'yyyymmdd HH:MM:SS.FFF'));
+                        hour = 24*D+round(H);
+                        minute = round(MN);
+                        second = round(S);
+                end
+                
+                if ImageIndex ~= 1
+                    textim = intensityrange(2)*double(~text2im([num2str(hour,'%02.0f') ':' num2str(minute,'%02.0f') ':' num2str(second,'%02.0f')]));
+                else
+                    textim = displaygate(2)*double(~text2im([num2str(hour,'%02.0f') ':' num2str(minute,'%02.0f') ':' num2str(second,'%02.0f')]));
+                end
+        end
+        displayIM=imresize(displayIM,0.75);
+        textim=imresize(textim,1);
+        mytextsize = size(textim);
+        displayIM(6:mytextsize(1)+5,6:mytextsize(2)+5,1) = textim;
+        if ImageIndex ~= 1
+            displayIM = mat2gray(displayIM,intensityrange);
+        end
+        
+        if framshift_logic && ~isempty(cellpath) && ~isempty(bg) && celllocationlogic
+            
+            
+            maxCell = size(cellpath{end},1);
+            rancolor = lines(maxCell);
+            if get(handles.framshift_logic,'Value')
+                
+                for cell=1:size(cellpath{tp},1)
+                    if(cellpath{tp}(cell,1)-frameX(1) > frameX(1)+20 && cellpath{tp}(cell,1)-frameX(1) < frameX(2)-20 && ...
+                            cellpath{tp}(cell,2)-frameY(1) > frameY(1)+20 && cellpath{tp}(cell,2)-frameY(1) < frameY(2)-20)
+                        if sisterList{tp}(cell)==-1
+                            plot(cellpath{tp}(cell,1)-frameX(1),cellpath{tp}(cell,2)-frameY(1),'rx');
+                        else
+                            plot(cellpath{tp}(cell,1)-frameX(1),cellpath{tp}(cell,2)-frameY(1),'o','MarkerFaceColor',rancolor(1+mod(cell,maxCell),:),'MarkerEdgeColor',rancolor(1+mod(cell,maxCell),:));
+                            plot(cellpath{tp}(sisterList{tp}(cell),1)-frameX(1),cellpath{tp}(sisterList{tp}(cell),2)-frameY(1),'o','MarkerFaceColor',rancolor(1+mod(cell,maxCell),:),'MarkerEdgeColor',rancolor(1+mod(cell,maxCell),:));
+                        end
+                        
+                        text(cellpath{tp}(cell,1)+10-frameX(1),cellpath{tp}(cell,2)-10-frameY(1),num2str(cell),'HorizontalAlignment','left',...
+                            'VerticalAlignment','middle','color',[0 .9 .5]);
+                    end
+                end
+                
+            else
+                for cell=1:size(cellpath{tp},1)
+                    if sisterList{tp}(cell)==-1
+                        
+                        plot(cellpath{tp}(cell,1),cellpath{tp}(cell,2),'rx');
+                    else
+                        plot(cellpath{tp}(cell,1),cellpath{tp}(cell,2),'o','MarkerFaceColor',rancolor(1+mod(cell,maxCell),:),'MarkerEdgeColor',rancolor(1+mod(cell,maxCell),:));
+                        plot(cellpath{tp}(sisterList{tp}(cell),1),cellpath{tp}(sisterList{tp}(cell),2),'o','MarkerFaceColor',rancolor(1+mod(cell,maxCell),:),'MarkerEdgeColor',rancolor(1+mod(cell,maxCell),:));
+                    end
+                    
+                    text(cellpath{tp}(cell,1)+10,cellpath{tp}(cell,2)+10,num2str(cell),'HorizontalAlignment','left',...
+                        'VerticalAlignment','middle','color',[0 .9 .5]);
+                end
+                
             end
             
         end
         
+        myRGB(:,:,1) = displayIM;
+        myRGB(:,:,2) = displayIM;
+        myRGB(:,:,3) = displayIM;
+        
+        clear displayIM textim;
+        [X,mycmap] = rgb2ind(myRGB,0.02);
+        myMovie = im2frame(X,mycmap);
+        writeVideo(myVideo, myMovie);
     end
-    
-    myRGB(:,:,1) = displayIM;
-    myRGB(:,:,2) = displayIM;
-    myRGB(:,:,3) = displayIM;
-    
-    clear displayIM textim;
-    [X,mycmap] = rgb2ind(myRGB,0.02);
-    myMovie = im2frame(X,mycmap);
-    writeVideo(myVideo, myMovie);
-    
 end
 
 close(myVideo);
 display(['R' num2str(row) 'C' num2str(col) 'F' num2str(field) '- Finished creating AVI file']);
-cd(currentF);
+
+function out = hbutter(im,d,n)
+height = size(im,1);
+width = size(im,2);
+[x,y] = meshgrid(-floor(width/2):floor((width-1)/2),-floor(height/2):floor((height-1)/2));
+out = 1-(1./(1+(sqrt(x.^2+y.^2)/d).^(2*n)));
 
 function ratioIm = calculateFRET(nominIM,denomIM,bg,cellsize,filterParam,displaygate,signalshift,bgsubstractlogic,illumcorlogic)
 displaygateL = displaygate(1);

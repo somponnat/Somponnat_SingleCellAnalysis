@@ -5424,42 +5424,221 @@ channel= str2num(get(handles.edit_CH,'String'));
 cellpath = handles.cellpath;
 sisterList = handles.sisterList;
 bg = handles.bg;
-tp = str2num(get(handles.edit_currentFrame,'String'));
+c_tp = str2num(get(handles.edit_currentFrame,'String'));
 first_tp = str2num(get(handles.edit_firstframe,'String'));
 last_tp = str2num(get(handles.edit_lastframe,'String'));
 
 joinSis = str2num(get(handles.edit_joiningsisters,'String'));
 
 main_cell = joinSis(1);
-
-for t = first_tp:tp-1
-    for cell = joinSis(2:end)
-        cellpath{t}(cell,:)   = [-1 -1];
-        sisterList{t}(cell,:) = [-1 -1 -1];
+oriSis = sisterList{last_tp}(main_cell,:);
+noSisInd = find(oriSis==-1,1,'first');
+if ~isempty(noSisInd)
+    switch noSisInd
+        case 1
+            main_cell_sis = [];
+        case 2
+            main_cell_sis = oriSis(1);
+        case 3
+            main_cell_sis = oriSis(1:2);
     end
+else
+    set(handles.edit_commu,'String',['Sister list is already full for ' num2str(main_cell)]);
+    return;
 end
 
-for t = tp:last_tp
-    sisterList{t}(joinSis(1),:) = [joinSis(2) -1 -1];
+sec_cell = joinSis(2);
+oriSis = sisterList{last_tp}(sec_cell,:);
+noSisInd = find(oriSis==-1,1,'first');
+if ~isempty(noSisInd)
+    switch noSisInd
+        case 1
+            sec_cell_sis = [];
+        case 2
+            sec_cell_sis = oriSis(1);
+        case 3
+            sec_cell_sis = oriSis(1:2);
+    end
+else
+    set(handles.edit_commu,'String',['Sister list is already full for ' num2str(sec_cell)]);
+    return;
+end
+if isempty(main_cell_sis) && isempty(sec_cell_sis)
+    for t = first_tp:c_tp-1
+        sisterList{t}(main_cell,:) = [-1 -1 -1];
+        
+        for cell = joinSis(2:end)
+            cellpath{t}(cell,:)   = [-1 -1];
+            sisterList{t}(cell,:) = [-1 -1 -1];
+        end
+    end
+    for t = c_tp:last_tp
+        sisterList{t}(main_cell,:) = [joinSis(2) -1 -1];
+        
+        for cell = joinSis(2:end)
+            sisterList{t}(cell,:) = [main_cell -1 -1];
+        end
+    end
+elseif isempty(main_cell_sis) && ~isempty(sec_cell_sis)
     
-    for cell = joinSis(2:end)
-        sisterList{t}(cell,:) = [joinSis(1) -1 -1];
+    firstSis = sec_cell_sis;
+    secondSis = sec_cell_sis;
+    for s = 1:length(firstSis)
+        secondSis = [secondSis setdiff(sisterList{last_tp}(firstSis(s),:),-1)];
+    end
+    thirdSis = secondSis;
+    for s = 1:length(secondSis)
+        thirdSis = [thirdSis setdiff(sisterList{last_tp}(secondSis(s),:),-1)];
+    end
+    sec_SisList = unique(thirdSis);
+    
+    
+    for t = first_tp:c_tp-1
+        sisterList{t}(main_cell,:) = [-1 -1 -1];
+        cellpath{t}(sec_cell,:)    = [-1 -1];
+        sisterList{t}(sec_cell,:)  = [-1 -1 -1];
+    end
+    for t = c_tp:last_tp
+        sisterList{t}(main_cell,:) = [sec_cell -1 -1];
+        for s = 1:length(sec_SisList)
+            oriSis = sisterList{t}(sec_SisList(s),:);
+            noSisInd = find(oriSis==-1,1,'first');
+            if ~isempty(noSisInd)
+                switch noSisInd
+                    case 1
+                        sisterList{t}(sec_SisList(s),:) = [main_cell -1 -1];
+                    case 2
+                        sisterList{t}(sec_SisList(s),:) = [main_cell oriSis(1) -1];
+                    case 3
+                        sisterList{t}(sec_SisList(s),:) = [main_cell oriSis(1:2) ];
+                    otherwise
+                        set(handles.edit_commu,'String',['Sister list is already full for ' num2str(sec_SisList(s))]);
+                        return;
+                end
+            end
+        end
+    end
+elseif ~isempty(main_cell_sis) && isempty(sec_cell_sis)
+    firstSis = main_cell_sis;
+    secondSis = main_cell_sis;
+    for s = 1:length(firstSis)
+        secondSis = [secondSis setdiff(sisterList{last_tp}(firstSis(s),:),-1)];
+    end
+    thirdSis = secondSis;
+    for s = 1:length(secondSis)
+        thirdSis = [thirdSis setdiff(sisterList{last_tp}(secondSis(s),:),-1)];
+    end
+    main_SisList = unique(thirdSis);
+
+    for t = first_tp:c_tp-1
+        sisterList{t}(main_cell,:) = [-1 -1 -1];
+        cellpath{t}(sec_cell,:)    = [-1 -1];
+        sisterList{t}(sec_cell,:)  = [-1 -1 -1];
+    end
+    
+    for t = c_tp:last_tp
+        sisterList{t}(sec_cell,:) = [main_cell -1 -1];
+        for s = 1:length(main_SisList)
+            oriSis = sisterList{t}(main_SisList(s),:);
+            noSisInd = find(oriSis==-1,1,'first');
+            if ~isempty(noSisInd)
+                switch noSisInd
+                    case 1
+                        sisterList{t}(main_SisList(s),:) = [sec_cell -1 -1];
+                    case 2
+                        sisterList{t}(main_SisList(s),:) = [sec_cell oriSis(1) -1];
+                    case 3
+                        sisterList{t}(main_SisList(s),:) = [sec_cell oriSis(1:2) ];
+                    otherwise
+                        set(handles.edit_commu,'String',['Sister list is already full for ' num2str(main_SisList(s))]);
+                        return;
+                end
+            end
+        end
+    end
+        
+else
+    firstSis = main_cell_sis;
+    secondSis = main_cell_sis;
+    for s = 1:length(firstSis)
+        secondSis = [secondSis setdiff(sisterList{last_tp}(firstSis(s),:),-1)];
+    end
+    thirdSis = secondSis;
+    for s = 1:length(secondSis)
+        thirdSis = [thirdSis setdiff(sisterList{last_tp}(secondSis(s),:),-1)];
+    end
+    main_SisList = unique(thirdSis);
+    
+    firstSis = sec_cell_sis;
+    secondSis = sec_cell_sis;
+    for s = 1:length(firstSis)
+        secondSis = [secondSis setdiff(sisterList{last_tp}(firstSis(s),:),-1)];
+    end
+    thirdSis = secondSis;
+    for s = 1:length(secondSis)
+        thirdSis = [thirdSis setdiff(sisterList{last_tp}(secondSis(s),:),-1)];
+    end
+    sec_SisList = unique(thirdSis);
+    
+    
+    for t = first_tp:c_tp-1
+        sisterList{t}(main_cell,:) = [-1 -1 -1];
+        cellpath{t}(sec_cell,:)    = [-1 -1];
+        sisterList{t}(sec_cell,:)  = [-1 -1 -1];
+    end
+    for t = c_tp:last_tp
+        
+        for s = 1:length(main_SisList)
+            oriSis = sisterList{t}(main_SisList(s),:);
+            noSisInd = find(oriSis==-1,1,'first');
+            if ~isempty(noSisInd)
+                switch noSisInd
+                    case 1
+                        sisterList{t}(main_SisList(s),:) = [sec_cell -1 -1];
+                    case 2
+                        sisterList{t}(main_SisList(s),:) = [sec_cell oriSis(1) -1];
+                    case 3
+                        sisterList{t}(main_SisList(s),:) = [sec_cell oriSis(1:2) ];
+                    otherwise
+                        set(handles.edit_commu,'String',['Sister list is already full for ' num2str(main_SisList(s))]);
+                        return;
+                end
+            end
+        end
+        
+        for s = 1:length(sec_SisList)
+            oriSis = sisterList{t}(sec_SisList(s),:);
+            noSisInd = find(oriSis==-1,1,'first');
+            if ~isempty(noSisInd)
+                switch noSisInd
+                    case 1
+                        sisterList{t}(sec_SisList(s),:) = [main_cell -1 -1];
+                    case 2
+                        sisterList{t}(sec_SisList(s),:) = [main_cell oriSis(1) -1];
+                    case 3
+                        sisterList{t}(sec_SisList(s),:) = [main_cell oriSis(1:2) ];
+                    otherwise
+                        set(handles.edit_commu,'String',['Sister list is already full for ' num2str(sec_SisList(s))]);
+                        return;
+                end
+            end
+        end
     end
 end
 
 handles.cellpath   = cellpath;
 handles.sisterList = sisterList;
 
-currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],c_tp,handles.channelnames,handles.SourceF);
 imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
 if get(handles.checkbox_cellmarking,'Value')
-    [p bg_p] = plotTrackpoints(handles,cellpath,sisterList,handles.res_cellpath,handles.res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+    [p bg_p] = plotTrackpoints(handles,cellpath,sisterList,handles.res_cellpath,handles.res_sisterList,bg,c_tp,str2num(get(handles.edit_cellNo,'String')));
     handles.p = p;
     handles.bg_p = bg_p;
     guidata(hObject, handles);
 end
 drawnow;
-updateLists(cellpath,sisterList,handles.res_cellpath,handles.res_sisterList,bg,handles,tp);
+updateLists(cellpath,sisterList,handles.res_cellpath,handles.res_sisterList,bg,handles,c_tp);
 guidata(hObject, handles);
 
 

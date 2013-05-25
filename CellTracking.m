@@ -5534,33 +5534,62 @@ if ~isempty(cellpath)
     sis_cellpath = cell(last_tp,1);
     sis_sisterList = cell(last_tp,1);
     % Determine cells with sisters
-    withSisInd = find(sisterList{last_tp}(:,1)~=-1);
+    withSisInd = find(sisterList{last_tp}(:,1)~=-1 );
     if ~isempty(withSisInd)
         cInd=1;
-        loopInd=1;
-        lastInd(loopInd)=1;
+
         while ~isempty(withSisInd)
-            firstSis = withSisInd(1);
-            secondSis = sisterList{last_tp}(withSisInd(1),1);
-            sis_gInd = find(sisterList{last_tp}(:,1)==firstSis | sisterList{last_tp}(:,1)==secondSis);
-            for t = first_tp:last_tp
-                surv_Cells = intersect(find(cellpath{t}(:,1)~=-1),sis_gInd);
-                cInd=lastInd(loopInd);
-                for s=1:length(sis_gInd)
-                    if ~isempty(find(sis_gInd(s)==surv_Cells, 1))
-                        sis_cellpath{t}(cInd,:)   = cellpath{t}(sis_gInd(s),:);
+            SisList = withSisInd(1);
+            firstSis = setdiff(sisterList{last_tp}(withSisInd(1),:),-1);
+            secondSis = firstSis;
+            for s = 1:length(firstSis)
+                secondSis = [secondSis setdiff(sisterList{last_tp}(firstSis(s),:),-1)];
+            end
+            thirdSis = secondSis;
+            for s = 1:length(secondSis)
+                thirdSis = [thirdSis setdiff(sisterList{last_tp}(secondSis(s),:),-1)];
+            end
+            
+            SisList = unique(thirdSis);
+
+            for s=1:length(SisList)
+                
+                for t = first_tp:last_tp
+                    if cellpath{t}(SisList(s),1) ~= -1 && cellpath{t}(SisList(s),2) ~= -1
+                        sis_cellpath{t}(cInd,:)   = cellpath{t}(SisList(s),:);
                         sis_sisterList{t}(cInd,:) = [-1 -1 -1];
-                        cInd = cInd+1;
-                    elseif ~isempty(surv_Cells)
-                        sis_cellpath{t}(cInd,:)   = cellpath{t}(surv_Cells(1),:);
-                        sis_sisterList{t}(cInd,:) = [-1 -1 -1];
-                        cInd = cInd+1;
+                    else
+                        havecoordInd = find(cellpath{t}(SisList,1) ~= -1 & cellpath{t}(SisList,2) ~= -1);
+                        if length(havecoordInd) == 1
+                            sis_cellpath{t}(cInd,:)   = cellpath{t}(SisList(havecoordInd),:);
+                            sis_sisterList{t}(cInd,:) = [-1 -1 -1];
+                        else
+                            oriSis = sisterList{last_tp}(SisList(s),:);
+                            noSisInd = find(oriSis==-1,1,'first');
+                            if ~isempty(noSisInd)
+                                mySis = oriSis(1:(noSisInd-1));
+                            else
+                                mySis = oriSis;
+                            end
+                            for ms = length(mySis):-1:1
+                                if cellpath{t}(mySis(ms),1) ~= -1 && cellpath{t}(mySis(ms),2) ~= -1
+                                    mytrueParent = mySis(ms);
+                                    break
+                                end
+                            end
+                            
+                            sis_cellpath{t}(cInd,:)   = cellpath{t}(mytrueParent,:);
+                            sis_sisterList{t}(cInd,:) = [-1 -1 -1];
+                        end
+                        
+                        
                     end
                 end
+                
+                cInd = cInd+1;
             end
-            loopInd=loopInd+1;
-            lastInd(loopInd) = cInd;
-            withSisInd = setdiff(withSisInd,sis_gInd);
+            
+            withSisInd = setdiff(withSisInd,SisList);
         end
     end
     
@@ -5571,6 +5600,7 @@ if ~isempty(cellpath)
         nosis_sisterList{t} = sisterList{t}(noSisInd,:) ;
     end
     
+    % Combine data
     for t = first_tp:last_tp
         new_cellpath{t} =[sis_cellpath{t};nosis_cellpath{t}];
         new_sisterList{t} = [sis_sisterList{t};nosis_sisterList{t}];

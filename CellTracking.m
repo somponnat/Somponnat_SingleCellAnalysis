@@ -4664,7 +4664,7 @@ if ~isempty(cellpath)
     currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
     imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
     if get(handles.checkbox_cellmarking,'Value')
-        [p bg_p] = plotTrackpoints(handles,new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+        [p bg_p] = plotTrackpoints(handles,new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,bg,tp,1);
     end
     drawnow;
     updateLists(new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,handles.bg,handles,tp);
@@ -4791,7 +4791,7 @@ if ~isempty(res_cellpath)
     currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
     imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
     if get(handles.checkbox_cellmarking,'Value')
-        [p bg_p] = plotTrackpoints(handles,new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+        [p bg_p] = plotTrackpoints(handles,new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,bg,tp,1);
     end
     drawnow;
     updateLists(new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,handles.bg,handles,tp);
@@ -4853,7 +4853,7 @@ if ~isempty(res_cellpath)
     currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
     imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
     if get(handles.checkbox_cellmarking,'Value')
-        [p bg_p] = plotTrackpoints(handles,new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+        [p bg_p] = plotTrackpoints(handles,new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,bg,tp,1);
     end
     drawnow;
     updateLists(new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,handles.bg,handles,tp);
@@ -5109,7 +5109,7 @@ while ~isempty(leftInd)
             out_Ind=out_Ind+2;
             
         elseif length(sisInd) == 2
-            
+            cellNos = [leftInd(1) sis1Ind(sisInd)]
             ind_dist = zeros(1,last_tp);
             c_disMat = zeros(length(sisInd)+1,length(sisInd)+1,last_tp-1);
             for t=first_tp:(last_tp-1)
@@ -5133,7 +5133,7 @@ while ~isempty(leftInd)
                 end
             end
             DivTime = unique(TimeDistance(TimeDistance~=0));
-            cellNos = [leftInd(1) sis1Ind(sisInd)];
+            
             switch length(DivTime)
                 case 1               
                     for t=first_tp:DivTime
@@ -5195,6 +5195,7 @@ while ~isempty(leftInd)
             out_Ind=out_Ind+3;
             cList = [leftInd(1);sis1Ind(sisInd(1));sis1Ind(sisInd(2))];
         elseif length(sisInd) == 3
+            cellNos = [leftInd(1) sis1Ind(sisInd)]
             ind_dist = zeros(1,last_tp);
             c_disMat = zeros(length(sisInd)+1,length(sisInd)+1,last_tp-1);
             for t=first_tp:(last_tp-1)
@@ -5218,7 +5219,7 @@ while ~isempty(leftInd)
                 end
             end
             DivTime = unique(TimeDistance(TimeDistance~=0));
-            cellNos = [leftInd(1) sis1Ind(sisInd)];
+            
             switch length(DivTime)
                 case 1
                     for t=first_tp:DivTime
@@ -5753,7 +5754,7 @@ while ~isempty(withSisInd)
         thirdSis = [thirdSis setdiff(sisterList{last_tp}(secondSis(s),:),-1)];
     end
     
-    SisList = unique(thirdSis);
+    SisList = unique(thirdSis)
     
     for s=1:length(SisList)
         

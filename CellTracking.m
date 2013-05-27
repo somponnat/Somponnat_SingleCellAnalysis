@@ -1079,51 +1079,61 @@ elseif c_tp<first_tp
 else
     tp=c_tp;
 end
-set(handles.edit_cellNo,'String',num2str(selected_cell));
-set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',cellpath{tp}(selected_cell,1),cellpath{tp}(selected_cell,2))));
-set(handles.edit_sister,'String',num2str(sisterList{tp}(selected_cell,:)));
 
-cellsize = str2num(get(handles.edit_cellsize,'String'));
-row = str2num(get(handles.edit_row,'String'));
-col = str2num(get(handles.edit_col,'String'));
-field = str2num(get(handles.edit_field,'String'));
-plane = str2num(get(handles.edit_plane,'String'));
-channel= str2num(get(handles.edit_CH,'String'));
-
-
-currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
-set(handles.edit_currentFrame,'String',num2str(tp));
-imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
-if get(handles.checkbox_cellmarking,'Value')
-    [p bg_p] = plotTrackpoints(handles,cellpath,sisterList,handles.res_cellpath,handles.res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
-    handles.p = p;
-    handles.bg_p = bg_p;
+if cellpath{tp}(selected_cell,1) ~= -1 && cellpath{tp}(selected_cell,2) ~= -1
+    
+    
+    set(handles.edit_cellNo,'String',num2str(selected_cell));
+    set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',cellpath{tp}(selected_cell,1),cellpath{tp}(selected_cell,2))));
+    set(handles.edit_sister,'String',num2str(sisterList{tp}(selected_cell,:)));
+    
+    cellsize = str2num(get(handles.edit_cellsize,'String'));
+    row = str2num(get(handles.edit_row,'String'));
+    col = str2num(get(handles.edit_col,'String'));
+    field = str2num(get(handles.edit_field,'String'));
+    plane = str2num(get(handles.edit_plane,'String'));
+    channel= str2num(get(handles.edit_CH,'String'));
+    
+    
+    currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+    set(handles.edit_currentFrame,'String',num2str(tp));
+    imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
+    if get(handles.checkbox_cellmarking,'Value')
+        [p bg_p] = plotTrackpoints(handles,cellpath,sisterList,handles.res_cellpath,handles.res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+        handles.p = p;
+        handles.bg_p = bg_p;
+    end
+    
+    xL=max(cellpath{tp}(selected_cell,1)-cellsize,1);
+    xR=min(cellpath{tp}(selected_cell,1)+cellsize,size(currentframe,2));
+    yL=max(cellpath{tp}(selected_cell,2)-cellsize,1);
+    yR=min(cellpath{tp}(selected_cell,2)+cellsize,size(currentframe,1));
+    template = currentframe(yL:yR,xL:xR);
+    
+    switch handles.cellrecogmethod
+        case 1
+            [x1 y1 BW] = templateToCentroid(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
+        case 2
+            [x1 y1 BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
+    end
+    
+    edge = bwmorph(BW,'remove');
+    imshow(imadjust(template),'Parent',handles.axes2);
+    set(handles.axes2,'NextPlot','add');
+    [y x]=find(edge);
+    plot(handles.axes2,x,y,'.r','MarkerSize',1);
+    plot(handles.axes2,cellpath{tp}(selected_cell,1)-xL,cellpath{tp}(selected_cell,2)-yL,'xr');
+    set(handles.axes2,'NextPlot','replace');
+    guidata(hObject, handles);
+    drawnow;
+    set(handles.edit_commu,'String',['Showing Cell#' num2str(selected_cell)]);
+else
+    set(handles.edit_cellNo,'String',num2str(selected_cell));
+    set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',cellpath{tp}(selected_cell,1),cellpath{tp}(selected_cell,2))));
+    set(handles.edit_sister,'String',num2str(sisterList{tp}(selected_cell,:)));
+    
+    set(handles.edit_commu,'String',['Cell#' num2str(selected_cell) ' does not exist at current time point.']);
 end
-
-xL=max(cellpath{tp}(selected_cell,1)-cellsize,1);
-xR=min(cellpath{tp}(selected_cell,1)+cellsize,size(currentframe,2));
-yL=max(cellpath{tp}(selected_cell,2)-cellsize,1);
-yR=min(cellpath{tp}(selected_cell,2)+cellsize,size(currentframe,1));
-template = currentframe(yL:yR,xL:xR);
-
-switch handles.cellrecogmethod
-    case 1
-        [x1 y1 BW] = templateToCentroid(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
-    case 2
-        [x1 y1 BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
-end
-
-edge = bwmorph(BW,'remove');
-imshow(imadjust(template),'Parent',handles.axes2);
-set(handles.axes2,'NextPlot','add');
-[y x]=find(edge);
-plot(handles.axes2,x,y,'.r','MarkerSize',1);
-plot(handles.axes2,cellpath{tp}(selected_cell,1)-xL,cellpath{tp}(selected_cell,2)-yL,'xr');
-set(handles.axes2,'NextPlot','replace');
-guidata(hObject, handles);
-drawnow;
-
-
 % --- Outputs from this function are returned to the command line.
 function varargout = CellTracking_OutputFcn(hObject, eventdata, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
@@ -1236,13 +1246,7 @@ if get(handles.togglebutton_editable,'Value')
     if ~isempty(cellpath) && ~isempty(cellpath{tp})
         PosInd = find(cellpath{tp}(:,1)>0)';
         for cell=PosInd
-            if cell ~= selected_cell
-                %    p{cell} = coordtopoint(cellpath{tp}(cell,:),cell,'r',handles.fcn1,handles.axes1,get(handles.checkbox_cellnostring,'Value'));
-                %    addNewPositionCallback(p{cell},@(h) set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',h(1),h(2)))));
-                %    addNewPositionCallback(p{cell},@(h) set(handles.edit_cellNo,'String',num2str(cell)));
-                %    addNewPositionCallback(p{cell},@(h) set(handles.listbox_cells,'Value',cell));
-                %    addNewPositionCallback(p{cell},@(h) set(handles.edit_sister,'String',num2str(sisterList{tp}(cell,:))));
-            else
+            if cell == selected_cell
                 p{cell} = coordtopoint(cellpath{tp}(cell,:),cell,'b',handles.fcn1,handles.axes1,get(handles.checkbox_cellnostring,'Value'));
                 addNewPositionCallback(p{cell},@(h) set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',h(1),h(2)))));
                 addNewPositionCallback(p{cell},@(h) set(handles.edit_cellNo,'String',num2str(cell)));
@@ -1303,16 +1307,15 @@ if ~isempty(res_cellpath) && ~isempty(res_cellpath{tp})
         text(res_cellpath{tp}(:,1)+5,res_cellpath{tp}(:,2)+5,num2str((1:length(res_cellpath{tp}))'),'HorizontalAlignment','left',...
             'VerticalAlignment','middle','color','w');
     end
+    if isempty(cellpath) || isempty(cellpath{tp})
+        plot(res_cellpath{tp}(selected_cell,1),res_cellpath{tp}(selected_cell,2),'o','MarkerFaceColor','none','MarkerEdgeColor','y'); hold on;
+        if get(handles.checkbox_cellnostring,'Value') ~=1
+            text(res_cellpath{tp}(selected_cell,1)+10,res_cellpath{tp}(selected_cell,2)+5,num2str(selected_cell),'HorizontalAlignment','left',...
+                'VerticalAlignment','middle','color',[1 1 0]);
+        end
+    end
     hold off;
 end
-
-if ~isempty(bg)
-    hold on;
-    plot(bg{tp}(:,1),bg{tp}(:,2),'.','MarkerFaceColor','c','MarkerEdgeColor','c');
-    hold off;
-end
-
-
 
 
 function updateLists(cellpath,sisterList,res_cellpath,res_sisterList,bg,handles,tp)
@@ -2378,15 +2381,24 @@ function edit_cellNo_Callback(hObject, eventdata, handles)
 p=handles.p;
 cellpath = handles.cellpath;
 sisterList = handles.sisterList;
+res_cellpath = handles.res_cellpath;
+res_sisterList = handles.res_sisterList;
+
 tp = str2num(get(handles.edit_currentFrame,'String'));
 cell = str2num(get(hObject,'String'));
-set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',cellpath{tp}(cell,1),cellpath{tp}(cell,2))));
-set(handles.edit_sister,'String',num2str(sisterList{tp}(cell,:)));
-set(handles.listbox_cells,'Value',cell);
+
+if isempty(cellpath) || isempty(cellpath{tp})
+    set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',res_cellpath{tp}(cell,1),res_cellpath{tp}(cell,2))));
+    set(handles.edit_sister,'String',num2str(res_sisterList{tp}(cell,:)));
+    set(handles.listbox_Restcells,'Value',cell);
+    
+else
+    set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',cellpath{tp}(cell,1),cellpath{tp}(cell,2))));
+    set(handles.edit_sister,'String',num2str(sisterList{tp}(cell,:)));
+    set(handles.listbox_cells,'Value',cell);
+end
+
 guidata(hObject, handles);
-
-
-
 
 % --- Executes on button press in pushbutton_gensister.
 function pushbutton_gensister_Callback(hObject, eventdata, handles)
@@ -2911,7 +2923,21 @@ function edit_coord_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of edit_coord as text
 %        str2double(get(hObject,'String')) returns contents of edit_coord as a double
+cellpath = handles.cellpath;
+tp = str2num(get(handles.edit_currentFrame,'String'));
+selected_cell = str2num(get(handles.edit_cellNo,'String'));
 
+currentCoord = get(hObject,'String');
+tokens   = regexp(currentCoord, '((?<myX>\d+),(?<myY>\d+))|(?<myX>\d+),(?<myY>\d+)','tokens');
+myX = str2num(tokens{1}{1});
+myY = str2num(tokens{1}{2});
+cellpath{tp}(selected_cell,:) = [myX myY];
+set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',myX,myY)));
+handles.cellpath = cellpath;
+guidata(hObject, handles);
+handles = guidata(hObject);
+restoreCellList(handles,tp);
+updateLists(cellpath,handles.sisterList,handles.res_cellpath,handles.res_sisterList,handles.bg,handles,tp);
 
 % --- Executes during object creation, after setting all properties.
 function edit_coord_CreateFcn(hObject, eventdata, handles)
@@ -4502,7 +4528,77 @@ function listbox_Restcells_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns listbox_Restcells contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from listbox_Restcells
+selected_cell = get(hObject,'Value');
 
+res_cellpath = handles.res_cellpath;
+res_sisterList = handles.res_sisterList;
+bg = handles.bg;
+
+c_tp = str2num(get(handles.edit_currentFrame,'String'));
+
+first_tp = str2num(get(handles.edit_firstframe,'String'));
+last_tp = str2num(get(handles.edit_lastframe,'String'));
+if c_tp>last_tp
+    tp=last_tp;
+elseif c_tp<first_tp
+    tp=first_tp;
+else
+    tp=c_tp;
+end
+
+if res_cellpath{tp}(selected_cell,1) ~= -1 && res_cellpath{tp}(selected_cell,2) ~= -1
+    
+    set(handles.edit_cellNo,'String',num2str(selected_cell));
+    set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',res_cellpath{tp}(selected_cell,1),res_cellpath{tp}(selected_cell,2))));
+    set(handles.edit_sister,'String',num2str(res_sisterList{tp}(selected_cell,:)));
+    
+    cellsize = str2num(get(handles.edit_cellsize,'String'));
+    row = str2num(get(handles.edit_row,'String'));
+    col = str2num(get(handles.edit_col,'String'));
+    field = str2num(get(handles.edit_field,'String'));
+    plane = str2num(get(handles.edit_plane,'String'));
+    channel= str2num(get(handles.edit_CH,'String'));
+    
+    currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+    set(handles.edit_currentFrame,'String',num2str(tp));
+    imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
+    if get(handles.checkbox_cellmarking,'Value')
+        [p bg_p] = plotTrackpoints(handles,handles.cellpath,handles.sisterList,res_cellpath,res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+        handles.p = p;
+        handles.bg_p = bg_p;
+    end
+    
+    xL=max(res_cellpath{tp}(selected_cell,1)-cellsize,1);
+    xR=min(res_cellpath{tp}(selected_cell,1)+cellsize,size(currentframe,2));
+    yL=max(res_cellpath{tp}(selected_cell,2)-cellsize,1);
+    yR=min(res_cellpath{tp}(selected_cell,2)+cellsize,size(currentframe,1));
+    template = currentframe(yL:yR,xL:xR);
+    
+    switch handles.cellrecogmethod
+        case 1
+            [x1 y1 BW] = templateToCentroid(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
+        case 2
+            [x1 y1 BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
+    end
+    
+    edge = bwmorph(BW,'remove');
+    imshow(imadjust(template),'Parent',handles.axes2);
+    set(handles.axes2,'NextPlot','add');
+    [y x]=find(edge);
+    plot(handles.axes2,x,y,'.r','MarkerSize',1);
+    plot(handles.axes2,res_cellpath{tp}(selected_cell,1)-xL,res_cellpath{tp}(selected_cell,2)-yL,'xr');
+    set(handles.axes2,'NextPlot','replace');
+    guidata(hObject, handles);
+    drawnow;
+    
+    set(handles.edit_commu,'String',['Showing Cell#' num2str(selected_cell)]);
+else
+    set(handles.edit_commu,'String',['Cell#' num2str(selected_cell) ' does not exist at current time point.']);
+    set(handles.edit_cellNo,'String',num2str(selected_cell));
+    set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',res_cellpath{tp}(selected_cell,1),res_cellpath{tp}(selected_cell,2))));
+    set(handles.edit_sister,'String',num2str(res_sisterList{tp}(selected_cell,:)));
+    
+end
 
 % --- Executes during object creation, after setting all properties.
 function listbox_Restcells_CreateFcn(hObject, eventdata, handles)
@@ -4515,110 +4611,6 @@ function listbox_Restcells_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-
-
-% --- Executes on button press in pushbutton_reserveindv.
-function pushbutton_reserveindv_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_reserveindv (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-cellpath = handles.cellpath;
-sisterList = handles.sisterList;
-res_cellpath = handles.res_cellpath;
-res_sisterList = handles.res_sisterList;
-bg = handles.bg;
-
-row = str2num(get(handles.edit_row,'String'));
-col = str2num(get(handles.edit_col,'String'));
-field = str2num(get(handles.edit_field,'String'));
-plane = str2num(get(handles.edit_plane,'String'));
-channel= str2num(get(handles.edit_CH,'String'));
-tp = str2num(get(handles.edit_currentFrame,'String'));
-first_tp = str2num(get(handles.edit_firstframe,'String'));
-last_tp = str2num(get(handles.edit_lastframe,'String'));
-
-selected_cell = str2num(get(handles.edit_cellNo,'String'));
-moveLists = [selected_cell];
-for t = first_tp:last_tp
-    sisInd = find(sisterList{t}(selected_cell,:) ~= -1);
-    if ~isempty(sisInd)
-        for s = 1:length(sisInd)
-            if isempty(find(sisterList{t}(selected_cell,sisInd(s)) == moveLists,1))
-                moveLists = [moveLists sisterList{t}(selected_cell,sisInd(s))];
-            end
-        end
-    end
-end
-
-if length(moveLists)==1
-    
-    if ~isempty(cellpath)
-        
-        for t = first_tp:last_tp
-            %get rid of selected cells
-            cellListsize = size(cellpath{t},1);
-            
-            if selected_cell>1
-                belowL_cellpath = cellpath{t}(1:(selected_cell-1),:);
-                belowL_sisterList = sisterList{t}(1:(selected_cell-1),:);
-            else
-                belowL_cellpath = [];
-                belowL_sisterList = [];
-            end
-            if selected_cell<cellListsize
-                aboveL_cellpath = cellpath{t}((selected_cell+1):cellListsize,:);
-                aboveL_sisterList = sisterList{t}((selected_cell+1):cellListsize,:);
-            else
-                aboveL_cellpath = [];
-                aboveL_sisterList = [];
-            end
-            new_cellpath{t} = [belowL_cellpath;aboveL_cellpath];
-            new_sisterList{t} = [belowL_sisterList;aboveL_sisterList];
-            
-            if ~isempty(res_cellpath)
-                restListsize = size(res_cellpath{t},1);
-                new_rescellpath{t} = res_cellpath{t};
-                new_ressisterList{t} = res_sisterList{t};
-            else
-                restListsize = 0;
-            end
-            
-            new_rescellpath{t}(restListsize+1,:)   =  cellpath{t}(selected_cell,:);
-            new_ressisterList{t}(restListsize+1,:) =  sisterList{t}(selected_cell,:);
-            
-        end
-        res_cellpath = new_rescellpath;
-        res_sisterList = new_ressisterList;
-        cellpath = new_cellpath;
-        sisterList = new_sisterList;
-    end
-    handles.cellpath = cellpath;
-    handles.sisterList = sisterList;
-    handles.res_cellpath = res_cellpath;
-    handles.res_sisterList = res_sisterList;
-    
-    set(handles.listbox_cells,'Value',1);
-    set(handles.listbox_Restcells,'Value',1);
-    
-    currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
-    imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
-    if get(handles.checkbox_cellmarking,'Value')
-        [p bg_p] = plotTrackpoints(handles,cellpath,sisterList,res_cellpath,res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
-        handles.p = p;
-        handles.bg_p = bg_p;
-        guidata(hObject, handles);
-    end
-    drawnow;
-    updateLists(cellpath,sisterList,res_cellpath,res_sisterList,bg,handles,tp);
-    guidata(hObject, handles);
-    
-else
-    set(handles.edit_commu,'String',['Cell#' num2str(selected_cell) ' has sisters. Reserving only this cell will destroy sisterhoods.']);
-end
-
-
-
 
 % --- Executes on button press in pushbutton_reserveall.
 function pushbutton_reserveall_Callback(hObject, eventdata, handles)
@@ -4642,55 +4634,43 @@ first_tp = str2num(get(handles.edit_firstframe,'String'));
 last_tp = str2num(get(handles.edit_lastframe,'String'));
 
 if ~isempty(cellpath)
-    for t = first_tp:last_tp
-        if ~isempty(res_cellpath)
-            restListsize = size(res_cellpath{t},1);
-            new_cellpath{t} = res_cellpath{t};
-            new_sisterList{t} = res_sisterList{t};
-        else
-            restListsize = 0;
-        end
+    if ~isempty(res_cellpath)
+        [sel_cellpath,sel_sisterList] = removeSister(cellpath,sisterList,first_tp,last_tp,1:size(cellpath{last_tp},1));
         
-        cellListsize = size(cellpath{t},1);
-        for cell = 1 : cellListsize
-            new_cellpath{t}(restListsize+cell,:)   =  cellpath{t}(cell,:);
-            new_sisterList{t}(restListsize+cell,:) =  sisterList{t}(cell,:);
-            old_sisters = sisterList{t}(cell,:);
-            PosSis = find(old_sisters>0);
-            if ~isempty(PosSis)
-                for ss=1:length(PosSis)
-                    new_sisterList{t}(restListsize+cell,PosSis(ss)) = old_sisters(PosSis(ss))+restListsize;
-                end
+        for t = first_tp:last_tp
+            if ~isempty(res_cellpath)
+                new_res_cellpath{t} = [res_cellpath{t};sel_cellpath{t}];
+                new_res_cellpath{t} = [res_sisterList{t};sel_sisterList{t}];
+            else
+                new_res_cellpath{t} = sel_cellpath{t};
+                new_res_cellpath{t} = sel_sisterList{t};
             end
-            
         end
+    else
+        new_res_cellpath = cellpath;
+        new_res_sisterList = sisterList;
     end
-    res_cellpath = new_cellpath;
-    res_sisterList = new_sisterList;
+    new_cellpath = [];
+    new_sisterList = [];
+    handles.cellpath = new_cellpath;
+    handles.sisterList = new_sisterList;
+    handles.res_cellpath = new_res_cellpath;
+    handles.res_sisterList = new_res_sisterList;
+    guidata(hObject, handles);
     
-    cellpath = [];
-    sisterList = [];
-end
-
-handles.cellpath = cellpath;
-handles.sisterList = sisterList;
-handles.res_cellpath = res_cellpath;
-handles.res_sisterList = res_sisterList;
-
-set(handles.listbox_cells,'Value',1);
-set(handles.listbox_Restcells,'Value',1);
-
-currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
-imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
-if get(handles.checkbox_cellmarking,'Value')
-    [p bg_p] = plotTrackpoints(handles,cellpath,sisterList,res_cellpath,res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
-    handles.p = p;
-    handles.bg_p = bg_p;
+    set(handles.listbox_cells,'Value',1);
+    set(handles.listbox_Restcells,'Value',1);
+    
+    currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+    imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
+    if get(handles.checkbox_cellmarking,'Value')
+        [p bg_p] = plotTrackpoints(handles,new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+    end
+    drawnow;
+    updateLists(new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,handles.bg,handles,tp);
     guidata(hObject, handles);
 end
-drawnow;
-updateLists(cellpath,sisterList,res_cellpath,res_sisterList,bg,handles,tp);
-guidata(hObject, handles);
+
 
 
 
@@ -4715,35 +4695,33 @@ tp = str2num(get(handles.edit_currentFrame,'String'));
 first_tp = str2num(get(handles.edit_firstframe,'String'));
 last_tp = str2num(get(handles.edit_lastframe,'String'));
 
-selected_cell = get(handles.listbox_Restcells,'Value');
-moveLists = [selected_cell];
+selected_cell = str2num(get(handles.edit_cellNo,'String'));
 
-for t = first_tp:last_tp
-    sisInd = find(res_sisterList{t}(selected_cell,:) ~= -1);
-    if ~isempty(sisInd)
-        for s = 1:length(sisInd)
-            if isempty(find(res_sisterList{t}(selected_cell,sisInd(s)) == moveLists),1)
-                moveLists = [moveLists res_sisterList{t}(selected_cell,sisInd(s))];
-            end
-        end
+oriSis = res_sisterList{last_tp}(selected_cell,:);
+noSisInd = find(oriSis==-1,1,'first');
+if ~isempty(noSisInd)
+    switch noSisInd
+        case 1
+            moveLists = [selected_cell];
+        case 2
+            moveLists = [selected_cell oriSis(1)];
+        case 3
+            moveLists = [selected_cell oriSis(1:2)];
     end
+else
+    moveLists = [selected_cell oriSis];
 end
-
-if length(moveLists)==1
-    
-    if ~isempty(res_cellpath)
+if ~isempty(res_cellpath)
+    % when the selected cells has no sisters
+    if isempty(setdiff(moveLists,selected_cell))
         
         for t = first_tp:last_tp
             %get rid of selected cells
             restListsize = size(res_cellpath{t},1);
-            
-            if selected_cell>1
-                belowL_rescellpath = res_cellpath{t}(1:(selected_cell-1),:);
-                belowL_ressisterList = res_sisterList{t}(1:(selected_cell-1),:);
-            else
-                belowL_rescellpath = [];
-                belowL_ressisterList = [];
-            end
+
+            belowL_rescellpath = res_cellpath{t}(1:(selected_cell-1),:);
+            belowL_ressisterList = res_sisterList{t}(1:(selected_cell-1),:);
+
             if selected_cell<restListsize
                 aboveL_rescellpath = res_cellpath{t}((selected_cell+1):restListsize,:);
                 aboveL_ressisterList = res_sisterList{t}((selected_cell+1):restListsize,:);
@@ -4765,21 +4743,47 @@ if length(moveLists)==1
             new_cellpath{t}(cellListsize+1,:)   =  res_cellpath{t}(selected_cell,:);
             new_sisterList{t}(cellListsize+1,:) =  res_sisterList{t}(selected_cell,:);
             
-            
-            
-            
         end
         cellpath = new_cellpath;
         sisterList = new_sisterList;
         
         res_cellpath = new_rescellpath;
         res_sisterList = new_ressisterList;
+
+    else
         
+        firstSis = moveLists;
+        secondSis = moveLists;
+        for s = 1:length(firstSis)
+            secondSis = [secondSis setdiff(res_sisterList{last_tp}(firstSis(s),:),-1)];
+        end
+        thirdSis = secondSis;
+        for s = 1:length(secondSis)
+            thirdSis = [thirdSis setdiff(res_sisterList{last_tp}(secondSis(s),:),-1)];
+        end
+        moveLists = unique(thirdSis);
+        
+        [new_res_cellpath, new_res_sisterList] = recreateAllList(res_cellpath,res_sisterList,first_tp,last_tp,moveLists,0);
+        [sel_cellpath,sel_sisterList] = removeSister(res_cellpath,res_sisterList,first_tp,last_tp,moveLists);
+        
+        
+        for t = first_tp:last_tp
+            if ~isempty(cellpath)
+                new_cellpath{t} = [cellpath{t};sel_cellpath{t}];
+                new_sisterList{t} = [sisterList{t};sel_sisterList{t}];
+            else
+                new_cellpath{t} = sel_cellpath{t};
+                new_sisterList{t} = sel_sisterList{t};
+            end
+
+        end
     end
-    handles.cellpath = cellpath;
-    handles.sisterList = sisterList;
-    handles.res_cellpath = res_cellpath;
-    handles.res_sisterList = res_sisterList;
+
+    handles.cellpath = new_cellpath;
+    handles.sisterList = new_sisterList;
+    handles.res_cellpath = new_res_cellpath;
+    handles.res_sisterList = new_res_sisterList;
+    guidata(hObject, handles);
     
     set(handles.listbox_cells,'Value',1);
     set(handles.listbox_Restcells,'Value',1);
@@ -4787,18 +4791,13 @@ if length(moveLists)==1
     currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
     imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
     if get(handles.checkbox_cellmarking,'Value')
-        [p bg_p] = plotTrackpoints(handles,cellpath,sisterList,res_cellpath,res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
-        handles.p = p;
-        handles.bg_p = bg_p;
-        guidata(hObject, handles);
+        [p bg_p] = plotTrackpoints(handles,new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
     end
     drawnow;
-    updateLists(cellpath,sisterList,res_cellpath,res_sisterList,bg,handles,tp);
+    updateLists(new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,handles.bg,handles,tp);
     guidata(hObject, handles);
-    
-else
-    set(handles.edit_commu,'String',['Cell#' num2str(selected_cell) ' has sisters. Restoring only this cell will destroy sisterhoods.']);
 end
+
 
 
 
@@ -4807,6 +4806,7 @@ function pushbutton_restoreall_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_restoreall (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
 cellpath = handles.cellpath;
 sisterList = handles.sisterList;
 res_cellpath = handles.res_cellpath;
@@ -4823,55 +4823,44 @@ first_tp = str2num(get(handles.edit_firstframe,'String'));
 last_tp = str2num(get(handles.edit_lastframe,'String'));
 
 if ~isempty(res_cellpath)
-    for t = first_tp:last_tp
-        if ~isempty(cellpath)
-            cellListsize = size(cellpath{t},1);
-            new_cellpath{t} = cellpath{t};
-            new_sisterList{t} = sisterList{t};
-        else
-            cellListsize = 0;
+    if ~isempty(cellpath) 
+        [sel_cellpath,sel_sisterList] = removeSister(res_cellpath,res_sisterList,first_tp,last_tp,1:size(res_cellpath{last_tp},1));
+        for t = first_tp:last_tp
+            if ~isempty(cellpath)
+                new_cellpath{t} = [cellpath{t};sel_cellpath{t}];
+                new_sisterList{t} = [sisterList{t};sel_sisterList{t}];
+            else
+                new_cellpath{t} = sel_cellpath{t};
+                new_sisterList{t} = sel_sisterList{t};
+            end
         end
         
-        restListsize = size(res_cellpath{t},1);
-        for cell = 1 : restListsize
-            new_cellpath{t}(cellListsize+cell,:)   =  res_cellpath{t}(cell,:);
-            old_sisters = res_sisterList{t}(cell,:);
-            PosSis = find(old_sisters>0);
-            new_sisterList{t}(cellListsize+cell,:) =  old_sisters;
-            if ~isempty(PosSis)
-                for ss=1:length(PosSis)
-                    new_sisterList{t}(cellListsize+cell,PosSis(ss)) = old_sisters(PosSis(ss))+cellListsize;
-                end
-            end
-            
-        end
+    else
+        new_cellpath = res_cellpath;
+        new_sisterList = res_sisterList;
     end
-    cellpath = new_cellpath;
-    sisterList = new_sisterList;
-    res_cellpath = [];
-    res_sisterList = [];
+    new_res_cellpath = [];
+    new_res_sisterList = [];
+    handles.cellpath = new_cellpath;
+    handles.sisterList = new_sisterList;
+    handles.res_cellpath = new_res_cellpath;
+    handles.res_sisterList = new_res_sisterList;
+    guidata(hObject, handles);
     
-end
-
-handles.cellpath = cellpath;
-handles.sisterList = sisterList;
-handles.res_cellpath = res_cellpath;
-handles.res_sisterList = res_sisterList;
-
-set(handles.listbox_cells,'Value',1);
-set(handles.listbox_Restcells,'Value',1);
-
-currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
-imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
-if get(handles.checkbox_cellmarking,'Value')
-    [p bg_p] = plotTrackpoints(handles,cellpath,sisterList,res_cellpath,res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
-    handles.p = p;
-    handles.bg_p = bg_p;
+    set(handles.listbox_cells,'Value',1);
+    set(handles.listbox_Restcells,'Value',1);
+    
+    currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+    imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
+    if get(handles.checkbox_cellmarking,'Value')
+        [p bg_p] = plotTrackpoints(handles,new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+    end
+    drawnow;
+    updateLists(new_cellpath,new_sisterList,new_res_cellpath,new_res_sisterList,handles.bg,handles,tp);
     guidata(hObject, handles);
 end
-drawnow;
-updateLists(cellpath,sisterList,res_cellpath,res_sisterList,bg,handles,tp);
-guidata(hObject, handles);
+
+
 
 
 % --- Executes on button press in pushbutton_cleanList.
@@ -4894,72 +4883,51 @@ sisterList = handles.sisterList;
 bg=handles.bg;
 
 if ~isempty(cellpath)
+    [new_cellpath, new_sisterList] = recreateAllList(cellpath,sisterList,first_tp,last_tp,[],1);
+    handles.cellpath   = new_cellpath;
+    handles.sisterList = new_sisterList;
     
+    guidata(hObject, handles);
+    handles = guidata(hObject);
+    updateLists(new_cellpath,new_sisterList,handles.res_cellpath,handles.res_sisterList,bg,handles,tp);
+end
+
+
+
+
+set(handles.edit_commu,'String','Done cleaning list.');
+currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
+if get(handles.checkbox_cellmarking,'Value')
+    [p bg_p] = plotTrackpoints(handles,new_cellpath,new_sisterList,handles.res_cellpath,handles.res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+    handles.p = p;
+    handles.bg_p = bg_p;
+    guidata(hObject, handles);
+end
+drawnow;
+
+
+function [new_cellpath, new_sisterList] = recreateAllList(cellpath,sisterList,first_tp,last_tp,excludeInd,marriageLog)
+
+sis_cellpath = cell(last_tp,1);
+sis_sisterList = cell(last_tp,1);
+% Determine cells with sisters
+withSisInd = setdiff(find(sisterList{last_tp}(:,1)~=-1),excludeInd);
+
+if ~isempty(withSisInd)
     
-    sis_cellpath = cell(last_tp,1);
-    sis_sisterList = cell(last_tp,1);
-    % Determine cells with sisters
-    withSisInd = find(sisterList{last_tp}(:,1)~=-1);
-    
-    if ~isempty(withSisInd)
+    cInd=1;
+    loopInd=1;
+    lastInd(loopInd)=1;
+    while ~isempty(withSisInd)
+        firstSis = withSisInd(1);
+        secondSis = sisterList{last_tp}(withSisInd(1),1);
+        sis_gInd = find(sisterList{last_tp}(:,1)==firstSis | sisterList{last_tp}(:,1)==secondSis);
         
-        cInd=1;
-        loopInd=1;
-        lastInd(loopInd)=1;
-        while ~isempty(withSisInd)
-            firstSis = withSisInd(1);
-            secondSis = sisterList{last_tp}(withSisInd(1),1);
-            sis_gInd = find(sisterList{last_tp}(:,1)==firstSis | sisterList{last_tp}(:,1)==secondSis);
-            
-            for t = last_tp:-1:first_tp
-                if  t~=last_tp
-                    sis_sisterList{t} = -1*ones(size(sis_sisterList{last_tp}));
-                else
-                    
-                    cInd=lastInd(loopInd);
-                    
-                    for s=1:length(sis_gInd)
-                        sis_table{sis_gInd(s)} = s+cInd-1;
-                    end
-                    
-                    for s=1:length(sis_gInd)
-                        sis_cellpath{t}(cInd,:)   = cellpath{t}(sis_gInd(s),:);
-                        oldList = sisterList{t}(sis_gInd(s),:);
-                        posL = find(oldList ~= -1);
-                        
-                        if ~isempty(posL)
-                            switch length(posL)
-                                case 1
-                                    sis_sisterList{t}(cInd,:) = [sis_table{oldList(1)} -1 -1];
-                                case 2
-                                    sis_sisterList{t}(cInd,:) = [sis_table{oldList(1)} sis_table{oldList(2)} -1];
-                                case 3
-                                    sis_sisterList{t}(cInd,:) = [sis_table{oldList(1)} sis_table{oldList(2)} sis_table{oldList(3)}];
-                            end
-                        end
-                        cInd = cInd+1;
-                    end
-                    
-                end
-                
-            end
-            loopInd=loopInd+1;
-            lastInd(loopInd) = cInd;
-            withSisInd = setdiff(withSisInd,sis_gInd);
-            clear sis_table;
-            
-        end
-        
-        cInd=1;
-        loopInd=1;
-        lastInd(loopInd)=1;
-        withSisInd = find(sisterList{last_tp}(:,1)~=-1);
-        while ~isempty(withSisInd)
-            firstSis = withSisInd(1);
-            secondSis = sisterList{last_tp}(withSisInd(1),1);
-            sis_gInd = find(sisterList{last_tp}(:,1)==firstSis | sisterList{last_tp}(:,1)==secondSis);
-            
-            for t = last_tp:-1:first_tp
+        for t = last_tp:-1:first_tp
+            if  t~=last_tp
+                sis_sisterList{t} = -1*ones(size(sis_sisterList{last_tp}));
+            else
                 
                 cInd=lastInd(loopInd);
                 
@@ -4971,6 +4939,7 @@ if ~isempty(cellpath)
                     sis_cellpath{t}(cInd,:)   = cellpath{t}(sis_gInd(s),:);
                     oldList = sisterList{t}(sis_gInd(s),:);
                     posL = find(oldList ~= -1);
+                    
                     if ~isempty(posL)
                         switch length(posL)
                             case 1
@@ -4985,23 +4954,68 @@ if ~isempty(cellpath)
                 end
                 
             end
-            loopInd=loopInd+1;
-            lastInd(loopInd) = cInd;
-            withSisInd = setdiff(withSisInd,sis_gInd);
-            clear sis_table;
+            
         end
+        loopInd=loopInd+1;
+        lastInd(loopInd) = cInd;
+        withSisInd = setdiff(withSisInd,sis_gInd);
+        clear sis_table;
         
     end
     
-    % Determine cells without sisters
-    noSisInd = find(sisterList{last_tp}(:,1)==-1 & cellpath{last_tp}(:,1)~=-1);
-    for t = first_tp:last_tp
-        nosis_cellpath{t}   = cellpath{t}(noSisInd,:);
-        nosis_sisterList{t} = sisterList{t}(noSisInd,:) ;
+    cInd=1;
+    loopInd=1;
+    lastInd(loopInd)=1;
+    withSisInd = setdiff(find(sisterList{last_tp}(:,1)~=-1),excludeInd);
+    while ~isempty(withSisInd)
+        firstSis = withSisInd(1);
+        secondSis = sisterList{last_tp}(withSisInd(1),1);
+        sis_gInd = find(sisterList{last_tp}(:,1)==firstSis | sisterList{last_tp}(:,1)==secondSis);
+        
+        for t = last_tp:-1:first_tp
+            
+            cInd=lastInd(loopInd);
+            
+            for s=1:length(sis_gInd)
+                sis_table{sis_gInd(s)} = s+cInd-1;
+            end
+            
+            for s=1:length(sis_gInd)
+                sis_cellpath{t}(cInd,:)   = cellpath{t}(sis_gInd(s),:);
+                oldList = sisterList{t}(sis_gInd(s),:);
+                posL = find(oldList ~= -1);
+                if ~isempty(posL)
+                    switch length(posL)
+                        case 1
+                            sis_sisterList{t}(cInd,:) = [sis_table{oldList(1)} -1 -1];
+                        case 2
+                            sis_sisterList{t}(cInd,:) = [sis_table{oldList(1)} sis_table{oldList(2)} -1];
+                        case 3
+                            sis_sisterList{t}(cInd,:) = [sis_table{oldList(1)} sis_table{oldList(2)} sis_table{oldList(3)}];
+                    end
+                end
+                cInd = cInd+1;
+            end
+            
+        end
+        loopInd=loopInd+1;
+        lastInd(loopInd) = cInd;
+        withSisInd = setdiff(withSisInd,sis_gInd);
+        clear sis_table;
     end
     
+end
+
+% Determine cells without sisters
+noSisInd = setdiff(find(sisterList{last_tp}(:,1)==-1 & cellpath{last_tp}(:,1)~=-1),excludeInd);
+
+for t = first_tp:last_tp
+    nosis_cellpath{t}   = cellpath{t}(noSisInd,:);
+    nosis_sisterList{t} = sisterList{t}(noSisInd,:) ;
+end
+
+if marriageLog
     [single_cellpath single_sisterList couple_cellpath couple_sisterList] = massWedding(nosis_cellpath,nosis_sisterList,first_tp,last_tp);
-    
     if ~isempty(couple_cellpath)
         for t = first_tp:last_tp
             if ~isempty(sis_cellpath)
@@ -5028,32 +5042,20 @@ if ~isempty(cellpath)
         end
         sis_cellpath = new_cellpath;
         sis_sisterList = new_sisterList;
-        
     end
-    
-    
+
     for t = first_tp:last_tp
         new_cellpath{t} =[sis_cellpath{t};single_cellpath{t}];
         new_sisterList{t} = [sis_sisterList{t};single_sisterList{t}];
     end
     
-    handles.cellpath   = new_cellpath;
-    handles.sisterList = new_sisterList;
-    
-    guidata(hObject, handles);
-    handles = guidata(hObject);
-    updateLists(new_cellpath,new_sisterList,handles.res_cellpath,handles.res_sisterList,bg,handles,tp);
+else
+    for t = first_tp:last_tp
+        new_cellpath{t} =   [sis_cellpath{t};nosis_cellpath{t}];
+        new_sisterList{t} = [sis_sisterList{t};nosis_sisterList{t}];
+    end
 end
-set(handles.edit_commu,'String','Done cleaning list.');
-currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
-imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
-if get(handles.checkbox_cellmarking,'Value')
-    [p bg_p] = plotTrackpoints(handles,new_cellpath,new_sisterList,handles.res_cellpath,handles.res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
-    handles.p = p;
-    handles.bg_p = bg_p;
-    guidata(hObject, handles);
-end
-drawnow;
+
 
 function [single_cellpath single_sisterList couple_cellpath couple_sisterList] = massWedding(nosis_cellpath,nosis_sisterList,first_tp,last_tp)
 single_cellpath   = nosis_cellpath;
@@ -5708,83 +5710,8 @@ sisterList = handles.sisterList;
 bg=handles.bg;
 
 if ~isempty(cellpath)
-    
-    
-    sis_cellpath = cell(last_tp,1);
-    sis_sisterList = cell(last_tp,1);
-    % Determine cells with sisters
-    withSisInd = find(sisterList{last_tp}(:,1)~=-1 );
-    if ~isempty(withSisInd)
-        cInd=1;
 
-        while ~isempty(withSisInd)
-            SisList = withSisInd(1);
-            firstSis = setdiff(sisterList{last_tp}(withSisInd(1),:),-1);
-            secondSis = firstSis;
-            for s = 1:length(firstSis)
-                secondSis = [secondSis setdiff(sisterList{last_tp}(firstSis(s),:),-1)];
-            end
-            thirdSis = secondSis;
-            for s = 1:length(secondSis)
-                thirdSis = [thirdSis setdiff(sisterList{last_tp}(secondSis(s),:),-1)];
-            end
-            
-            SisList = unique(thirdSis);
-
-            for s=1:length(SisList)
-                
-                for t = first_tp:last_tp
-                    if cellpath{t}(SisList(s),1) ~= -1 && cellpath{t}(SisList(s),2) ~= -1
-                        sis_cellpath{t}(cInd,:)   = cellpath{t}(SisList(s),:);
-                        sis_sisterList{t}(cInd,:) = [-1 -1 -1];
-                    else
-                        havecoordInd = find(cellpath{t}(SisList,1) ~= -1 & cellpath{t}(SisList,2) ~= -1);
-                        if length(havecoordInd) == 1
-                            sis_cellpath{t}(cInd,:)   = cellpath{t}(SisList(havecoordInd),:);
-                            sis_sisterList{t}(cInd,:) = [-1 -1 -1];
-                        else
-                            oriSis = sisterList{last_tp}(SisList(s),:);
-                            noSisInd = find(oriSis==-1,1,'first');
-                            if ~isempty(noSisInd)
-                                mySis = oriSis(1:(noSisInd-1));
-                            else
-                                mySis = oriSis;
-                            end
-                            for ms = length(mySis):-1:1
-                                if cellpath{t}(mySis(ms),1) ~= -1 && cellpath{t}(mySis(ms),2) ~= -1
-                                    mytrueParent = mySis(ms);
-                                    break
-                                end
-                            end
-                            
-                            sis_cellpath{t}(cInd,:)   = cellpath{t}(mytrueParent,:);
-                            sis_sisterList{t}(cInd,:) = [-1 -1 -1];
-                        end
-                        
-                        
-                    end
-                end
-                
-                cInd = cInd+1;
-            end
-            
-            withSisInd = setdiff(withSisInd,SisList);
-        end
-    end
-    
-    % Determine cells without sisters
-    noSisInd = find(sisterList{last_tp}(:,1)==-1 & cellpath{last_tp}(:,1)~=-1);
-    for t = first_tp:last_tp
-        nosis_cellpath{t}   = cellpath{t}(noSisInd,:);
-        nosis_sisterList{t} = sisterList{t}(noSisInd,:) ;
-    end
-    
-    % Combine data
-    for t = first_tp:last_tp
-        new_cellpath{t} =[sis_cellpath{t};nosis_cellpath{t}];
-        new_sisterList{t} = [sis_sisterList{t};nosis_sisterList{t}];
-    end
-    
+    [new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,first_tp,last_tp,1:length(cellpath{last_tp}));
     handles.cellpath   = new_cellpath;
     handles.sisterList = new_sisterList;
     
@@ -5804,6 +5731,77 @@ if get(handles.checkbox_cellmarking,'Value')
 end
 drawnow;
 
+
+
+function [new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,first_tp,last_tp,testList)
+sis_cellpath = cell(last_tp,1);
+sis_sisterList = cell(last_tp,1);
+cInd=1;
+% Determine cells with sisters
+withSisInd = intersect(find(sisterList{last_tp}(:,1)~=-1),testList);
+% Determine cells without sisters
+
+while ~isempty(withSisInd) 
+    SisList = withSisInd(1);
+    firstSis = setdiff(sisterList{last_tp}(withSisInd(1),:),-1);
+    secondSis = firstSis;
+    for s = 1:length(firstSis)
+        secondSis = [secondSis setdiff(sisterList{last_tp}(firstSis(s),:),-1)];
+    end
+    thirdSis = secondSis;
+    for s = 1:length(secondSis)
+        thirdSis = [thirdSis setdiff(sisterList{last_tp}(secondSis(s),:),-1)];
+    end
+    
+    SisList = unique(thirdSis);
+    
+    for s=1:length(SisList)
+        
+        for t = first_tp:last_tp
+            if cellpath{t}(SisList(s),1) ~= -1 && cellpath{t}(SisList(s),2) ~= -1
+                sis_cellpath{t}(cInd,:)   = cellpath{t}(SisList(s),:);
+                sis_sisterList{t}(cInd,:) = [-1 -1 -1];
+            else
+                havecoordInd = find(cellpath{t}(SisList,1) ~= -1 & cellpath{t}(SisList,2) ~= -1);
+                if length(havecoordInd) == 1
+                    sis_cellpath{t}(cInd,:)   = cellpath{t}(SisList(havecoordInd),:);
+                    sis_sisterList{t}(cInd,:) = [-1 -1 -1];
+                else
+                    oriSis = sisterList{last_tp}(SisList(s),:);
+                    NegOneInd = find(oriSis==-1,1,'first');
+                    if ~isempty(NegOneInd)
+                        mySis = oriSis(1:(NegOneInd-1));
+                    else
+                        mySis = oriSis;
+                    end
+                    for ms = length(mySis):-1:1
+                        if cellpath{t}(mySis(ms),1) ~= -1 && cellpath{t}(mySis(ms),2) ~= -1
+                            mytrueParent = mySis(ms);
+                            break
+                        end
+                    end
+                    sis_cellpath{t}(cInd,:)   = cellpath{t}(mytrueParent,:);
+                    sis_sisterList{t}(cInd,:) = [-1 -1 -1];
+                end
+            end
+        end
+        cInd = cInd+1;
+    end
+    
+    withSisInd = setdiff(withSisInd,SisList);
+end
+
+noSisterInd = intersect(find(sisterList{last_tp}(:,1)==-1 & cellpath{last_tp}(:,1)~=-1),testList);
+for t = first_tp:last_tp
+    nosis_cellpath{t}   = cellpath{t}(noSisterInd,:);
+    nosis_sisterList{t} = sisterList{t}(noSisterInd,:) ;
+end
+
+% Combine data
+for t = first_tp:last_tp
+    new_cellpath{t} =[sis_cellpath{t};nosis_cellpath{t}];
+    new_sisterList{t} = [sis_sisterList{t};nosis_sisterList{t}];
+end
 
 % --- Executes on button press in pushbutton_deleteDup.
 function pushbutton_deleteDup_Callback(hObject, eventdata, handles)

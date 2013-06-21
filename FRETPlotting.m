@@ -5692,7 +5692,7 @@ if exist(fullfile(ndpathname,H5filename),'file')
                         if ~isempty(find(cellmask(:,:,cellNo),1))
                             CellMask = cellmask(:,:,cellNo);
                         else
-                            CellMask = bwmorph(NucMask,'dilate',str2num(cytosize));
+                            CellMask = bwmorph(NucMask,'dilate',str2num(handles.cytosize));
                             cellmask(:,:,cellNo) = CellMask;
                         end
                         
@@ -5779,22 +5779,22 @@ if exist(fullfile(ndpathname,H5filename),'file')
         if Var1LOG == 1
             region1 = handles.regions1{region1LOG};
             signal1 = handles.signals1{signal1LOG};
-            h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal1',[region1 '_' signal1]);
+            h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal1',[region1 '-' signal1]);
         end
         if Var2LOG == 1
             region2 = handles.regions2{region2LOG};
             signal2 = handles.signals2{signal2LOG};
-            h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal2',[region2 '_' signal2]);
+            h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal2',[region2 '-' signal2]);
         end
         if Var3LOG == 1
             region3 = handles.regions3{region3LOG};
             signal3 = handles.signals3{signal3LOG};
-            h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal3',[region3 '_' signal3]);
+            h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal3',[region3 '-' signal3]);
         end
         if Var4LOG == 1
             region4 = handles.regions4{region4LOG};
             signal4 = handles.signals4{signal4LOG};
-            h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal4',[region4 '_' signal4]);
+            h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal4',[region4 '-' signal4]);
         end
         
         fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');

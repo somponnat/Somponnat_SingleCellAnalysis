@@ -10,7 +10,7 @@ function varargout = CellTracking(varargin)
 %  CellTracking(2,[templateCH tp_1 tp_end],[],{'1';'2';'3'},<tiff stack file>)
 %  CellTracking(3,[templateCH tp_1 tp_end],[],{'CFP';'YFP';'RFP'},'2012-11-16_%s_xy087_t%03g.tif')
 %
-% Last Modified by GUIDE v2.5 02-May-2013 16:29:26
+% Last Modified by GUIDE v2.5 28-May-2013 23:07:13
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -57,7 +57,12 @@ switch filetype
         if exist(fullfile(SourceF,filename),'file');
             outputim = imread(fullfile(SourceF,filename));
         end
+    case 4
         
+        filename = sprintf(fileformat,row,col,field,tp,plane,channel)
+        if exist(fullfile(SourceF,filename),'file')
+            outputim = imread(fullfile(SourceF,filename));
+        end  
 end
 
 % --- Executes just before CellTracking is made visible.
@@ -121,7 +126,7 @@ switch filetype
             return;
         end
         filetype = 1;
-        set(handles.radiobutton_petiffs,'Value',1);
+        set(handles.radiobutton_columbus,'Value',1);
         row = imagelocation(1);
         col = imagelocation(2);
         field = imagelocation(3);
@@ -398,6 +403,11 @@ set(handles.slider_frames,'Min',minF);
 set(handles.slider_frames,'Value',minF);
 set(handles.edit_currentFrame,'String',num2str(minF));
 set(handles.slider_frames,'SliderStep',[1/(maxF-minF) 1/(maxF-minF)]);
+if handles.filetype~=3
+    handles.channelnames = [];
+    guidata(hObject, handles);
+    handles = guidata(hObject);
+end
 initialframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
 
 set(handles.edit_currentFrame,'String',num2str(tp));
@@ -1080,7 +1090,7 @@ else
     tp=c_tp;
 end
 
-if cellpath{tp}(selected_cell,1) ~= -1 && cellpath{tp}(selected_cell,2) ~= -1
+if cellpath{tp}(selected_cell,1) ~= -1 || cellpath{tp}(selected_cell,2) ~= -1
     
     
     set(handles.edit_cellNo,'String',num2str(selected_cell));
@@ -1285,12 +1295,15 @@ else
             text(cellpath{tp}(PosInd,1)+5,cellpath{tp}(PosInd,2)+5,num2str(PosInd),'HorizontalAlignment','left',...
                 'VerticalAlignment','middle','color',[0 .9 .5]);
         end
-        
+        if selected_cell>size(cellpath{tp},1)
+            selected_cell = 1;
+        end
         plot(cellpath{tp}(selected_cell,1),cellpath{tp}(selected_cell,2),'o','MarkerFaceColor','none','MarkerEdgeColor','y'); hold on;
         if get(handles.checkbox_cellnostring,'Value') ~=1
             text(cellpath{tp}(selected_cell,1)+10,cellpath{tp}(selected_cell,2)+5,num2str(selected_cell),'HorizontalAlignment','left',...
                 'VerticalAlignment','middle','color',[1 1 0]);
         end
+        
     end
     if ~isempty(bg)
         plot(bg{tp}(:,1),bg{tp}(:,2),'.','MarkerFaceColor','c','MarkerEdgeColor','c');
@@ -1308,6 +1321,9 @@ if ~isempty(res_cellpath) && ~isempty(res_cellpath{tp})
             'VerticalAlignment','middle','color','w');
     end
     if isempty(cellpath) || isempty(cellpath{tp})
+        if selected_cell>size(res_cellpath{tp},1)
+            selected_cell = 1;
+        end
         plot(res_cellpath{tp}(selected_cell,1),res_cellpath{tp}(selected_cell,2),'o','MarkerFaceColor','none','MarkerEdgeColor','y'); hold on;
         if get(handles.checkbox_cellnostring,'Value') ~=1
             text(res_cellpath{tp}(selected_cell,1)+10,res_cellpath{tp}(selected_cell,2)+5,num2str(selected_cell),'HorizontalAlignment','left',...
@@ -2038,9 +2054,9 @@ cellsize = str2num(get(handles.edit_cellsize,'String'));
 cFrame = str2num(get(handles.edit_currentFrame,'String'));
 switch handles.increment
     case 1
-        endFrame   = str2num(get(handles.edit_lastframe,'String'))-1;
+        endFrame   = str2num(get(handles.edit_lastframe,'String'));
     case -1
-        endFrame   = str2num(get(handles.edit_firstframe,'String'))+1;
+        endFrame   = str2num(get(handles.edit_firstframe,'String'));
 end
 
 if cFrame~=endFrame
@@ -3339,6 +3355,11 @@ switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
     case 'radiobutton_customtiff'
         set(handles.edit_commu,'String','Metamorph tiff chosen for inputs. Edit file structure if needed.');
         handles.filetype = 3;
+    case 'radiobutton_columbus'
+        set(handles.edit_commu,'String','Columbus tif chosen for inputs. Edit file structure if needed.');
+        set(handles.edit_fileformat,'String','%03.0f%03.0f-%u-%03.0f%03.0f%03.0f.tif');
+        handles.filetype = 4;     
+        
 end
 guidata(hObject, handles);
 
@@ -4416,12 +4437,6 @@ c_tp = str2num(get(handles.edit_currentFrame,'String'));
 first_tp = str2num(get(handles.edit_firstframe,'String'));
 last_tp = str2num(get(handles.edit_lastframe,'String'));
 
-if ~isempty(cellpath)
-    if length(cellpath)<last_tp
-        last_tp = length(cellpath);
-    end
-end
-
 for tp=c_tp:1:last_tp
     cellpath{tp}(selected_cell,:) = [-2 -2];
     sisterList{tp}(selected_cell,:) = sisterList{tp-1}(selected_cell,:);
@@ -4640,10 +4655,10 @@ if ~isempty(cellpath)
         for t = first_tp:last_tp
             if ~isempty(res_cellpath)
                 new_res_cellpath{t} = [res_cellpath{t};sel_cellpath{t}];
-                new_res_cellpath{t} = [res_sisterList{t};sel_sisterList{t}];
+                new_res_sisterList{t} = [res_sisterList{t};sel_sisterList{t}];
             else
                 new_res_cellpath{t} = sel_cellpath{t};
-                new_res_cellpath{t} = sel_sisterList{t};
+                new_res_sisterList{t} = sel_sisterList{t};
             end
         end
     else
@@ -4729,8 +4744,8 @@ if ~isempty(res_cellpath)
                 aboveL_rescellpath = [];
                 aboveL_ressisterList = [];
             end
-            new_rescellpath{t} = [belowL_rescellpath;aboveL_rescellpath];
-            new_ressisterList{t} = [belowL_ressisterList;aboveL_ressisterList];
+            new_res_cellpath{t} = [belowL_rescellpath;aboveL_rescellpath];
+            new_res_sisterList{t} = [belowL_ressisterList;aboveL_ressisterList];
             
             if ~isempty(cellpath)
                 cellListsize = size(cellpath{t},1);
@@ -4747,8 +4762,8 @@ if ~isempty(res_cellpath)
         cellpath = new_cellpath;
         sisterList = new_sisterList;
         
-        res_cellpath = new_rescellpath;
-        res_sisterList = new_ressisterList;
+        res_cellpath = new_res_cellpath;
+        res_sisterList = new_res_sisterList;
 
     else
         
@@ -4762,7 +4777,7 @@ if ~isempty(res_cellpath)
             thirdSis = [thirdSis setdiff(res_sisterList{last_tp}(secondSis(s),:),-1)];
         end
         moveLists = unique(thirdSis);
-        
+
         [new_res_cellpath, new_res_sisterList] = recreateAllList(res_cellpath,res_sisterList,first_tp,last_tp,moveLists,0);
         [sel_cellpath,sel_sisterList] = removeSister(res_cellpath,res_sisterList,first_tp,last_tp,moveLists);
         
@@ -4878,6 +4893,10 @@ tp = str2num(get(handles.edit_currentFrame,'String'));
 first_tp = str2num(get(handles.edit_firstframe,'String'));
 last_tp = str2num(get(handles.edit_lastframe,'String'));
 
+set(handles.edit_cellNo,'String','1');
+set(handles.listbox_cells,'Value',1);
+set(handles.listbox_Restcells,'Value',1);
+
 cellpath = handles.cellpath;
 sisterList = handles.sisterList;
 bg=handles.bg;
@@ -4920,7 +4939,7 @@ if ~isempty(withSisInd)
     loopInd=1;
     lastInd(loopInd)=1;
     while ~isempty(withSisInd)
-        firstSis = withSisInd(1);
+        firstSis = withSisInd(1)
         secondSis = sisterList{last_tp}(withSisInd(1),1);
         sis_gInd = find(sisterList{last_tp}(:,1)==firstSis | sisterList{last_tp}(:,1)==secondSis);
         
@@ -5776,7 +5795,7 @@ while ~isempty(withSisInd)
                         mySis = oriSis;
                     end
                     for ms = length(mySis):-1:1
-                        if cellpath{t}(mySis(ms),1) ~= -1 && cellpath{t}(mySis(ms),2) ~= -1
+                        if cellpath{t}(mySis(ms),1) ~= -1 || cellpath{t}(mySis(ms),2) ~= -1
                             mytrueParent = mySis(ms);
                             break
                         end

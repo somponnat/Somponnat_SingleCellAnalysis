@@ -1202,21 +1202,20 @@ if H5L.exists(fid,maskdatasetname,'H5P_DEFAULT')
     [new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,firsttp,lasttp,1:length(cellpath{lasttp}));
     ind_cellpath = pos_path(new_cellpath,new_sisterList,selected_cell,firsttp,lasttp,imheight,imwidth);
     handles.ind_cellpath = ind_cellpath;
+    allmasks =permute(h5read(fullfile(handles.ndpathname,H5filename),maskdatasetname,[selected_cell firsttp 1 1 1], [1 lasttp-firsttp+1 3 maskinfo.Dataspace.Size(4) maskinfo.Dataspace.Size(5)]),[4 5 2 3 1]);
+    
+    nucmask  = double(allmasks(:,:,:,1));
+    cellmask  = double(allmasks(:,:,:,2));
+    cytomask  = double(allmasks(:,:,:,3));
+    
+    if cellsize~=(size(nucmask(:,:,tp),1)-1)/2
+        cellsize = (size(nucmask(:,:,tp),1)-1)/2;
+    end
     
     if tp > size(ind_cellpath,1)
-        set(handles.edit_commu,'String',['Cell#' num2str(selected_cell) ' is not present']);
+        set(handles.edit_commu,'String',['Cell#' num2str(selected_cell) ' is dead at frame' num2str(tp)]);
     else
-        
-        allmasks =permute(h5read(fullfile(handles.ndpathname,H5filename),maskdatasetname,[selected_cell firsttp 1 1 1], [1 lasttp-firsttp+1 3 maskinfo.Dataspace.Size(4) maskinfo.Dataspace.Size(5)]),[4 5 2 3 1]);
-        
-        nucmask  = double(allmasks(:,:,:,1));
-        cellmask  = double(allmasks(:,:,:,2));
-        cytomask  = double(allmasks(:,:,:,3));
-        
-        if cellsize~=(size(nucmask(:,:,tp),1)-1)/2
-            cellsize = (size(nucmask(:,:,tp),1)-1)/2;
-        end
-        
+
         xL=max(ind_cellpath(tp,1)-cellsize,1);
         xR=min(ind_cellpath(tp,1)+cellsize,imwidth);
         yL=max(ind_cellpath(tp,2)-cellsize,1);
@@ -1297,6 +1296,7 @@ if H5L.exists(fid,maskdatasetname,'H5P_DEFAULT')
         set(handles.edit_sister,'String',num2str(sisterList{tp}(selected_cell,:)));
         
     end
+    
     handles.nucmask = nucmask;
     handles.cellmask = cellmask;
     handles.cytomask = cytomask;
@@ -5640,6 +5640,8 @@ if exist(fullfile(ndpathname,H5filename),'file')
         timestamp = 1:(last_tp-first_tp+1);
         maskinfo = h5info(fullfile(ndpathname,H5filename), maskdatasetname);
         
+        [new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,first_tp,last_tp,1:length(cellpath{last_tp}));
+        
         for tp=first_tp:last_tp
             % Determine image capture time based on the template channel
             if filetype == 3
@@ -5687,7 +5689,7 @@ if exist(fullfile(ndpathname,H5filename),'file')
             
             for cellNo=selected_cells'
                 
-                ind_cellpath = pos_path(cellpath,sisterList,cellNo,first_tp,last_tp,imheight,imwidth);
+                ind_cellpath = pos_path(new_cellpath,new_sisterList,cellNo,first_tp,last_tp,imheight,imwidth);
                 
                 if tp <= size(ind_cellpath,1)
                     

@@ -1199,8 +1199,8 @@ if H5L.exists(fid,maskdatasetname,'H5P_DEFAULT')
     currentframe = loadsignal(handles,templateCH,tp);
     imwidth = size(currentframe,2);
     imheight = size(currentframe,1);
-    
-    ind_cellpath = pos_path(cellpath,sisterList,selected_cell,firsttp,lasttp,imheight,imwidth);
+    [new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,firsttp,lasttp,1:length(cellpath{lasttp}));
+    ind_cellpath = pos_path(new_cellpath,new_sisterList,selected_cell,firsttp,lasttp,imheight,imwidth);
     handles.ind_cellpath = ind_cellpath;
     
     if tp > size(ind_cellpath,1)
@@ -1313,45 +1313,18 @@ function  out_cellpath = pos_path(cellpath,sisterList,cellNo,firsttp,input_lastt
 %#1 if acquiring and being inferior sister, combine trace of self with
 %prior-sister
 % has sister?
-lasttp = length(sisterList);
-new_cellpath = zeros(input_lasttp,2);
 
-if  sisterList{end}(cellNo,1) ~= -1
-    sis1No = sisterList{lasttp}(cellNo,1);
-    
-    if cellpath{firsttp}(cellNo,1) == -1
-        mainInd = sis1No;
-        subInd =  cellNo;
-        subData = zeros(1,lasttp);
-        for t=firsttp:lasttp
-            subData(t) = sisterList{t}(subInd,1);
-        end
-        t_break = find(subData(firsttp:lasttp)>0,1,'first');
-        
-        for t=firsttp:input_lasttp
-            if t<t_break
-                new_cellpath(t,:) = cellpath{t}(mainInd,:);
-            else
-                new_cellpath(t,:) = cellpath{t}(subInd,:);
-            end
-        end
-    else
-        for t=firsttp:lasttp
-            new_cellpath(t,:) = cellpath{t}(cellNo,:);
-        end
-    end
-else
-    for t=firsttp:lasttp
-        new_cellpath(t,:) = cellpath{t}(cellNo,:);
-    end
+ind_cellpath = zeros(input_lasttp,2);
+
+for t=firsttp:input_lasttp
+    ind_cellpath(t,:) = cellpath{t}(cellNo,:);
 end
-
-deathInd = find(new_cellpath(:,1)==-2,1,'first');
+deathInd = find(ind_cellpath(:,1)==-2,1,'first');
 
 if isempty(deathInd)
-    out_cellpath = new_cellpath;
+    out_cellpath = ind_cellpath;
 else
-    out_cellpath = new_cellpath(1:(deathInd-1),:);
+    out_cellpath = ind_cellpath(1:(deathInd-1),:);
 end
 
 % --- Outputs from this function are returned to the command line.
@@ -3245,7 +3218,7 @@ selected_cells = h5read(fullfile(handles.ndpathname,H5filename),selectedcells_na
 timestamp = 1:(last_tp-first_tp+1);
 
 maskinfo = h5info(fullfile(handles.ndpathname,H5filename), maskdatasetname);
-
+[new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,first_tp,last_tp,1:length(cellpath{last_tp}));
 for tp=first_tp:last_tp
     % Determine image capture time based on the template channel
     if handles.filetype == 3
@@ -3295,7 +3268,7 @@ for tp=first_tp:last_tp
     
     for cellNo=selected_cells'
 
-        ind_cellpath = pos_path(cellpath,sisterList,cellNo,first_tp,last_tp,imheight,imwidth);
+        ind_cellpath = pos_path(new_cellpath,new_sisterList,cellNo,first_tp,last_tp,imheight,imwidth);
         
         if tp <= size(ind_cellpath,1)
             
@@ -3475,6 +3448,77 @@ guidata(hObject, handles);
 handles = guidata(hObject);
 set(handles.edit_commu,'String','finished collecting data');
 updateOutputList(handles)
+
+function [new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,first_tp,last_tp,testList)
+sis_cellpath = cell(last_tp,1);
+sis_sisterList = cell(last_tp,1);
+cInd=1;
+% Determine cells with sisters
+withSisInd = intersect(find(sisterList{last_tp}(:,1)~=-1),testList);
+% Determine cells without sisters
+
+while ~isempty(withSisInd) 
+    SisList = withSisInd(1);
+    firstSis = setdiff(sisterList{last_tp}(withSisInd(1),:),-1);
+    secondSis = firstSis;
+    for s = 1:length(firstSis)
+        secondSis = [secondSis setdiff(sisterList{last_tp}(firstSis(s),:),-1)];
+    end
+    thirdSis = secondSis;
+    for s = 1:length(secondSis)
+        thirdSis = [thirdSis setdiff(sisterList{last_tp}(secondSis(s),:),-1)];
+    end
+    
+    SisList = unique(thirdSis);
+    
+    for s=1:length(SisList)
+        
+        for t = first_tp:last_tp
+            if cellpath{t}(SisList(s),1) ~= -1 && cellpath{t}(SisList(s),2) ~= -1
+                sis_cellpath{t}(cInd,:)   = cellpath{t}(SisList(s),:);
+                sis_sisterList{t}(cInd,:) = [-1 -1 -1];
+            else
+                havecoordInd = find(cellpath{t}(SisList,1) ~= -1 & cellpath{t}(SisList,2) ~= -1);
+                if length(havecoordInd) == 1
+                    sis_cellpath{t}(cInd,:)   = cellpath{t}(SisList(havecoordInd),:);
+                    sis_sisterList{t}(cInd,:) = [-1 -1 -1];
+                else
+                    oriSis = sisterList{last_tp}(SisList(s),:);
+                    NegOneInd = find(oriSis==-1,1,'first');
+                    if ~isempty(NegOneInd)
+                        mySis = oriSis(1:(NegOneInd-1));
+                    else
+                        mySis = oriSis;
+                    end
+                    for ms = length(mySis):-1:1
+                        if cellpath{t}(mySis(ms),1) ~= -1 || cellpath{t}(mySis(ms),2) ~= -1
+                            mytrueParent = mySis(ms);
+                            break
+                        end
+                    end
+                    sis_cellpath{t}(cInd,:)   = cellpath{t}(mytrueParent,:);
+                    sis_sisterList{t}(cInd,:) = [-1 -1 -1];
+                end
+            end
+        end
+        cInd = cInd+1;
+    end
+    
+    withSisInd = setdiff(withSisInd,SisList);
+end
+
+noSisterInd = intersect(find(sisterList{last_tp}(:,1)==-1 & cellpath{last_tp}(:,1)~=-1),testList);
+for t = first_tp:last_tp
+    nosis_cellpath{t}   = cellpath{t}(noSisterInd,:);
+    nosis_sisterList{t} = sisterList{t}(noSisterInd,:) ;
+end
+
+% Combine data
+for t = first_tp:last_tp
+    new_cellpath{t} =[sis_cellpath{t};nosis_cellpath{t}];
+    new_sisterList{t} = [sis_sisterList{t};nosis_sisterList{t}];
+end
+
 
 function updateOutputList(handles)
 

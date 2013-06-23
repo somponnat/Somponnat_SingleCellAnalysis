@@ -73,10 +73,9 @@ for tp=first_tp:last_tp
     
     switch filetype
         case 1
-            filename = sprintf(fileformat,row,col,field,plane,templateCH,tp);
+            filename = sprintf(fileformat,row,col,field,tp,templateCH);
         case 3
             filename = sprintf(fileformat,channelnames{templateCH},tp);
-
     end
     
     if exist(fullfile(targetfolder,filename),'file')

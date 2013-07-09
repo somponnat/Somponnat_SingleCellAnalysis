@@ -3,7 +3,7 @@ SourceF = 'C:\computation\02-03-2013\';
 %SourceF = '~/files/ImStor/soger/data/NIC/Pat/02-03-2013';
 ndfilename = '02032013-r1.nd';
 
-site = 4;
+site = 1;
 
 
 field = 1;
@@ -80,7 +80,7 @@ for tp=1:last_tp
 end
 tp = last_tp;
 %for tp=1:last_tp
-figure(1);
+figure(1);set(gcf,'Position',[500 500 400 350]);
 plot(timestamp(1:tp)/60,100.*Dead_p1(1:tp)./NoSurv(1),'b');hold on;
 plot(timestamp(1:tp)/60,100.*NoDiv(1:tp)./NoSurv(1),'g');
 plot(timestamp(1:tp)/60,100.*wDiv(1:tp)./NoSurv(1),'r');
@@ -98,7 +98,7 @@ figure(1); ylabel('Change in cell number (%)'); xlabel('Time (hours)');
 title(['R' num2str(row) 'C' num2str(col) ' Start:' num2str(NoSurv(first_tp)) ' End:' num2str(NoSurv(last_tp)) ' Non-dividing:' num2str(NoDiv(last_tp)) ' Dead:' num2str(NoDead(last_tp))]);
 
 
-figure(2);
+figure(2);set(gcf,'Position',[500 500 400 350]);
 tol = 3e-4;
 mytotal = log2((NoSurv+NoDead)./NoSurv(1));
 dividing = mytotal.*withDiv_frac./(noDiv_frac+withDiv_frac);
@@ -123,6 +123,7 @@ text(timestamp(last_tp)/60,dividing(last_tp),['Dividing'],'VerticalAlignment','b
 text(timestamp(last_tp)/60,quiescent(last_tp),['Quiescent'],'VerticalAlignment','bottom','HorizontalAlignment','right','Color','r');
 ylabel('Population doublings'); xlabel('Time (hours)');
 title(['R' num2str(row) 'C' num2str(col) ' Start:' num2str(NoSurv(first_tp)) ' End:' num2str(NoSurv(last_tp)) ' Non-dividing:' num2str(NoDiv(last_tp)) ' Dead:' num2str(NoDead(last_tp))]);
+%ylim([0 0.7]);
 
 function [notp stagePos stageName waveName] = readndfile(filename)
 % Search for number of string matches per line.

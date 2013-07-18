@@ -669,6 +669,8 @@ for i=1:length(handles.plot_h)
     IN= inpolygon(c_X,c_Y,xy(:,1),xy(:,2));
 end
 hold off
+
+
 insideInd = find(IN==1);
 mycolor = jet(size(searchInd,2));
 axes(handles.axes_individual);
@@ -679,9 +681,10 @@ hold off;
 drawnow;
 warning on;
 
-
 handles.selectedcellIndices = handles.plotInd(insideInd);
 handles.selectedPolygon = xy;
+guidata(hObject, handles);  
+handles = guidata(hObject);
 
 table_data = get(handles.uitable_params,'Data');
 for i=1:size(table_data,1)
@@ -689,7 +692,7 @@ for i=1:size(table_data,1)
 end
 set(handles.uitable_params,'Data',table_data);
 
-handles.plot_h = plotPCA(1,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.plotInd(insideInd));
+handles.plot_h = plotPCA(1,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
 hold on;
 plot(xy([1:n 1],1),xy([1:n 1],2),'k-');hold off;
 set(handles.axes_pca,'XLim',old_xlim );

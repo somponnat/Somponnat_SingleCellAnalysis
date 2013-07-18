@@ -8,7 +8,7 @@ field = 1;
 outputsignalNo =1;
 searchInd(1,:) = [1 1 1 1 1 1 1 3 3 3 3 ];
 searchInd(2,:) = [3 4 5 6 7 8 9 3 4 5 6 ];
-
+selectedparams = 17:29;
 %searchInd(1,:) = [3 3 3 3 ];
 %searchInd(2,:) = [3 4 5 6 ];
 
@@ -18,10 +18,12 @@ searchInd(2,:) = [3 4 5 6 7 8 9 3 4 5 6 ];
 mycolor = [hsv(5);hsv(5);hsv(5);hsv(5);hsv(5)];%size(searchInd,2));
 mycolor2 = hsv(3);
 ndpathname = 'c:\computation\02-03-2013';
+%ndpathname = 'E:\data';
 noCluster = 20;
 %ndpathname = '/home/ss240/files/ImStor/sorger/data/NIC/Pat/02-03-2013/';
 
 data_index = 1;
+
 for i = 1:size(searchInd,2)
         row = searchInd(1,i);
         col = searchInd(2,i);
@@ -40,7 +42,7 @@ for i = 1:size(searchInd,2)
             countind = [paraminfo.Dataspace.Size(1) paraminfo.Dataspace.Size(2)];
             param_mat = double(h5read(fullfile(ndpathname,H5filename),param_name,startind, countind));
 
-            alldata = [alldata;param_mat(:,[11:18]+1)];
+            alldata = [alldata;param_mat];
             groupNo = [groupNo;i*ones(size(param_mat,1),1)];
             
             signalinfo = h5info(fullfile(ndpathname,H5filename), signal_name);
@@ -53,15 +55,14 @@ for i = 1:size(searchInd,2)
             timestamp = h5read(fullfile(ndpathname,H5filename),timestamp_name);
             for c_cell=1:size(param_mat,1)
                 PosTime = find(signal(:,param_mat(c_cell,1)));
-                c_signal = signal(PosTime,param_mat(c_cell,1));
-                c_time   = timestamp(PosTime);
-                ys=interp1(c_time,c_signal,0:7:1568,'spline');
+                tempData = zeros(1,length(timestamp));
+                originData(data_index,:) = signal(:,param_mat(c_cell,4))';
                 
-                originData(data_index,:) = ys;
-                data_index=data_index+1;
+                %figure(1), plot(timestamp(PosTime),originData(data_index,PosTime),'r-');drawnow; 
+                data_index = data_index+1;
                 names{length(names)+1} = ['r' num2str(row) 'c' num2str(col) '_' num2str(param_mat(c_cell,1))];
                 groupColor = [groupColor;mycolor(i,:)];
-                cellFate =  [cellFate;param_mat(c_cell,20)];
+                cellFate =  [cellFate;param_mat(c_cell,30)];
             end
             clear param_mat;
             
@@ -69,17 +70,21 @@ for i = 1:size(searchInd,2)
         else
             H5F.close(fid);
         end
-        
 end
 
+[R C] = find(originData==0);
+for i=1:length(R)
+    originData(R(i),C(i)) = NaN;
+end
 
-w = 1./var(alldata);
-[wcoeff,score,latent,tsquared,explained] = pca(alldata,'VariableWeights',w);
+w = 1./nanvar(alldata(:,selectedparams));
+w(w==inf) = 1e-64;
+[wcoeff,score,latent,tsquared,explained] = pca(alldata(:,selectedparams),'VariableWeights',w);
 
 %c3 = wcoeff(:,1:3)
 coefforth = diag(sqrt(w))*wcoeff;
 
-cscores = zscore(alldata)*coefforth;
+cscores = zscore(alldata(:,selectedparams))*coefforth;
 
 figure(1)
 
@@ -89,7 +94,7 @@ xlabel('1st Principal Component');
 ylabel('2nd Principal Component');
 
 figure(14)
-interestedG = 10;
+interestedG = 6;
 gscatter(score(groupNo==interestedG,1),score(groupNo==interestedG,2),cellFate(groupNo==interestedG),mycolor2,'x',3,'on','1st Principal Component','2nd Principal Component');
 xlabel('1st Principal Component');
 ylabel('2nd Principal Component');
@@ -107,12 +112,15 @@ gscatter(score(groupNo==plotG,myX),score(groupNo==plotG,myY),groupNo(groupNo==pl
 axis equal;
 
 figure(16);
-mycolor3=jet(5);
-for i=11:15
-    plotG=i;plot(0:7:1568,mean(originData(groupNo==plotG,:),1),'color',mycolor3(i-10,:)); hold on
+plotG = 1:7;
+mycolor3=jet(length(plotG));
+
+for i=plotG
+    plot(nanmean(originData(groupNo==i,:),1),'color',mycolor3(i-plotG(1)+1,:)); hold on
+    mylegend{i-plotG(1)+1} = ['r' num2str(searchInd(1,i)) 'c' num2str(searchInd(2,i))];
 end
-
-
+hold off;
+legend(mylegend);
 %gname(names)
 
 figure(2);
@@ -124,7 +132,7 @@ ylabel('Variance Explained (%)');
 extreme = index(1:10);
 
 figure(3);
-biplot(coefforth(:,1:2),'scores',score(:,1:2),'varlabels',num2str((1:size(alldata,2))'));
+biplot(coefforth(:,1:2),'scores',score(:,1:2),'varlabels',num2str((1:size(alldata(:,selectedparams),2))'));
 
 
 figure(6);
@@ -134,7 +142,7 @@ for i=1:4%size(wcoeff,2)
     
 end
 figure(5);
-biplot(coefforth(:,1:3),'scores',score(:,1:3),'varlabels',num2str((1:size(alldata,2))'),'Marker','x');
+biplot(coefforth(:,1:3),'scores',score(:,1:3),'varlabels',num2str((1:size(alldata(:,selectedparams),2))'),'Marker','x');
 
 hold off;
 %axis([-.26 0.8 -.51 .51 -.61 .81]);
@@ -146,7 +154,7 @@ ylabel('2nd Principal Component');
 zlabel('3rd Principal Component');
 
 
-Z = linkage(score(:,1:3),'ward','euclidean');
+Z = linkage(score(:,1:8),'ward','euclidean');
 T = cluster(Z,'maxclust',noCluster);
 %T = kmeans(score(:,1:2),noCluster,'replicates',4);
 % 

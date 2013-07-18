@@ -2,13 +2,13 @@ function do_lsf_moviemakingND()
 
 % Define parameters related to the process---------
 clear all;
-signalshift = 2^9;
+signalshift = 0.005;
 bgsubstractlogic = 0; % 
 illumcorlogic = 1; % Algorithmic illumination correction by high-pass filter
 framshift_logic = 0;
 ImageIndex = 1; % 1=nomin/denomin, 2=templateCH, 3=nomin,4=denomin
-intensityrange = [0.0031281 0.0036622]; % For other images
-displaygate = [0.85 1.6]; % For FRET Only
+intensityrange = [0.0030213 0.009]; % For other images
+displaygate = [0.812 1.23]; % For FRET Only
 filterParam = [2 2]; 
 cellsize = 15;
 timestamplogic = 2; % 1 = frame no, 2 = actual time
@@ -17,11 +17,11 @@ save videoparameters;
 clear all;
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename = '05162013-r1.nd';
-templateCH = 1;
+ndfilename = '07042013-r1.nd';
+templateCH = 4;
 nominCH = 2;
 denominCH = 3;
-sourcefolder = '/files/ImStor/sorger/data/NIC/Pat/05-16-2013';
+sourcefolder = '/files/ImStor/sorger/data/NIC/Pat/07-04-2013';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
 [notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename);
@@ -30,7 +30,8 @@ sites = 1:length(stagePos);
 
 jobmgr = findResource('scheduler', 'type', 'lsf');
 jobmgr.ClusterMatlabRoot = '/opt/matlab';
-jobmgr.SubmitArguments = '-q short -W 12:00 -R "rusage[matlab_dc_lic=1]"';
+jobmgr.SubmitArguments = '-q sysbio_2h -R "rusage[matlab_dc_lic=1]"';
+%jobmgr.SubmitArguments = '-q short -W 12:00 -R "rusage[matlab_dc_lic=1]"';
 job = jobmgr.createJob();
 
 for site = sites

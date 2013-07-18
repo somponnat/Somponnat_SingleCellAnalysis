@@ -1,58 +1,48 @@
+
+
+% Define parameters related to the process---------
 clear all;
-
-cellsize = 15;
-signalshift = 2^9;
+signalshift = 0.01;
 bgsubstractlogic = 0; % 
-illumcorlogic = 0;
+illumcorlogic = 0; % Algorithmic illumination correction by high-pass filter
 framshift_logic = 0;
-ImageIndex = 2; % 1=nomin/denomin, 2=template, 3=nomin,4=denomin
-filterParam = [2 2];
-
-intensityrange = [0 2000];
-displaygate = [0.97 1.5];
-timestep_min =20; %minutes
-timestep_sec = 0;%second
-timestamplogic = 2; % 1 = frame no, 2 = actual time
+ImageIndex = 2; % 1=nomin/denomin, 2=templateCH, 3=nomin,4=denomin
+intensityrange = [0.003357 0.23]; %#1 [0.0032807 0.008957] #2 [0 0.0084382] #3[0.0083314 0.22164]
+displaygate = [0.85 1.6]; % For FRET Only
+filterParam = [2 2]; 
+cellsize = 15;
+timestamplogic = 1; % 1 = frame no, 2 = actual time
 celllocationlogic = 0; % 1 = show location of tracked cells, 0 = only image
-
 save videoparameters;
 clear all;
+%-------------------------------------------------
+% Define information about input images-----------
+templateCH = 3; %1=foxO, 2=mCherry, 3=dye
+nominCH = 2;
+denominCH = 3;
+sourcefolder = '/files/ImStor/sorger/data/Operetta/Bernhard/130520_184A1_CellTrackerDye_Stimulated/130520_CellTracker_Stimulated[261]/130520_CellTracker_Violet_Stimulation[516]/2013-05-20T210004Z[516]';
+%------------------------------------------------
 
 
 jobmgr = findResource('scheduler', 'type', 'lsf');
 jobmgr.ClusterMatlabRoot = '/opt/matlab';
 jobmgr.SubmitArguments = '-q short -W 12:00 -R "rusage[matlab_dc_lic=1]"';
-
-currentfolder = pwd;
-
-targetfolder = '/files/ImStor/sorger/data/Operetta/Bernhard/121222_Starvation_Experiment_Cell_Lines_and_Media_Conditions/122212_Starvation_Experiment_184A1_FoxO3a_Cherry_EKAREV_2__2012-12-22T16_04_14-Measurement1/Images';
-rows = 2:7;
-cols = [5 6 9 10];
-
-
-fields = 1:2;
-plane = 1;
-channels = [3];
-tps = [1 50];
-fileformat = 'r%02.0fc%02.0ff%02.0fp%02.0frc%1.0f-ch1sk%ufk1fl1.tiff';
-
-
 job = jobmgr.createJob();
 
-for row = rows
-    for col = cols
-        for field = fields
-            for channel = channels     
-                celltrackfile = ['celltrackOUT_r' num2str(row) '_c' num2str(col) '_f' num2str(field) '_p' num2str(plane) '_ch' num2str(channel)];
-                videoname = ['myMov_r' num2str(row) 'c' num2str(col) 'f' num2str(field) 'ch' num2str(channel) '.avi'];
-                
-                job.createTask(@GenMov_commandline, 0, ...
-                    {1,targetfolder, row, col,field,plane,channel,-1,-1, tps,fileformat,~});
-            end
+tps = [1 72];
+sites = 1;
+
+for row = 2:7
+    for col = 1:12
+        for field = 1
+            
+            fileformat = ['%03.0f%03.0f-%u-%03.0f001%03.0f.tif'];
+            plane = 1;
+            job.createTask(@GenMov_commandline, 0, ...
+                {1,sourcefolder, row, col,field,plane,templateCH,nominCH,denominCH, tps,fileformat,[]});
+            
         end
     end
 end
 
 job.submit();
-
-

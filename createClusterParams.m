@@ -7,11 +7,11 @@ prefix = ndfilename(1:(end-3));
 [notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename);
 outputsignalNo = 1;
 sequenceNo = 2;
-sites = [29];
-
-if matlabpool('size') == 0
-  matlabpool open;
-end
+sites = [10];
+% 
+% if matlabpool('size') == 0
+%   matlabpool open;
+% end
 
 for s=1:length(sites)
     site = sites(s);
@@ -32,7 +32,7 @@ end
 function cal_clusterparam(row,col,field,ndpathname,outputsignalNo,sequenceNo)
 minimumSignalSize = 100;
 MiddleToTop = 1;
-showPlots = 0;
+showPlots = 1;
 midHgating = 0.1; % x the median of lowest peak cluster
 delayGate = 0.7; % fraction of height must decay to consider as peak tail
 

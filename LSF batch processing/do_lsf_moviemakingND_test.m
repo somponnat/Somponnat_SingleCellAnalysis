@@ -3,13 +3,13 @@ function do_lsf_moviemakingND()
 
 % Define parameters related to the process---------
 clear all;
-signalshift = 2^9;
+signalshift = 0.001;
 bgsubstractlogic = 0; % 
 illumcorlogic = 1; % Algorithmic illumination correction by high-pass filter
 framshift_logic = 0;
 ImageIndex = 1; % 1=nomin/denomin, 2=templateCH, 3=nomin,4=denomin
-intensityrange = [0.0032654 0.004715]; % For other images
-displaygate = [0.85 1.6]; % For FRET Only
+intensityrange = [0.0030213 0.009]; % For other images
+displaygate = [0.277 1.9]; % For FRET Only
 filterParam = [2 2]; 
 cellsize = 15;
 timestamplogic = 2; % 1 = frame no, 2 = actual time
@@ -18,20 +18,24 @@ save videoparameters;
 clear all;
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename = '05162013-r1.nd';
-templateCH = 1;
+ndfilename = '07112013-r1.nd';
+templateCH = 4;
 nominCH = 2;
 denominCH = 3;
-sourcefolder = '/files/ImStor/sorger/data/NIC/Pat/05-16-2013';
+sourcefolder = 'Q:\sorger\data\NIC\Pat\07-11-2013';
 %------------------------------------------------
 
 prefix = ndfilename(1:(end-3));
-[notp stagePos stageName channelnames] = readndfile(sourcefolder,filename)
+[notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename);
 
-tps = [1 2];
-sites = 1;
+tps = [1 notp];
+sites = 1:length(stagePos);
 
-for site = sites
+if matlabpool('size') == 0
+  matlabpool open;
+end
+
+parfor site = sites
     
     fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
     tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');

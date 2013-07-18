@@ -22,7 +22,7 @@ function varargout = SignalClustering(varargin)
 
 % Edit the above text to modify the response to help SignalClustering
 
-% Last Modified by GUIDE v2.5 18-Jul-2013 14:25:26
+% Last Modified by GUIDE v2.5 18-Jul-2013 17:41:53
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -749,6 +749,8 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function plot_h = plotPCA(type,handles,x,y,z,c,p,plotInd,grayInd,selectedcellInd)
+msize = str2num(get(handles.edit_markersize,'String'));
+mtype = get(handles.edit_markertype,'String');
 
 plot_h=[];
 searchInd(1,:)= str2num(get(handles.edit_selectedRows,'String'));
@@ -762,10 +764,10 @@ if ~isempty(handles.score)
     switch type
         case 1 % scatter-2D
             if ~isempty(selectedcellInd) && get(handles.togglebutton_showselectedpolygon,'Value')==1;
-                scatter(handles.score(intersect(plotInd,selectedcellInd),x),handles.score(intersect(plotInd,selectedcellInd),y),10,'o','MarkerFaceColor','k','MarkerEdgeColor','k','LineWidth',4);hold on;
+                scatter(handles.score(intersect(plotInd,selectedcellInd),x),handles.score(intersect(plotInd,selectedcellInd),y),msize,'o','MarkerFaceColor','k','MarkerEdgeColor','k','LineWidth',4);hold on;
             end
             if ~isempty(grayInd)
-                scatter(handles.score(grayInd,x),handles.score(grayInd,y),10,[0.7 0.7 0.7],'x');hold on;
+                scatter(handles.score(grayInd,x),handles.score(grayInd,y),msize,[0.7 0.7 0.7],'x');hold on;
             end
             switch c
                 case 1 % well position
@@ -774,7 +776,7 @@ if ~isempty(handles.score)
                         myLegend{i} = ['r' num2str(searchInd(1,c_groupNo(i))) 'c' num2str(searchInd(2,c_groupNo(i)))];
                     end
                                 
-                    plot_h = gscatter(handles.score(plotInd,x),handles.score(plotInd,y),nominal(handles.groupNo(plotInd),myLegend),jet(length(unique(handles.groupNo(plotInd)))));
+                    plot_h = gscatter(handles.score(plotInd,x),handles.score(plotInd,y),nominal(handles.groupNo(plotInd),myLegend),jet(length(unique(handles.groupNo(plotInd)))),mtype,msize,'on');
                     set(handles.togglebutton_legendLogic,'Value',1);
                     
                 case 2 % phenotype
@@ -783,11 +785,11 @@ if ~isempty(handles.score)
                     for i=1:length(c_phenotype)
                         myLegend{i} = phenotypeList{c_phenotype(i)+1};
                     end
-                    plot_h = gscatter(handles.score(plotInd,x),handles.score(plotInd,y),nominal(handles.cellFate(plotInd),myLegend),'bgrkm','osxvv',3);
+                    plot_h = gscatter(handles.score(plotInd,x),handles.score(plotInd,y),nominal(handles.cellFate(plotInd),myLegend),'bgrkm','osxvv',msize,'on');
                     set(handles.togglebutton_legendLogic,'Value',1);
                     %legend(myLegend);
                 case 3 % cluster
-                    plot_h = gscatter(handles.score(plotInd,x),handles.score(plotInd,y),handles.T(plotInd),hsv(length(unique(handles.T(plotInd)))));
+                    plot_h = gscatter(handles.score(plotInd,x),handles.score(plotInd,y),handles.T(plotInd),hsv(length(unique(handles.T(plotInd)))),mtype,msize,'on');
                     set(handles.togglebutton_legendLogic,'Value',1);
                 case 4 % plot params
                     chosen_param = handles.selectedparams(p);
@@ -798,16 +800,16 @@ if ~isempty(handles.score)
                     for i=1:length(bin)
                         cellcolor(i,:) = mycolor(bin(i),:);
                     end
-                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),9,cellcolor,'o');
+                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),msize,cellcolor,mtype);
                     set(handles.togglebutton_legendLogic,'Value',0);
             end
             hold off;
         case 2
             if ~isempty(selectedcellInd) && get(handles.togglebutton_showselectedpolygon,'Value')==1;
-                scatter3(handles.score(intersect(plotInd,selectedcellInd),x),handles.score(intersect(plotInd,selectedcellInd),y),handles.score(intersect(plotInd,selectedcellInd),z),10,'o','MarkerFaceColor','k','MarkerEdgeColor','none');hold on;
+                scatter3(handles.score(intersect(plotInd,selectedcellInd),x),handles.score(intersect(plotInd,selectedcellInd),y),handles.score(intersect(plotInd,selectedcellInd),z),msize,'o','MarkerFaceColor','k','MarkerEdgeColor','none');hold on;
             end
             if ~isempty(grayInd)
-                scatter3(handles.score(grayInd,x),handles.score(grayInd,y),handles.score(grayInd,z),9,[0.7 0.7 0.7],'x');hold on;
+                scatter3(handles.score(grayInd,x),handles.score(grayInd,y),handles.score(grayInd,z),msize,[0.7 0.7 0.7],'x');hold on;
             end
             switch c
                 case 1 % well position
@@ -818,7 +820,7 @@ if ~isempty(handles.score)
                     for i=1:length(mydata)
                         cellcolor(i,:) = mycolor(mydata(i),:);
                     end
-                    plot_h=scatter3(handles.score(plotInd,x),handles.score(plotInd,y),handles.score(plotInd,z),9,cellcolor,'o');
+                    plot_h=scatter3(handles.score(plotInd,x),handles.score(plotInd,y),handles.score(plotInd,z),msize,cellcolor,mtype);
                     set(handles.togglebutton_legendLogic,'Value',0);
                 case 2 % phenotype
                     set(handles.edit_commu,'String','Plot colors show cell decision.');
@@ -828,7 +830,7 @@ if ~isempty(handles.score)
                     for i=1:length(mydata)
                         cellcolor(i,:) = mycolor(mydata(i)+1,:);
                     end
-                    plot_h=scatter3(handles.score(plotInd,x),handles.score(plotInd,y),handles.score(plotInd,z),9,cellcolor,'o');
+                    plot_h=scatter3(handles.score(plotInd,x),handles.score(plotInd,y),handles.score(plotInd,z),msize,cellcolor,mtype);
                     set(handles.togglebutton_legendLogic,'Value',0);
                 case 3 % cluster
                     set(handles.edit_commu,'String','Plot colors show cluster number.');
@@ -838,7 +840,7 @@ if ~isempty(handles.score)
                     for i=1:length(mydata)
                         cellcolor(i,:) = mycolor(mydata(i),:);
                     end
-                    plot_h=scatter3(handles.score(plotInd,x),handles.score(plotInd,y),handles.score(plotInd,z),9,cellcolor,'o');
+                    plot_h=scatter3(handles.score(plotInd,x),handles.score(plotInd,y),handles.score(plotInd,z),msize,cellcolor,mtype);
                     set(handles.togglebutton_legendLogic,'Value',0);
                 case 4 % plot params
                     set(handles.edit_commu,'String','Plot colors show intensity of the selected parameter.');
@@ -850,7 +852,7 @@ if ~isempty(handles.score)
                     for i=1:length(bin)
                         cellcolor(i,:) = mycolor(bin(i),:);
                     end
-                    plot_h=scatter3(handles.score(plotInd,x),handles.score(plotInd,y),handles.score(plotInd,z),9,cellcolor,'o');
+                    plot_h=scatter3(handles.score(plotInd,x),handles.score(plotInd,y),handles.score(plotInd,z),msize,cellcolor,mtype);
                     set(handles.togglebutton_legendLogic,'Value',0);
             end
             hold off;
@@ -895,7 +897,7 @@ if ~isempty(handles.score)
                     for i=1:length(mydata)
                         cellcolor(i,:) = mycolor(mydata(i),:);
                     end
-                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),9,cellcolor,'o');
+                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),msize,cellcolor,mtype);
                                         
                 case 2 % phenotype
 
@@ -905,7 +907,7 @@ if ~isempty(handles.score)
                     for i=1:length(mydata)
                         cellcolor(i,:) = mycolor(mydata(i)+1,:);
                     end
-                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),9,cellcolor,'o');
+                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),msize,cellcolor,mtype);
                     
                 case 3 % cluster
                     cellcolor = [];
@@ -914,7 +916,7 @@ if ~isempty(handles.score)
                     for i=1:length(mydata)
                         cellcolor(i,:) = mycolor(mydata(i),:);
                     end
-                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),9,cellcolor,'o');
+                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),msize,cellcolor,mtype);
                 case 4 % plot params
                     chosen_param = handles.selectedparams(p);
                     alldataset = handles.alldata(:,chosen_param);
@@ -924,7 +926,7 @@ if ~isempty(handles.score)
                     for i=1:length(bin)
                         cellcolor(i,:) = mycolor(bin(i),:);
                     end
-                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),9,cellcolor,'o');
+                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),msize,cellcolor,mtype);
             end
     end
     
@@ -1803,6 +1805,52 @@ function edit_nocontour_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function edit_nocontour_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit_nocontour (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_markersize_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_markersize (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_markersize as text
+%        str2double(get(hObject,'String')) returns contents of edit_markersize as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_markersize_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_markersize (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_markertype_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_markertype (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_markertype as text
+%        str2double(get(hObject,'String')) returns contents of edit_markertype as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_markertype_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_markertype (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 

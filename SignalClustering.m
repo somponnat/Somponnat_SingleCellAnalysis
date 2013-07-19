@@ -22,7 +22,7 @@ function varargout = SignalClustering(varargin)
 
 % Edit the above text to modify the response to help SignalClustering
 
-% Last Modified by GUIDE v2.5 18-Jul-2013 17:41:53
+% Last Modified by GUIDE v2.5 19-Jul-2013 17:21:16
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -804,6 +804,7 @@ if ~isempty(handles.score)
                     set(handles.togglebutton_legendLogic,'Value',0);
             end
             hold off;
+            colorbar('off');
         case 2
             if ~isempty(selectedcellInd) && get(handles.togglebutton_showselectedpolygon,'Value')==1;
                 scatter3(handles.score(intersect(plotInd,selectedcellInd),x),handles.score(intersect(plotInd,selectedcellInd),y),handles.score(intersect(plotInd,selectedcellInd),z),msize,'o','MarkerFaceColor','k','MarkerEdgeColor','none');hold on;
@@ -862,29 +863,15 @@ if ~isempty(handles.score)
             xlabel(xnames{get(handles.popupmenu_x_pca,'Value')});
             ylabel(ynames{get(handles.popupmenu_y_pca,'Value')});
             zlabel(znames{get(handles.popupmenu_z_pca,'Value')});
-        
         case 3
-
+            set(handles.togglebutton_legendLogic,'Value',0);
             x=handles.score(plotInd,x);
             y=handles.score(plotInd,y);
-            %[xx,yy]=meshgrid(x,y);
-            switch c
-                case 1
-                    z = handles.groupNo(plotInd);
-                case 2
-                    z = handles.cellFate(plotInd);
-                case 3
-                    z = handles.T(plotInd);
-                case 4
-                    chosen_param = handles.selectedparams(p);
-                    alldataset = handles.alldata(:,chosen_param);
-                    myx = [min(alldataset):(max(alldataset)-min(alldataset))/31:max(alldataset)];
-                    [~,bin] = histc(handles.alldata(plotInd,chosen_param),myx);
-                    z = bin;
-            end
-            tri=delaunay(x,y); 
-            [C,plot_h]=tricontour(tri,x,y,z,str2num(get(handles.edit_nocontour,'String')));
-            %[C,plot_h]=contour(xx,yy,zz,v);   % standard contour for comparison
+            out = scatplot(x,y,'circles',str2num(get(handles.edit_contourcirclesize,'String')),str2num(get(handles.edit_meshsize,'String')),8,2,msize);
+            view(2);
+            xlabel([]);
+            ylabel([]);
+            zlabel([]);
 
         case 0 
             set(handles.togglebutton_legendLogic,'Value',0);
@@ -1851,6 +1838,52 @@ function edit_markertype_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function edit_markertype_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit_markertype (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_contourcirclesize_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_contourcirclesize (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_contourcirclesize as text
+%        str2double(get(hObject,'String')) returns contents of edit_contourcirclesize as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_contourcirclesize_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_contourcirclesize (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_meshsize_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_meshsize (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_meshsize as text
+%        str2double(get(hObject,'String')) returns contents of edit_meshsize as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_meshsize_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_meshsize (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 

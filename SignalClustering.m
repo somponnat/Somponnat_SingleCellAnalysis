@@ -1123,16 +1123,16 @@ xlabel('Principal Component');
 ylabel('Variance Explained (%)');
 s(1) = subplot(2,4,5);
 barh(paramNo,handles.coefforth(:,1));title('PC1');
-set(gca,'YLim',[min(paramNo) max(paramNo)],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',get(handles.popupmenu_selectedparams,'String'));
+set(gca,'YLim',[min(paramNo)-1 max(paramNo)+1],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',get(handles.popupmenu_selectedparams,'String'));
 s(2) = subplot(2,4,6);
 barh(paramNo,handles.coefforth(:,2));title('PC2');
-set(gca,'YLim',[min(paramNo) max(paramNo)],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',[]);
+set(gca,'YLim',[min(paramNo)-1 max(paramNo)+1],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',[]);
 s(3) = subplot(2,4,7);
 barh(paramNo,handles.coefforth(:,3));title('PC3');
-set(gca,'YLim',[min(paramNo) max(paramNo)],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',[]);
+set(gca,'YLim',[min(paramNo)-1 max(paramNo)+1],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',[]);
 s(4) = subplot(2,4,8);
 barh(paramNo,handles.coefforth(:,4));title('PC4');
-set(gca,'YLim',[min(paramNo) max(paramNo)],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',[]);
+set(gca,'YLim',[min(paramNo)-1 max(paramNo)+1],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',[]);
 linkaxes(s);
 % --- Executes on button press in pushbutton_cluster.
 function pushbutton_cluster_Callback(hObject, eventdata, handles)

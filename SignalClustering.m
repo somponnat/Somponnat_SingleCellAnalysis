@@ -22,7 +22,7 @@ function varargout = SignalClustering(varargin)
 
 % Edit the above text to modify the response to help SignalClustering
 
-% Last Modified by GUIDE v2.5 19-Jul-2013 17:21:16
+% Last Modified by GUIDE v2.5 19-Jul-2013 21:30:43
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -1113,8 +1113,27 @@ function pushbutton_showpcaloading_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_showpcaloading (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
-
+figure(1);
+paramNo = str2num(get(handles.edit_selectedparams,'String'));
+subplot(2,3,1);
+biplot(handles.coefforth(:,1:3),'scores',handles.score(:,1:3),'varlabels',get(handles.popupmenu_selectedparams,'String'));
+subplot(2,3,2:3);
+pareto(handles.explained);
+xlabel('Principal Component');
+ylabel('Variance Explained (%)');
+s(1) = subplot(2,4,5);
+barh(paramNo,handles.coefforth(:,1));title('PC1');
+set(gca,'YLim',[min(paramNo) max(paramNo)],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',get(handles.popupmenu_selectedparams,'String'));
+s(2) = subplot(2,4,6);
+barh(paramNo,handles.coefforth(:,2));title('PC2');
+set(gca,'YLim',[min(paramNo) max(paramNo)],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',[]);
+s(3) = subplot(2,4,7);
+barh(paramNo,handles.coefforth(:,3));title('PC3');
+set(gca,'YLim',[min(paramNo) max(paramNo)],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',[]);
+s(4) = subplot(2,4,8);
+barh(paramNo,handles.coefforth(:,4));title('PC4');
+set(gca,'YLim',[min(paramNo) max(paramNo)],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',[]);
+linkaxes(s);
 % --- Executes on button press in pushbutton_cluster.
 function pushbutton_cluster_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_cluster (see GCBO)
@@ -1148,7 +1167,8 @@ w(w==inf) = 1e-64;
 coefforth = diag(sqrt(w))*wcoeff;
 set(handles.edit_commu,'String','Finished calculating PCA');
 handles.score = score;
-
+handles.explained = explained;
+handles.coefforth = coefforth;
 Z = linkage(score(:,1:5),'ward','euclidean');
 T = cluster(Z,'maxclust',noCluster);
 binning = [];
@@ -1748,8 +1768,8 @@ function togglebutton_showselectedpolygon_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of togglebutton_showselectedpolygon
-xy = handles.selectedPolygon;
-if ~isempty(handles.originData) && ~isempty(xy)
+
+if ~isempty(handles.originData) && ~isempty(handles.selectedcellIndices)
 
     myx = get(handles.popupmenu_x_pca,'Value');
     myy = get(handles.popupmenu_y_pca,'Value');
@@ -1762,6 +1782,25 @@ if ~isempty(handles.originData) && ~isempty(xy)
     set(handles.axes_pca,'XLim',old_xlim );
     set(handles.axes_pca,'YLim',old_ylim );
 end
+
+
+% --- Executes on button press in pushbutton_wellHistogram.
+function pushbutton_wellHistogram_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_wellHistogram (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+searchInd(1,:)= str2num(get(handles.edit_selectedRows,'String'));
+searchInd(2,:)= str2num(get(handles.edit_selectedCols,'String'));
+searchInd(3,:)= str2num(get(handles.edit_selectedFields,'String'));
+selectedInd = handles.selectedcellIndices;
+wellPos = unique(handles.groupNo);
+nelements = hist(handles.groupNo(selectedInd),wellPos);
+bar(wellPos,nelements);
+for i=1:length(wellPos)
+    wellLabel{i} = ['r' num2str(searchInd(1,i)) 'c' num2str(searchInd(2,i))];
+end
+set(gca,'XTickLabel',wellLabel);
+
 
 
 % --- Executes on button press in togglebutton_legendLogic.

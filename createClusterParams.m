@@ -7,13 +7,13 @@ prefix = ndfilename(1:(end-3));
 [notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename);
 outputsignalNo = 1;
 sequenceNo = 2;
-sites = [10];
-% 
-% if matlabpool('size') == 0
-%   matlabpool open;
-% end
+sites = [1:7 15:19];
 
-for s=1:length(sites)
+if matlabpool('size') == 0
+  matlabpool open;
+end
+
+parfor s=1:length(sites)
     site = sites(s);
     tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
     if ~isempty(tokens)
@@ -32,7 +32,7 @@ end
 function cal_clusterparam(row,col,field,ndpathname,outputsignalNo,sequenceNo)
 minimumSignalSize = 100;
 MiddleToTop = 1;
-showPlots = 1;
+showPlots = 0;
 midHgating = 0.1; % x the median of lowest peak cluster
 delayGate = 0.7; % fraction of height must decay to consider as peak tail
 
@@ -133,7 +133,7 @@ if exist(fullfile(ndpathname,H5filename),'file')
                     double(row),double(col),double(field),double(scell),...
                     double(p_params),...
                     double(t_params),...
-                    double(firstPeakDuration(t_peaks{scell},timestamp(PostTime(1)))),...
+                    double(firstPeakDuration(t_peaks{scell},timestamp(PostTime(1)),timestamp(PostTime(end)))),...
                     double(phenotype),...
                     ];
                 
@@ -184,16 +184,16 @@ else
     display([H5filename ' does not exist']);
 end
 
-function T = firstPeakDuration(peaks,refTime)
+function T = firstPeakDuration(peaks,refTime,endTime)
 if ~isempty(peaks)
     firstPeakInd = find(peaks(4,:)==1,1,'first');
     if ~isempty(firstPeakInd)
         T = peaks(1,firstPeakInd) - refTime;
     else
-        T = -1;
+        T = endTime;
     end
 else
-    T = -1;
+    T = endTime;
 end
 
 

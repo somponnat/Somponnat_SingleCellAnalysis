@@ -832,7 +832,7 @@ if ~isempty(handles.score)
             colorbar('off');
         case 2
             if ~isempty(selectedcellInd) && get(handles.togglebutton_showselectedpolygon,'Value')==1;
-                scatter3(handles.score(intersect(plotInd,selectedcellInd),x),handles.score(intersect(plotInd,selectedcellInd),y),handles.score(intersect(plotInd,selectedcellInd),z),msize,'k','o','fill');hold on;
+                scatter3(handles.score(intersect(plotInd,selectedcellInd),x),handles.score(intersect(plotInd,selectedcellInd),y),handles.score(intersect(plotInd,selectedcellInd),z),msize,'o','MarkerEdgeColor','k');hold on;
             end
             if ~isempty(grayInd)
                 scatter3(handles.score(grayInd,x),handles.score(grayInd,y),handles.score(grayInd,z),msize,[0.7 0.7 0.7],'x');hold on;
@@ -1758,7 +1758,7 @@ outputsignalNo = str2num(get(handles.edit_outputsignalno,'String'));
 dcm_obj = datacursormode(gcf);
 infs = dcm_obj.getCursorInfo;
 
-if ~isempty(infs)
+if get(handles.popupmenu_plotchoice,'Value')==1 && ~isempty(infs)
     
     gind = getappdata(infs.Target,'gind');
     if ~isempty(gind)
@@ -1819,7 +1819,7 @@ if ~isempty(infs)
         set(handles.uitable_params,'Data',table_data);
     end
 else
-    set(handles.edit_commu,'String','Select a cell with cursor. Does not work with param plot.');
+    set(handles.edit_commu,'String','Select a cell with cursor. Only works when showing ''All'' data points.');
 end
 
 
@@ -1846,9 +1846,8 @@ function togglebutton_showselectedpolygon_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of togglebutton_showselectedpolygon
 
-
 if ~isempty(handles.originData) && ~isempty(handles.selectedcellIndices)
-    
+
     myx = get(handles.popupmenu_x_pca,'Value');
     myy = get(handles.popupmenu_y_pca,'Value');
     myz = get(handles.popupmenu_z_pca,'Value');
@@ -1859,22 +1858,7 @@ if ~isempty(handles.originData) && ~isempty(handles.selectedcellIndices)
     handles.plot_h = plotPCA(1,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
     set(handles.axes_pca,'XLim',old_xlim );
     set(handles.axes_pca,'YLim',old_ylim );
-    if get(hObject,'Value') == 1
-        searchInd(1,:)= str2num(get(handles.edit_selectedRows,'String'));
-        searchInd(2,:)= str2num(get(handles.edit_selectedCols,'String'));
-        searchInd(3,:)= str2num(get(handles.edit_selectedFields,'String'));
-        mycolor = jet(size(searchInd,2));
-        axes(handles.axes_individual);
-        hold on;
-        for i=1:length(handles.selectedcellIndices)
-            plot(handles.timestamp(handles.originData(handles.selectedcellIndices(i),:)~=0),handles.originData(handles.selectedcellIndices(i),handles.originData(handles.selectedcellIndices(i),:)~=0),'Color',mycolor(handles.groupNo(handles.selectedcellIndices(i)),:));hold on;
-        end
-        hold off;
-        drawnow;
-    end
 end
-
-
 
 
 % --- Executes on button press in pushbutton_wellHistogram.

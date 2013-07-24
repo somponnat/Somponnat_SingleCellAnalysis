@@ -1763,65 +1763,70 @@ if ~isempty(infs)
     if ~isempty(gind)
         ind = infs.DataIndex;
         observationNo = gind(ind);
-        currentData = handles.alldata(handles.plotInd,:);
-        currentOriginalData = handles.originData(handles.plotInd,:);
-        scell = currentData(observationNo,4);
-        row = currentData(observationNo,1);
-        col = currentData(observationNo,2);
-        field = currentData(observationNo,3);
-        H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
         
-        peak_name  = ['/field' num2str(field)  '/peakmat' num2str(outputsignalNo)];
-        fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-        if H5L.exists(fid,peak_name,'H5P_DEFAULT')
-            H5F.close(fid);
-            p_peaks =  double(h5read(fullfile(handles.ndpathname,H5filename),peak_name,[double(scell) 1 1 1], [1 1 4 200]));
-            t_peaks =  double(h5read(fullfile(handles.ndpathname,H5filename),peak_name,[double(scell) 2 1 1], [1 1 4 200]));
-        end
-        p_peaks = squeeze(p_peaks);
-        p_truePeak = p_peaks(1,:);
-        p_PeakHeight = p_peaks(2,:);
-        p_PeakDuration = p_peaks(3,:);
-        p_peakSelection = p_peaks(4,:);
-        
-        p_truePeak =p_truePeak(p_truePeak~=0);
-        p_PeakHeight = p_PeakHeight(p_truePeak~=0);
-        p_PeakDuration = p_PeakDuration(p_truePeak~=0);
-        p_peakSelection = p_peakSelection(p_truePeak~=0);
-        
-        t_peaks = squeeze(t_peaks);
-        t_truePeak = t_peaks(1,:);
-        t_PeakHeight = t_peaks(2,:);
-        t_PeakDuration = t_peaks(3,:);
-        t_peakSelection = t_peaks(4,:);
-        
-        t_truePeak =t_truePeak(t_truePeak~=0);
-        t_PeakHeight = t_PeakHeight(t_truePeak~=0);
-        t_PeakDuration = t_PeakDuration(t_truePeak~=0);
-        t_peakSelection = t_peakSelection(t_truePeak~=0);
-        axes(handles.axes_individual);
-        plot(handles.timestamp(currentOriginalData(observationNo,:)~=0),currentOriginalData(observationNo,currentOriginalData(observationNo,:)~=0),'k');      
-        YLim = get(handles.axes_individual,'YLim');
-        for i=find(p_peakSelection==1)
-            rectangle('Position',[p_truePeak(i),YLim(1),p_PeakDuration(i),YLim(2)-YLim(1)],...
-                'FaceColor',[0.95 0.8 0.8],'EdgeColor','none','EraseMode','normal');hold on; 
-            
-        end
-        for i=find(t_peakSelection==1)
-            rectangle('Position',[t_truePeak(i),YLim(1),t_PeakDuration(i),YLim(2)-YLim(1)],...
-                'FaceColor',[ 0.8 0.8 0.95],'EdgeColor','none','EraseMode','normal');hold on; 
-        end
-        plot(handles.timestamp(currentOriginalData(observationNo,:)~=0),currentOriginalData(observationNo,currentOriginalData(observationNo,:)~=0),'k');hold off; 
-        
-        table_data = get(handles.uitable_params,'Data');
-        for i=1:size(table_data,1)
-            table_data{i,2} = nanmean(currentData(observationNo,i));
-        end
-        set(handles.uitable_params,'Data',table_data);
-        set(handles.edit_commu,'String',['Showing cell# ' num2str(scell) ' from r' num2str(row) 'c' num2str(col) 'f' num2str(field)]);
     else
-        set(handles.edit_commu,'String','Must select an active (non-gray) point.');
+        c_X = get(handles.plot_h,'XData')';
+        c_Y = get(handles.plot_h,'YData')';
+        my_x = infs.Position(1);
+        my_y = infs.Position(2);
+        observationNo = find(c_X == my_x & c_Y == my_y);
+        
     end
+    currentData = handles.alldata(handles.plotInd,:);
+    currentOriginalData = handles.originData(handles.plotInd,:);
+    scell = currentData(observationNo,4);
+    row = currentData(observationNo,1);
+    col = currentData(observationNo,2);
+    field = currentData(observationNo,3);
+    H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
+    peak_name  = ['/field' num2str(field)  '/peakmat' num2str(outputsignalNo)];
+    fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    if H5L.exists(fid,peak_name,'H5P_DEFAULT')
+        H5F.close(fid);
+        p_peaks =  double(h5read(fullfile(handles.ndpathname,H5filename),peak_name,[double(scell) 1 1 1], [1 1 4 200]));
+        t_peaks =  double(h5read(fullfile(handles.ndpathname,H5filename),peak_name,[double(scell) 2 1 1], [1 1 4 200]));
+    end
+    p_peaks = squeeze(p_peaks);
+    p_truePeak = p_peaks(1,:);
+    p_PeakHeight = p_peaks(2,:);
+    p_PeakDuration = p_peaks(3,:);
+    p_peakSelection = p_peaks(4,:);
+    
+    p_truePeak =p_truePeak(p_truePeak~=0);
+    p_PeakHeight = p_PeakHeight(p_truePeak~=0);
+    p_PeakDuration = p_PeakDuration(p_truePeak~=0);
+    p_peakSelection = p_peakSelection(p_truePeak~=0);
+    
+    t_peaks = squeeze(t_peaks);
+    t_truePeak = t_peaks(1,:);
+    t_PeakHeight = t_peaks(2,:);
+    t_PeakDuration = t_peaks(3,:);
+    t_peakSelection = t_peaks(4,:);
+    
+    t_truePeak =t_truePeak(t_truePeak~=0);
+    t_PeakHeight = t_PeakHeight(t_truePeak~=0);
+    t_PeakDuration = t_PeakDuration(t_truePeak~=0);
+    t_peakSelection = t_peakSelection(t_truePeak~=0);
+    axes(handles.axes_individual);
+    plot(handles.timestamp(currentOriginalData(observationNo,:)~=0),currentOriginalData(observationNo,currentOriginalData(observationNo,:)~=0),'k');
+    YLim = get(handles.axes_individual,'YLim');
+    for i=find(p_peakSelection==1)
+        rectangle('Position',[p_truePeak(i),YLim(1),p_PeakDuration(i),YLim(2)-YLim(1)],...
+            'FaceColor',[0.95 0.8 0.8],'EdgeColor','none','EraseMode','normal');hold on;
+        
+    end
+    for i=find(t_peakSelection==1)
+        rectangle('Position',[t_truePeak(i),YLim(1),t_PeakDuration(i),YLim(2)-YLim(1)],...
+            'FaceColor',[ 0.8 0.8 0.95],'EdgeColor','none','EraseMode','normal');hold on;
+    end
+    plot(handles.timestamp(currentOriginalData(observationNo,:)~=0),currentOriginalData(observationNo,currentOriginalData(observationNo,:)~=0),'k');hold off;
+    
+    table_data = get(handles.uitable_params,'Data');
+    for i=1:size(table_data,1)
+        table_data{i,2} = nanmean(currentData(observationNo,i));
+    end
+    set(handles.uitable_params,'Data',table_data);
+    set(handles.edit_commu,'String',['Showing cell# ' num2str(scell) ' from r' num2str(row) 'c' num2str(col) 'f' num2str(field)]);
 else
     set(handles.edit_commu,'String','Select a cell with cursor. Does not work with param plot.');
 end

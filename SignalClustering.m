@@ -780,7 +780,7 @@ if ~isempty(handles.score)
                     set(handles.togglebutton_legendLogic,'Value',1);
                     
                 case 2 % phenotype
-                    phenotypeList = {'Dead';'Dead,Divided 3 times';'Dead,Divided twice';'Dead,Divided once';'Quiescent';'Divided once';'Divided twice';'Divided 3 times'};
+                    phenotypeList = {'Dead(-4)';'Dead,Divided 3 times(-3)';'Dead,Divided twice(-2)';'Dead,Divided once(-1)';'Quiescent(0)';'Divided once(1)';'Divided twice(2)';'Divided 3 times(3)'};
                     c_phenotype = unique(handles.cellFate(plotInd));
                     mymarkertype = [];
                     mymarkercolor = [];

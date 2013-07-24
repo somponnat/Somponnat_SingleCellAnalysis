@@ -134,12 +134,11 @@ if isempty(truePeak)
 end
 
 % make sure that all peaks stay in the requested temporal windows
-selected_truePeak = truePeak(truePeak+PeakDuration>=timewindows(1) &  truePeak<timewindows(2));
-selected_PeakHeight = PeakHeight(truePeak+PeakDuration>=timewindows(1) &  truePeak<timewindows(2));
-selected_PeakDuration = PeakDuration(truePeak+PeakDuration>=timewindows(1) &  truePeak<timewindows(2));
+selected_truePeak = truePeak(truePeak+PeakDuration<=timewindows(2) &  truePeak>timewindows(1));
+selected_PeakHeight = PeakHeight(truePeak+PeakDuration<=timewindows(2) &  truePeak>timewindows(1));
+selected_PeakDuration = PeakDuration(truePeak+PeakDuration<=timewindows(2) &  truePeak>timewindows(1));
 peakSelection = ones(1,length(selected_truePeak));
 % get rid of peaks that stay in division time range
-
 if ~isempty(divisionTime)
     for i = 1:length(divisionTime)
         frontPeakOverlapDivTime = find(selected_truePeak > divisionTime(i)-60 & selected_truePeak < divisionTime(i)+30 & selected_PeakDuration < 300);
@@ -175,7 +174,7 @@ if plotLog
     YLim = get(h,'YLim');
     
     for i=find(peakSelection==1)
-        if selected_truePeak(i)+PeakDuration(i)>=timewindows(1) &&  selected_truePeak(i)<timewindows(2)
+        if selected_truePeak(i)+PeakDuration(i)<=timewindows(2) &&  selected_truePeak(i)>timewindows(1)
             rectangle('Position',[selected_truePeak(i),YLim(1),PeakDuration(i),YLim(2)-YLim(1)],...
                 'FaceColor',[0.8 0.95 0.95],'EdgeColor','none','EraseMode','normal')
         else

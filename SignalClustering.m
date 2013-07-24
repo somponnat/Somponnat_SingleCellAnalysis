@@ -864,7 +864,7 @@ if ~isempty(handles.score)
                 case 3 % cluster
                     set(handles.edit_commu,'String','Plot colors show cluster number.');
                     cellcolor = [];
-                    mycolor = hsv(str2num(get(handles.edit_clusterno,'String')));
+                    mycolor = hsv(length(unique(handles.T(plotInd))));
                     mydata = handles.T(plotInd);
                     for i=1:length(mydata)
                         cellcolor(i,:) = mycolor(mydata(i),:);
@@ -1759,15 +1759,16 @@ dcm_obj = datacursormode(gcf);
 infs = dcm_obj.getCursorInfo;
 
 if ~isempty(infs)
-    
     gind = getappdata(infs.Target,'gind');
     if ~isempty(gind)
         ind = infs.DataIndex;
         observationNo = gind(ind);
-        scell = handles.alldata(observationNo,4);
-        row = handles.alldata(observationNo,1);
-        col = handles.alldata(observationNo,2);
-        field = handles.alldata(observationNo,3);
+        currentData = handles.alldata(handles.plotInd,:);
+        currentOriginalData = handles.originData(handles.plotInd,:);
+        scell = currentData(observationNo,4);
+        row = currentData(observationNo,1);
+        col = currentData(observationNo,2);
+        field = currentData(observationNo,3);
         H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
         
         peak_name  = ['/field' num2str(field)  '/peakmat' num2str(outputsignalNo)];
@@ -1799,7 +1800,7 @@ if ~isempty(infs)
         t_PeakDuration = t_PeakDuration(t_truePeak~=0);
         t_peakSelection = t_peakSelection(t_truePeak~=0);
         axes(handles.axes_individual);
-        plot(handles.timestamp(handles.originData(observationNo,:)~=0),handles.originData(observationNo,handles.originData(observationNo,:)~=0),'k');      
+        plot(handles.timestamp(currentOriginalData(observationNo,:)~=0),currentOriginalData(observationNo,currentOriginalData(observationNo,:)~=0),'k');      
         YLim = get(handles.axes_individual,'YLim');
         for i=find(p_peakSelection==1)
             rectangle('Position',[p_truePeak(i),YLim(1),p_PeakDuration(i),YLim(2)-YLim(1)],...
@@ -1810,13 +1811,16 @@ if ~isempty(infs)
             rectangle('Position',[t_truePeak(i),YLim(1),t_PeakDuration(i),YLim(2)-YLim(1)],...
                 'FaceColor',[ 0.8 0.8 0.95],'EdgeColor','none','EraseMode','normal');hold on; 
         end
-        plot(handles.timestamp(handles.originData(observationNo,:)~=0),handles.originData(observationNo,handles.originData(observationNo,:)~=0),'k');hold off; 
+        plot(handles.timestamp(currentOriginalData(observationNo,:)~=0),currentOriginalData(observationNo,currentOriginalData(observationNo,:)~=0),'k');hold off; 
         
         table_data = get(handles.uitable_params,'Data');
         for i=1:size(table_data,1)
-            table_data{i,2} = nanmean(handles.alldata(observationNo,i));
+            table_data{i,2} = nanmean(currentData(observationNo,i));
         end
         set(handles.uitable_params,'Data',table_data);
+        set(handles.edit_commu,'String',['Showing cell# ' num2str(scell) ' from r' num2str(row) 'c' num2str(col) 'f' num2str(field)]);
+    else
+        set(handles.edit_commu,'String','Must select an active (non-gray) point.');
     end
 else
     set(handles.edit_commu,'String','Select a cell with cursor. Does not work with param plot.');

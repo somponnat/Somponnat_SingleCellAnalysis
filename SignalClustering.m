@@ -1772,6 +1772,7 @@ if ~isempty(infs)
         observationNo = find(c_X == my_x & c_Y == my_y);
         
     end
+    if ~isempty(observationNo)
     currentData = handles.alldata(handles.plotInd,:);
     currentOriginalData = handles.originData(handles.plotInd,:);
     scell = currentData(observationNo,4);
@@ -1827,8 +1828,11 @@ if ~isempty(infs)
     end
     set(handles.uitable_params,'Data',table_data);
     set(handles.edit_commu,'String',['Showing cell# ' num2str(scell) ' from r' num2str(row) 'c' num2str(col) 'f' num2str(field)]);
+    else
+        set(handles.edit_commu,'String','Must select active (non-gray) point.');
+    end
 else
-    set(handles.edit_commu,'String','Select a cell with cursor. Does not work with param plot.');
+    set(handles.edit_commu,'String','Select a cell with cursor.');
 end
 
 

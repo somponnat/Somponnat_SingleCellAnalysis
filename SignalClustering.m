@@ -22,7 +22,7 @@ function varargout = SignalClustering(varargin)
 
 % Edit the above text to modify the response to help SignalClustering
 
-% Last Modified by GUIDE v2.5 19-Jul-2013 21:30:43
+% Last Modified by GUIDE v2.5 22-Jul-2013 21:53:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -242,7 +242,7 @@ searchInd(1,:)= str2num(get(handles.edit_selectedRows,'String'));
 searchInd(2,:)= str2num(get(handles.edit_selectedCols,'String'));
 searchInd(3,:)= str2num(get(handles.edit_selectedFields,'String'));
 
-outputsignalNo = 1;
+outputsignalNo = str2num(get(handles.edit_outputsignalno,'String'));
 alldata=[];
 groupNo=[];
 originData=[];
@@ -264,6 +264,7 @@ for i = 1:size(searchInd,2)
         field = searchInd(3,i);
         H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
         param_name = ['/field' num2str(field)  '/clusterparams' num2str(outputsignalNo)];
+        
         signal_name = ['/field' num2str(field)  '/outputsignal' num2str(outputsignalNo)];
         timestamp_name = ['/field' num2str(field) '/timestamp' num2str(outputsignalNo)];
 
@@ -274,7 +275,6 @@ for i = 1:size(searchInd,2)
             startind = double([1 1]);
             countind = [paraminfo.Dataspace.Size(1) paraminfo.Dataspace.Size(2)];
             param_mat = double(h5read(fullfile(handles.ndpathname,H5filename),param_name,startind, countind));
-
             alldata = [alldata;param_mat];
             groupNo = [groupNo;i*ones(size(param_mat,1),1)];
             
@@ -288,7 +288,7 @@ for i = 1:size(searchInd,2)
 
             for c_cell=1:size(param_mat,1)
                 originData = [originData;signal(:,param_mat(c_cell,4))'];
-                cellFate =  [cellFate;param_mat(c_cell,30)];
+                cellFate =  [cellFate;param_mat(c_cell,5)];
             end
             if i==1
                 timestamp = h5read(fullfile(handles.ndpathname,H5filename),timestamp_name);
@@ -780,12 +780,37 @@ if ~isempty(handles.score)
                     set(handles.togglebutton_legendLogic,'Value',1);
                     
                 case 2 % phenotype
-                    phenotypeList = {'Dead';'Quiescent';'Divided once';'Divided twice';'Divided 3 times'};
+                    phenotypeList = {'Dead';'Dead,Divided 3 times';'Dead,Divided twice';'Dead,Divided once';'Quiescent';'Divided once';'Divided twice';'Divided 3 times'};
                     c_phenotype = unique(handles.cellFate(plotInd));
+                    mymarkertype = [];
+                    mymarkercolor = [];
                     for i=1:length(c_phenotype)
-                        myLegend{i} = phenotypeList{c_phenotype(i)+1};
+                        myLegend{i} = phenotypeList{c_phenotype(i)+5};
+                        switch c_phenotype(i)
+                            case -4
+                                mymarkertype = [mymarkertype 'v'];
+                            case {-3,-2,-1}
+                                mymarkertype = [mymarkertype '.'];
+                            case 0
+                                mymarkertype = [mymarkertype 'o'];
+                            case {1,2,3}
+                                mymarkertype = [mymarkertype 'x'];
+                        end
+                        
+                        switch c_phenotype(i)
+                            case -4
+                                mymarkercolor = [mymarkercolor 'k'];
+                            case {-3,3}
+                                mymarkercolor = [mymarkercolor 'b'];
+                            case {-2,2}
+                                mymarkercolor = [mymarkercolor 'g'];
+                            case {-1,1}
+                                mymarkercolor = [mymarkercolor 'r'];
+                            case 0
+                                mymarkercolor = [mymarkercolor 'c'];
+                        end
                     end
-                    plot_h = gscatter(handles.score(plotInd,x),handles.score(plotInd,y),nominal(handles.cellFate(plotInd),myLegend),'bgrkm','osxvv',msize,'on');
+                    plot_h = gscatter(handles.score(plotInd,x),handles.score(plotInd,y),nominal(handles.cellFate(plotInd),myLegend),mymarkercolor,mymarkertype,msize,'on');
                     set(handles.togglebutton_legendLogic,'Value',1);
                     %legend(myLegend);
                 case 3 % cluster
@@ -825,13 +850,16 @@ if ~isempty(handles.score)
                     set(handles.togglebutton_legendLogic,'Value',0);
                 case 2 % phenotype
                     set(handles.edit_commu,'String','Plot colors show cell decision.');
-                    cellcolor = [];
-                    mycolor = [0 0 1;0 1 0;1 0 0;0 0 0];
-                    mydata = handles.cellFate(plotInd);
-                    for i=1:length(mydata)
-                        cellcolor(i,:) = mycolor(mydata(i)+1,:);
-                    end
-                    plot_h=scatter3(handles.score(plotInd,x),handles.score(plotInd,y),handles.score(plotInd,z),msize,cellcolor,mtype);
+                    
+                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==-4)),x),handles.score(intersect(plotInd,find(handles.cellFate==-4)),y),handles.score(intersect(plotInd,find(handles.cellFate==-4)),z),msize,'v','k');hold on;
+                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==-3)),x),handles.score(intersect(plotInd,find(handles.cellFate==-3)),y),handles.score(intersect(plotInd,find(handles.cellFate==-3)),z),msize,'.','b');
+                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==-2)),x),handles.score(intersect(plotInd,find(handles.cellFate==-2)),y),handles.score(intersect(plotInd,find(handles.cellFate==-2)),z),msize,'.','g');
+                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==-1)),x),handles.score(intersect(plotInd,find(handles.cellFate==-1)),y),handles.score(intersect(plotInd,find(handles.cellFate==-1)),z),msize,'.','r');
+                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==0)),x),handles.score(intersect(plotInd,find(handles.cellFate==0)),y),handles.score(intersect(plotInd,find(handles.cellFate==0)),z),msize,'o','c');
+                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==1)),x),handles.score(intersect(plotInd,find(handles.cellFate==1)),y),handles.score(intersect(plotInd,find(handles.cellFate==1)),z),msize,'x','r');
+                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==2)),x),handles.score(intersect(plotInd,find(handles.cellFate==2)),y),handles.score(intersect(plotInd,find(handles.cellFate==2)),z),msize,'x','g');
+                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==3)),x),handles.score(intersect(plotInd,find(handles.cellFate==3)),y),handles.score(intersect(plotInd,find(handles.cellFate==3)),z),msize,'x','b');hold off;
+                    
                     set(handles.togglebutton_legendLogic,'Value',0);
                 case 3 % cluster
                     set(handles.edit_commu,'String','Plot colors show cluster number.');
@@ -1122,17 +1150,17 @@ pareto(handles.explained);
 xlabel('Principal Component');
 ylabel('Variance Explained (%)');
 s(1) = subplot(2,4,5);
-barh(paramNo,handles.coefforth(:,1));title('PC1');
-set(gca,'YLim',[min(paramNo)-1 max(paramNo)+1],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',get(handles.popupmenu_selectedparams,'String'));
+barh(handles.coefforth(:,1));title('PC1');
+set(gca,'YLim',[0 length(paramNo)+1],'YTick',1:length(paramNo),'YTickLabel',get(handles.popupmenu_selectedparams,'String'));
 s(2) = subplot(2,4,6);
-barh(paramNo,handles.coefforth(:,2));title('PC2');
-set(gca,'YLim',[min(paramNo)-1 max(paramNo)+1],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',[]);
+barh(handles.coefforth(:,2));title('PC2');
+set(gca,'YTickLabel',[]);
 s(3) = subplot(2,4,7);
-barh(paramNo,handles.coefforth(:,3));title('PC3');
-set(gca,'YLim',[min(paramNo)-1 max(paramNo)+1],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',[]);
+barh(handles.coefforth(:,3));title('PC3');
+set(gca,'YTickLabel',[]);
 s(4) = subplot(2,4,8);
-barh(paramNo,handles.coefforth(:,4));title('PC4');
-set(gca,'YLim',[min(paramNo)-1 max(paramNo)+1],'YTick',min(paramNo):1:max(paramNo),'YTickLabel',[]);
+barh(handles.coefforth(:,4));title('PC4');
+set(gca,'YTickLabel',[]);
 linkaxes(s);
 % --- Executes on button press in pushbutton_cluster.
 function pushbutton_cluster_Callback(hObject, eventdata, handles)
@@ -1721,6 +1749,13 @@ function pushbutton_plotIndividual_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_plotIndividual (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+searchInd(1,:)= str2num(get(handles.edit_selectedRows,'String'));
+searchInd(2,:)= str2num(get(handles.edit_selectedCols,'String'));
+searchInd(3,:)= str2num(get(handles.edit_selectedFields,'String'));
+
+outputsignalNo = str2num(get(handles.edit_outputsignalno,'String'));
+
 if get(handles.popupmenu_plotchoice,'Value')==1
     dcm_obj = datacursormode(gcf);
     inf = dcm_obj.getCursorInfo;
@@ -1729,12 +1764,54 @@ if get(handles.popupmenu_plotchoice,'Value')==1
     if ~isempty(gind)
         ind = inf.DataIndex;
         observationNo = gind(ind);
-        
-        %plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_posCtrl,'Value'),:),1),'g'); hold on;
-        %plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_negCtrl,'Value'),:),1),'r');
-        %plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_group,'Value'),:),1),'b');
-        plot(handles.timestamp(handles.originData(observationNo,:)~=0),handles.originData(observationNo,handles.originData(observationNo,:)~=0),'k');hold off;
+        scell = handles.alldata(observationNo,4);
+        row = handles.alldata(observationNo,1);
+        col = handles.alldata(observationNo,2);
+        field = handles.alldata(observationNo,3);
+        H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
 
+        peak_name  = ['/field' num2str(field)  '/peakmat' num2str(outputsignalNo)];
+        fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+        if H5L.exists(fid,peak_name,'H5P_DEFAULT')
+            H5F.close(fid);
+            p_peaks =  double(h5read(fullfile(handles.ndpathname,H5filename),peak_name,[double(scell) 1 1 1], [1 1 4 200]));
+            t_peaks =  double(h5read(fullfile(handles.ndpathname,H5filename),peak_name,[double(scell) 2 1 1], [1 1 4 200]));
+        end
+        p_peaks = squeeze(p_peaks);
+        p_truePeak = p_peaks(1,:);
+        p_PeakHeight = p_peaks(2,:);
+        p_PeakDuration = p_peaks(3,:);
+        p_peakSelection = p_peaks(4,:);
+        
+        p_truePeak =p_truePeak(p_truePeak~=0);
+        p_PeakHeight = p_PeakHeight(p_truePeak~=0);
+        p_PeakDuration = p_PeakDuration(p_truePeak~=0);
+        p_peakSelection = p_peakSelection(p_truePeak~=0);
+        
+        t_peaks = squeeze(t_peaks);
+        t_truePeak = t_peaks(1,:);
+        t_PeakHeight = t_peaks(2,:);
+        t_PeakDuration = t_peaks(3,:);
+        t_peakSelection = t_peaks(4,:);
+        
+        t_truePeak =t_truePeak(t_truePeak~=0);
+        t_PeakHeight = t_PeakHeight(t_truePeak~=0);
+        t_PeakDuration = t_PeakDuration(t_truePeak~=0);
+        t_peakSelection = t_peakSelection(t_truePeak~=0);
+        
+        plot(handles.timestamp(handles.originData(observationNo,:)~=0),handles.originData(observationNo,handles.originData(observationNo,:)~=0),'k');      
+        YLim = get(handles.axes_individual,'YLim');
+        for i=find(p_peakSelection==1)
+            rectangle('Position',[p_truePeak(i),YLim(1),p_PeakDuration(i),YLim(2)-YLim(1)],...
+                'FaceColor',[0.95 0.8 0.8],'EdgeColor','none','EraseMode','normal');hold on; 
+            
+        end
+        for i=find(t_peakSelection==1)
+            rectangle('Position',[t_truePeak(i),YLim(1),t_PeakDuration(i),YLim(2)-YLim(1)],...
+                'FaceColor',[ 0.8 0.8 0.95],'EdgeColor','none','EraseMode','normal');hold on; 
+        end
+        plot(handles.timestamp(handles.originData(observationNo,:)~=0),handles.originData(observationNo,handles.originData(observationNo,:)~=0),'k');hold off; 
+        
         table_data = get(handles.uitable_params,'Data');
         for i=1:size(table_data,1)
             table_data{i,2} = nanmean(handles.alldata(observationNo,i));
@@ -1923,6 +2000,29 @@ function edit_meshsize_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function edit_meshsize_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit_meshsize (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_outputsignalno_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_outputsignalno (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_outputsignalno as text
+%        str2double(get(hObject,'String')) returns contents of edit_outputsignalno as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_outputsignalno_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_outputsignalno (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 

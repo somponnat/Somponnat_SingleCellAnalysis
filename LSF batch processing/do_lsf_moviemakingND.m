@@ -28,11 +28,13 @@ prefix = ndfilename(1:(end-3));
 tps = [1 notp];
 sites = 1:length(stagePos);
 
-jobmgr = findResource('scheduler', 'type', 'lsf');
-jobmgr.ClusterMatlabRoot = '/opt/matlab';
-jobmgr.SubmitArguments = '-q sysbio_2h -R "rusage[matlab_dc_lic=1]"';
+cluster = parallel.cluster.LSF('SubmitArguments', '-q sysbio_2h -R "rusage[matlab_dc_lic=1]"');
+cluster.ClusterMatlabRoot = '/opt/matlab';
+
+%jobmgr = findResource('scheduler', 'type', 'lsf');
+%jobmgr.SubmitArguments = '-q sysbio_2h -R "rusage[matlab_dc_lic=1]"';
 %jobmgr.SubmitArguments = '-q short -W 12:00 -R "rusage[matlab_dc_lic=1]"';
-job = jobmgr.createJob();
+job = cluster.createJob();
 
 for site = sites
     

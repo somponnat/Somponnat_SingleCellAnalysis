@@ -2,10 +2,11 @@ function output = findTruePeaks(xs,d_y,plotLog,ToTop,midHgating,delayGate,timewi
 % output(1,:) = truePeak';
 % output(2,:) = PeakHeight';
 % output(3,:) = PeakDuration';
+% output(4,:) = peakSelection;
 
 [pks,locs] = findpeaks(d_y); %
 options = statset('Display','off');
-if isempty(pks) || length(locs)< 3F
+if isempty(pks) || length(locs)< 3
     output = [];
     return;
 end

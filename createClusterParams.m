@@ -46,6 +46,8 @@ selectedcells_name = ['/field' num2str(field) '/selectedcells'];
 param_name = ['/field' num2str(field)  '/clusterparams' num2str(outputsignalNo)];
 cellpath_name = ['/field' num2str(field) '/cellpath'];
 sisterList_name = ['/field' num2str(field) '/sisterList'];
+peak_name = ['/field' num2str(field)  '/peakmat' num2str(outputsignalNo)];
+
 
 warning off;
 
@@ -65,10 +67,24 @@ if exist(fullfile(ndpathname,H5filename),'file')
         %outputsignal_name = h5readatt(fullfile(ndpathname,H5filename),signal_name,['signal' num2str(sequenceNo)]);
         cellpathinfo = h5info(fullfile(ndpathname,H5filename), cellpath_name);
         sisterListinfo = h5info(fullfile(ndpathname,H5filename), sisterList_name);
-
+        
         cellpath_mat = h5read(fullfile(ndpathname,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
         sisterList_mat = h5read(fullfile(ndpathname,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
         
+        % Initialize peaks matrix
+        fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+        if ~H5L.exists(fid,peak_name,'H5P_DEFAULT')
+            H5F.close(fid);
+            display(['Initializing ' H5filename ':' peak_name]);
+        else
+            H5L.delete(fid,peak_name,'H5P_DEFAULT');
+            display(['Overwriting ' H5filename ':' peak_name]);
+            H5F.close(fid);
+        end
+        
+        % cellNo, peak type, peak params, peak#
+        h5create(fullfile(ndpathname,H5filename), peak_name, [size(cellpath_mat,1),2, 4, 200], 'Datatype', 'double');
+
         param_mat = [];
         
         signal_mean_t = smooth(mean(signal,2));
@@ -77,16 +93,24 @@ if exist(fullfile(ndpathname,H5filename),'file')
             
             if cellpath_mat(scell,1,end) > 0
                 if     sisterList_mat(scell,1,end) ~= -1 && sisterList_mat(scell,2,end) == -1 && sisterList_mat(scell,3,end) == -1
-                    phenotype = 2; %dividing once
+                    phenotype = 1; %dividing once
                 elseif sisterList_mat(scell,1,end) ~= -1 && sisterList_mat(scell,2,end) ~= -1 && sisterList_mat(scell,3,end) == -1
-                    phenotype = 3; %dividing twice
+                    phenotype = 2; %dividing twice
                 elseif sisterList_mat(scell,1,end) ~= -1 && sisterList_mat(scell,2,end) ~= -1 && sisterList_mat(scell,3,end) ~= -1
-                    phenotype = 4; %dividing three times
+                    phenotype = 3; %dividing three times
                 else
-                    phenotype = 1; %non-dividing
+                    phenotype = 0; %non-dividing
                 end
             elseif cellpath_mat(scell,1,end) == -2
-                phenotype = 0;     %died
+                if  sisterList_mat(scell,1,end) ~= -1 && sisterList_mat(scell,2,end) == -1 && sisterList_mat(scell,3,end) == -1
+                    phenotype = -1; %dividing once
+                elseif sisterList_mat(scell,1,end) ~= -1 && sisterList_mat(scell,2,end) ~= -1 && sisterList_mat(scell,3,end) == -1
+                    phenotype = -2; %dividing twice
+                elseif sisterList_mat(scell,1,end) ~= -1 && sisterList_mat(scell,2,end) ~= -1 && sisterList_mat(scell,3,end) ~= -1
+                    phenotype = -3; %dividing three times
+                else
+                    phenotype = -4; %non-dividing
+                end
                 display('cell dead');
             end
             
@@ -108,8 +132,8 @@ if exist(fullfile(ndpathname,H5filename),'file')
             
             PosTime = find(signal(:,scell)~=0);
             c_signal = signal(PosTime,scell);
-            c_time   = timestamp(PosTime);            
-               
+            c_time   = timestamp(PosTime);
+            
             if numel(PosTime)>minimumSignalSize
                 display([H5filename 'cell:' num2str(scell)]);
                 xs = c_time(1):7:timestamp(PosTime(end));
@@ -120,28 +144,39 @@ if exist(fullfile(ndpathname,H5filename),'file')
                 ys = ys_ori-signal_mean;
                 outTS = getTimeSeriesTrend(ys,'trendType',1);
                 ys = outTS.dTS;
-                p_peaks{scell} = findTruePeaks(xs,ys,0,MiddleToTop,midHgating,delayGate,[timestamp(PreTime(1)) timestamp(PreTime(end))],divisionTime);
                 
-                t_peaks{scell} = findTruePeaks(xs,ys,showPlots,MiddleToTop,midHgating,delayGate,[timestamp(PostTime(1)) timestamp(PostTime(end))],divisionTime);
-                
+                % determining and assigning peaks to blank 4-by-200 matrix
+                p_peaks = zeros(4,200,'double');
+                t_peaks = zeros(4,200,'double');
+                p_temp = findTruePeaks(xs,ys,0,MiddleToTop,midHgating,delayGate,[timestamp(PreTime(1)) timestamp(PreTime(end))],divisionTime);
+                t_temp = findTruePeaks(xs,ys,showPlots,MiddleToTop,midHgating,delayGate,[timestamp(PostTime(1)) timestamp(PostTime(end))],divisionTime);
+                p_peaks(1:size(p_temp,1),1:size(p_temp,2)) = double(p_temp);
+                t_peaks(1:size(t_temp,1),1:size(t_temp,2)) = double(t_temp);
+                combinedpeaks(1,1,:,:) = p_peaks;
+                combinedpeaks(1,2,:,:) = t_peaks;
+                h5write(fullfile(ndpathname,H5filename), peak_name, combinedpeaks, [double(scell) 1 1 1], [1 2 4 200]);
+
                 clear p_params p_names t_params t_names param_names
-                [p_params,p_names] = peaksParam(p_peaks{scell});
-                [t_params,t_names] = peaksParam(t_peaks{scell});
+                % calculating parameters from the detected Peaks
+                [p_params,p_names] = peaksParam(p_temp);
+                [t_params,t_names] = peaksParam(t_temp);
+                
                 
                 % putting together parameter matrix
                 param_mat = [param_mat;...
-                    double(row),double(col),double(field),double(scell),...
+                    double(row),double(col),double(field),double(scell),double(phenotype),...
                     double(p_params),...
                     double(t_params),...
-                    double(firstPeakDuration(t_peaks{scell},timestamp(PostTime(1)),timestamp(PostTime(end)))),...
-                    double(phenotype),...
+                    double(firstPeakDuration(t_peaks,timestamp(PostTime(1)),timestamp(PostTime(end)))),...
                     ];
                 
                 % putting together parameter name struct
+                
                 param_names{1} = 'Row';
                 param_names{2} = 'Column';
                 param_names{3} = 'Field';
                 param_names{4} = 'Cell Number';
+                param_names{5} = 'Phenotype';
                 oldsize = length(param_names);
                 for i=1:length(p_names)
                     param_names{oldsize+i} = ['Pre-' p_names{i}];
@@ -152,9 +187,12 @@ if exist(fullfile(ndpathname,H5filename),'file')
                 end
                 
                 param_names{length(param_names)+1} = '1st peak delay';
-                param_names{length(param_names)+1} = 'Phenotype';
+                
+                
             end
         end
+        
+        
         if numel(param_mat)>0
             fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
             
@@ -167,13 +205,14 @@ if exist(fullfile(ndpathname,H5filename),'file')
                 H5F.close(fid);
             end
             
+            % store parameters
             h5create(fullfile(ndpathname,H5filename), param_name, [size(param_mat,1), size(param_mat,2)], 'Datatype', 'double', 'ChunkSize', [size(param_mat,1), size(param_mat,2)], 'Deflate', 9);
             h5write(fullfile(ndpathname,H5filename), param_name, param_mat, [1 1], [size(param_mat,1) size(param_mat,2)]);
             
             for i = 1:size(param_mat,2)
                 h5writeatt(fullfile(ndpathname,H5filename),param_name,['param' num2str(i)],param_names{i});
             end
-
+            
         end
         display(['Finished calculating parameters of ' H5filename]);
         

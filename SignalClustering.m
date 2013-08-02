@@ -673,7 +673,7 @@ function pushbutton_selectPoints_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_selectPoints (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-set(handles.edit_commu,'String','Draw polygon to choose cells. Click last point with Right mouse button.');
+
 searchInd(1,:)= str2num(get(handles.edit_selectedRows,'String'));
 searchInd(2,:)= str2num(get(handles.edit_selectedCols,'String'));
 searchInd(3,:)= str2num(get(handles.edit_selectedFields,'String'));
@@ -695,7 +695,7 @@ hold on
 xy = [];
 n = 0;
 % Loop, picking up the points.
-
+set(handles.edit_commu,'String','Draw polygon to choose cells. Click last point with Right mouse button.');
 but = 1;
 while but == 1
     [xi,yi,but] = ginput(1);

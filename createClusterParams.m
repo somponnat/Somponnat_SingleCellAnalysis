@@ -33,8 +33,8 @@ function cal_clusterparam(row,col,field,ndpathname,outputsignalNo,sequenceNo)
 minimumSignalSize = 100;
 MiddleToTop = 1;
 showPlots = 0;
-midHgating = 0.1; % x the median of lowest peak cluster
-delayGate = 0.7; % fraction of height must decay to consider as peak tail
+midHgating = 0.08; % x the median of lowest peak cluster
+delayGate = 0.5; % fraction of height must decay to consider as peak tail
 
 PreTime = 1:25;
 PostTime = 40:244;
@@ -117,16 +117,16 @@ if exist(fullfile(ndpathname,H5filename),'file')
             %find division time
             divisionTime = [];
             switch phenotype
-                case 2
+                case {1,-1}
                     divisionTime(1) = timestamp(find(sisterList_mat(scell,1,:) ~= -1,1,'first'));
-                case 3
+                case {2,-2}
                     divisionTime(1) = timestamp(find(sisterList_mat(scell,1,:) ~= -1,1,'first'));
                     divisionTime(2) = timestamp(find(sisterList_mat(scell,2,:) ~= -1,1,'first'));
-                case 4
+                case {3,-3}
                     divisionTime(1) = timestamp(find(sisterList_mat(scell,1,:) ~= -1,1,'first'));
                     divisionTime(2) = timestamp(find(sisterList_mat(scell,2,:) ~= -1,1,'first'));
                     divisionTime(3) = timestamp(find(sisterList_mat(scell,3,:) ~= -1,1,'first'));
-                case {0,1}
+                otherwise
                     divisionTime = [];
             end
             

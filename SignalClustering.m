@@ -22,7 +22,7 @@ function varargout = SignalClustering(varargin)
 
 % Edit the above text to modify the response to help SignalClustering
 
-% Last Modified by GUIDE v2.5 22-Jul-2013 21:53:45
+% Last Modified by GUIDE v2.5 02-Aug-2013 09:19:48
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -168,13 +168,10 @@ function popupmenu_y_pca_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_y_pca contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_y_pca
 
-myx = get(handles.popupmenu_x_pca,'Value');
-myy = get(hObject,'Value');
-myz = get(handles.popupmenu_z_pca,'Value');
-myc = get(handles.popupmenu_c_pca,'Value');
-myp = get(handles.popupmenu_selectedparams,'Value');
-handles.plot_h = plotPCA(1,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
-
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
 guidata(hObject, handles); 
 % --- Executes during object creation, after setting all properties.
 function popupmenu_y_pca_CreateFcn(hObject, eventdata, handles)
@@ -241,6 +238,8 @@ end
 searchInd(1,:)= str2num(get(handles.edit_selectedRows,'String'));
 searchInd(2,:)= str2num(get(handles.edit_selectedCols,'String'));
 searchInd(3,:)= str2num(get(handles.edit_selectedFields,'String'));
+
+phenotypeList = {'Dead(-4)';'Dead,Divided 3 times(-3)';'Dead,Divided twice(-2)';'Dead,Divided once(-1)';'Quiescent(0)';'Divided once(1)';'Divided twice(2)';'Divided 3 times(3)'};
 
 outputsignalNo = str2num(get(handles.edit_outputsignalno,'String'));
 alldata=[];
@@ -311,14 +310,48 @@ for i=1:length(R)
 end
 
 set(handles.togglebutton_showselectedpolygon,'Value',0);
+handles.plottype = 1;
+set(handles.togglebutton_scatter2D,'Value',1);
 handles.selectedcellIndices = [];
 handles.selectedPolygon = [];
 handles.alldata = alldata;
 handles.originData = originData;
+handles.phenotypeList = phenotypeList;
+
+Phenolabel{1} = 'All';
+PhenotypeID = unique(cellFate);
+for i=1:length(PhenotypeID)
+    Phenolabel{i+1} = [phenotypeList{PhenotypeID(i)+5}];
+end
+
+Groupnolabel{1} = 'All';
+groupNoID = unique(groupNo);
+for i=1:length(groupNoID)
+    Groupnolabel{i+1} = ['r' num2str(searchInd(1,groupNoID(i))) 'c' num2str(searchInd(2,groupNoID(i)))];
+end
+
+Clusterlabel{1} = 'All';
+ClusterNo = str2num(get(handles.edit_clusterno,'String'));
+for i=1:ClusterNo
+    Clusterlabel{i+1} = [num2str(i)];
+end
+
+set(handles.popupmenu_phenotype,'String',Phenolabel);
+set(handles.popupmenu_wellposition,'String',Groupnolabel);
+set(handles.popupmenu_cluster,'String',Clusterlabel);
+
 handles.cellFate = cellFate;
+choiceInput = sort(unique(cellFate))';
+set(handles.edit_phetype_list,'String',num2str(choiceInput));
+
 handles.groupNo = groupNo;
+choiceInput = sort(unique(groupNo))';
+set(handles.edit_position_list,'String',num2str(choiceInput));
+
+choiceInput = 1:str2num(get(handles.edit_clusterno,'String'));
+set(handles.edit_cluster_list,'String',num2str(choiceInput));
+
 handles.timestamp = timestamp;
-set(handles.popupmenu_plotchoice,'Value',1);
 handles.plotInd = 1:size(alldata,1);
 handles.grayInd = [];
 guidata(hObject, handles);
@@ -344,6 +377,21 @@ table_data{4,5} = [];
 set(handles.uitable_params,'Data',table_data);
 set(handles.edit_commu,'String','Finished initializing parameters');
 guidata(hObject, handles);
+
+selectedparams = str2num(get(handles.edit_selectedparams,'String'));
+table_data = get(handles.uitable_params,'Data');
+param_names = [];
+
+for i=1:size(table_data,1)
+    param_names{i} = table_data{i,1};
+end
+Ind=1;
+for i=selectedparams
+    selectedparams_name{Ind} = param_names{i};
+    Ind = Ind+1;
+end
+set(handles.popupmenu_selectedparams,'String',selectedparams_name);
+
 
 
 
@@ -629,20 +677,19 @@ set(handles.edit_commu,'String','Draw polygon to choose cells. Click last point 
 searchInd(1,:)= str2num(get(handles.edit_selectedRows,'String'));
 searchInd(2,:)= str2num(get(handles.edit_selectedCols,'String'));
 searchInd(3,:)= str2num(get(handles.edit_selectedFields,'String'));
-myx = get(handles.popupmenu_x_pca,'Value');
-myy = get(handles.popupmenu_y_pca,'Value');
-myz = get(handles.popupmenu_z_pca,'Value');
-myc = get(handles.popupmenu_c_pca,'Value');
-myp = get(handles.popupmenu_selectedparams,'Value');
 old_xlim = get(handles.axes_pca,'XLim');
 old_ylim = get(handles.axes_pca,'YLim');
 warning off;
-handles.plot_h = plotPCA(0,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
+[plot_h,plotInd,grayInd] = plotPCA(0,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
+
 set(handles.axes_pca,'XLim',old_xlim);
 set(handles.axes_pca,'YLim',old_ylim);
-%guidata(hObject, handles);  
-%handles = guidata(hObject);  
-%axis(handles.axes_pca);
+guidata(hObject, handles);  
+handles = guidata(hObject);  
+
 hold on
 % Initially, the list of points is empty.
 xy = [];
@@ -691,8 +738,11 @@ for i=1:size(table_data,1)
     table_data{i,2} = nanmean(handles.alldata(handles.plotInd(insideInd),i));
 end
 set(handles.uitable_params,'Data',table_data);
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
 
-handles.plot_h = plotPCA(1,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
 hold on;
 plot(xy([1:n 1],1),xy([1:n 1],2),'k-');hold off;
 set(handles.axes_pca,'XLim',old_xlim );
@@ -702,14 +752,14 @@ noCluster = str2num(get(handles.edit_clusterno,'String'));
 binSize=[];
 for j=1:noCluster
     
-    binSize(j) = numel(find(handles.T(insideInd)==j));
+    binSize(j) = numel(find(handles.T(handles.plotInd(insideInd))==j));
 end
 
 axes(handles.axes_selected);
 bar(1:str2num(get(handles.edit_clusterno,'String')),binSize);
 set(handles.axes_selected,'XTickLabel',[]);
 set(handles.togglebutton_showselectedpolygon,'Value',1);
-set(handles.edit_commu,'String',['Total number of cells selected: ' num2str(length(insideInd))]);
+set(handles.edit_commu,'String',['Cells in polygon: ' num2str(length(handles.plotInd(insideInd))) ' of ' num2str(length(handles.plotInd))]);
 guidata(hObject, handles);  
 
 % --- Executes on button press in pushbutton7.
@@ -748,7 +798,58 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-function plot_h = plotPCA(type,handles,x,y,z,c,p,plotInd,grayInd,selectedcellInd)
+
+function [plotInd,grayInd] = determinePlotInd(handles)
+allInd = 1:size(handles.alldata,1);
+PhenoInd = str2num(get(handles.edit_phetype_list,'String'));
+WellInd = str2num(get(handles.edit_position_list,'String'));
+CInd = str2num(get(handles.edit_cluster_list,'String'));
+SInd = get(handles.popupmenu_selection,'Value');
+if SInd == 2
+    selectedCells = handles.selectedcellIndices;
+else
+    selectedCells = allInd;
+end
+selectedPheno = [];
+for i=1:length(PhenoInd)
+    selectedPheno = [selectedPheno;find(handles.cellFate == PhenoInd(i))];
+end
+selectedPheno = sort(selectedPheno);
+
+selectedWell = [];
+for i=1:length(WellInd)
+    selectedWell = [selectedWell;find(handles.groupNo == WellInd(i))];
+end
+selectedWell = sort(selectedWell);
+
+selectedC = [];
+for i=1:length(CInd)
+    selectedC = [selectedC;find(handles.T == CInd(i))];
+end
+selectedC = sort(selectedC);
+
+plotInd = sort(intersect(intersect(intersect(selectedPheno,selectedWell),selectedC),selectedCells));
+grayInd = sort(setdiff(1:size(handles.alldata,1),plotInd));
+set(handles.edit_totalcellcount,'String',num2str(length(plotInd)));
+set(handles.edit_commu,'String',['Total cell selected: ' num2str(length(plotInd))]);
+
+function [plot_h,plotInd,grayInd]= plotPCA(plottype,handles,selectedcellInd)
+[plotInd,grayInd] = determinePlotInd(handles);
+x = get(handles.popupmenu_x_pca,'Value');
+y = get(handles.popupmenu_y_pca,'Value');
+z = get(handles.popupmenu_z_pca,'Value');
+c = get(handles.popupmenu_c_pca,'Value');
+p = get(handles.popupmenu_selectedparams,'Value');
+selectedparams = str2num(get(handles.edit_selectedparams,'String'));
+
+if get(handles.togglebutton_orthorotate,'Value')==0
+    myplotdata = handles.score;
+else
+    myplotdata = handles.rotated_score;
+end
+
+
+
 msize = str2num(get(handles.edit_markersize,'String'));
 mtype = get(handles.edit_markertype,'String');
 
@@ -757,149 +858,154 @@ searchInd(1,:)= str2num(get(handles.edit_selectedRows,'String'));
 searchInd(2,:)= str2num(get(handles.edit_selectedCols,'String'));
 searchInd(3,:)= str2num(get(handles.edit_selectedFields,'String'));
 
-if ~isempty(handles.score)
+if ~isempty(myplotdata)
     axes(handles.axes_pca);
     
-    
-    switch type
+    switch plottype
         case 1 % scatter-2D
             if ~isempty(selectedcellInd) && get(handles.togglebutton_showselectedpolygon,'Value')==1;
-                scatter(handles.score(intersect(plotInd,selectedcellInd),x),handles.score(intersect(plotInd,selectedcellInd),y),msize,'k','o','fill');hold on;
+                scatter(myplotdata(intersect(plotInd,selectedcellInd),x),myplotdata(intersect(plotInd,selectedcellInd),y),msize,'k','o','fill');hold on;
             end
             if ~isempty(grayInd)
-                scatter(handles.score(grayInd,x),handles.score(grayInd,y),msize,[0.7 0.7 0.7],'x');hold on;
+                scatter(myplotdata(grayInd,x),myplotdata(grayInd,y),msize,[0.7 0.7 0.7],'x');hold on;
             end
-            switch c
-                case 1 % well position
-                    c_groupNo = unique(handles.groupNo(plotInd));
-                    for i=1:length(c_groupNo)
-                        myLegend{i} = ['r' num2str(searchInd(1,c_groupNo(i))) 'c' num2str(searchInd(2,c_groupNo(i)))];
-                    end
-                                
-                    plot_h = gscatter(handles.score(plotInd,x),handles.score(plotInd,y),nominal(handles.groupNo(plotInd),myLegend),jet(length(unique(handles.groupNo(plotInd)))),mtype,msize,'on');
-                    set(handles.togglebutton_legendLogic,'Value',1);
-                    
-                case 2 % phenotype
-                    phenotypeList = {'Dead(-4)';'Dead,Divided 3 times(-3)';'Dead,Divided twice(-2)';'Dead,Divided once(-1)';'Quiescent(0)';'Divided once(1)';'Divided twice(2)';'Divided 3 times(3)'};
-                    c_phenotype = unique(handles.cellFate(plotInd));
-                    mymarkertype = [];
-                    mymarkercolor = [];
-                    for i=1:length(c_phenotype)
-                        myLegend{i} = phenotypeList{c_phenotype(i)+5};
-                        switch c_phenotype(i)
-                            case -4
-                                mymarkertype = [mymarkertype 'v'];
-                            case {-3,-2,-1}
-                                mymarkertype = [mymarkertype '.'];
-                            case 0
-                                mymarkertype = [mymarkertype 'o'];
-                            case {1,2,3}
-                                mymarkertype = [mymarkertype 'x'];
+            if ~isempty(plotInd)
+                switch c
+                    case 1 % well position
+                        c_groupNo = unique(handles.groupNo(plotInd));
+                        for i=1:length(c_groupNo)
+                            myLegend{i} = ['r' num2str(searchInd(1,c_groupNo(i))) 'c' num2str(searchInd(2,c_groupNo(i)))];
                         end
                         
-                        switch c_phenotype(i)
-                            case -4
-                                mymarkercolor = [mymarkercolor 'k'];
-                            case {-3,3}
-                                mymarkercolor = [mymarkercolor 'b'];
-                            case {-2,2}
-                                mymarkercolor = [mymarkercolor 'g'];
-                            case {-1,1}
-                                mymarkercolor = [mymarkercolor 'r'];
-                            case 0
-                                mymarkercolor = [mymarkercolor 'c'];
+                        plot_h = gscatter(myplotdata(plotInd,x),myplotdata(plotInd,y),nominal(handles.groupNo(plotInd),myLegend),jet(length(unique(handles.groupNo(plotInd)))),mtype,msize-6,'on');
+                        set(handles.togglebutton_legendLogic,'Value',1);
+                        
+                    case 2 % phenotype
+                        c_phenotype = unique(handles.cellFate(plotInd));
+                        mymarkertype = [];
+                        mymarkercolor = [];
+                        for i=1:length(c_phenotype)
+                            myLegend{i} = handles.phenotypeList{c_phenotype(i)+5};
+                            switch c_phenotype(i)
+                                case -4
+                                    mymarkertype = [mymarkertype 'v'];
+                                case {-3,-2,-1}
+                                    mymarkertype = [mymarkertype 'v'];
+                                case 0
+                                    mymarkertype = [mymarkertype 'o'];
+                                case {1,2,3}
+                                    mymarkertype = [mymarkertype 'x'];
+                            end
+                            
+                            switch c_phenotype(i)
+                                case -4
+                                    mymarkercolor = [mymarkercolor 'k'];
+                                case {-3,3}
+                                    mymarkercolor = [mymarkercolor 'b'];
+                                case {-2,2}
+                                    mymarkercolor = [mymarkercolor 'g'];
+                                case {-1,1}
+                                    mymarkercolor = [mymarkercolor 'r'];
+                                case 0
+                                    mymarkercolor = [mymarkercolor 'c'];
+                            end
                         end
-                    end
-                    plot_h = gscatter(handles.score(plotInd,x),handles.score(plotInd,y),nominal(handles.cellFate(plotInd),myLegend),mymarkercolor,mymarkertype,msize,'on');
-                    set(handles.togglebutton_legendLogic,'Value',1);
-                    %legend(myLegend);
-                case 3 % cluster
-                    plot_h = gscatter(handles.score(plotInd,x),handles.score(plotInd,y),handles.T(plotInd),hsv(length(unique(handles.T(plotInd)))),mtype,msize,'on');
-                    set(handles.togglebutton_legendLogic,'Value',1);
-                case 4 % plot params
-                    chosen_param = handles.selectedparams(p);
-                    alldataset = handles.alldata(:,chosen_param);
-                    myx = [min(alldataset):(max(alldataset)-min(alldataset))/31:max(alldataset)];
-                    [~,bin] = histc(handles.alldata(plotInd,chosen_param),myx);
-                    mycolor = hot(32);
-                    for i=1:length(bin)
-                        cellcolor(i,:) = mycolor(bin(i),:);
-                    end
-                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),msize,cellcolor,mtype);
-                    set(handles.togglebutton_legendLogic,'Value',0);
+                        plot_h = gscatter(myplotdata(plotInd,x),myplotdata(plotInd,y),nominal(handles.cellFate(plotInd),myLegend),mymarkercolor,mymarkertype,msize-6,'on');
+                        set(handles.togglebutton_legendLogic,'Value',1);
+                        %legend(myLegend);
+                    case 3 % cluster
+                        plot_h = gscatter(myplotdata(plotInd,x),myplotdata(plotInd,y),handles.T(plotInd),hsv(length(unique(handles.T(plotInd)))),mtype,msize-6,'on');
+                        set(handles.togglebutton_legendLogic,'Value',1);
+                    case 4 % plot params
+                        chosen_param = selectedparams(p);
+                        alldataset = handles.alldata(:,chosen_param);
+                        myx = [min(alldataset):(max(alldataset)-min(alldataset))/31:max(alldataset)];
+                        [~,bin] = histc(handles.alldata(plotInd,chosen_param),myx);
+                        mycolor = hot(32);
+                        for i=1:length(bin)
+                            cellcolor(i,:) = mycolor(bin(i),:);
+                        end
+                        plot_h = scatter(myplotdata(plotInd,x),myplotdata(plotInd,y),msize,cellcolor,mtype);
+                        set(handles.togglebutton_legendLogic,'Value',0);
+                end
+                hold off;
+                colorbar('off');
             end
-            hold off;
-            colorbar('off');
         case 2
             if ~isempty(selectedcellInd) && get(handles.togglebutton_showselectedpolygon,'Value')==1;
-                scatter3(handles.score(intersect(plotInd,selectedcellInd),x),handles.score(intersect(plotInd,selectedcellInd),y),handles.score(intersect(plotInd,selectedcellInd),z),msize,'k','o','fill');hold on;
+                scatter3(myplotdata(intersect(plotInd,selectedcellInd),x),myplotdata(intersect(plotInd,selectedcellInd),y),myplotdata(intersect(plotInd,selectedcellInd),z),msize,'k','o','fill');hold on;
             end
             if ~isempty(grayInd)
-                scatter3(handles.score(grayInd,x),handles.score(grayInd,y),handles.score(grayInd,z),msize,[0.7 0.7 0.7],'x');hold on;
+                scatter3(myplotdata(grayInd,x),myplotdata(grayInd,y),myplotdata(grayInd,z),msize,[0.7 0.7 0.7],'x');hold on;
             end
-            switch c
-                case 1 % well position
-                    set(handles.edit_commu,'String','Plot colors show well positions.');
-                    cellcolor = [];
-                    mycolor = jet(size(searchInd,2));
-                    mydata = handles.groupNo(plotInd);
-                    for i=1:length(mydata)
-                        cellcolor(i,:) = mycolor(mydata(i),:);
-                    end
-                    plot_h=scatter3(handles.score(plotInd,x),handles.score(plotInd,y),handles.score(plotInd,z),msize,cellcolor,mtype);
-                    set(handles.togglebutton_legendLogic,'Value',0);
-                case 2 % phenotype
-                    set(handles.edit_commu,'String','Plot colors show cell decision.');
-                    
-                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==-4)),x),handles.score(intersect(plotInd,find(handles.cellFate==-4)),y),handles.score(intersect(plotInd,find(handles.cellFate==-4)),z),msize,'v','k');hold on;
-                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==-3)),x),handles.score(intersect(plotInd,find(handles.cellFate==-3)),y),handles.score(intersect(plotInd,find(handles.cellFate==-3)),z),msize,'.','b');
-                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==-2)),x),handles.score(intersect(plotInd,find(handles.cellFate==-2)),y),handles.score(intersect(plotInd,find(handles.cellFate==-2)),z),msize,'.','g');
-                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==-1)),x),handles.score(intersect(plotInd,find(handles.cellFate==-1)),y),handles.score(intersect(plotInd,find(handles.cellFate==-1)),z),msize,'.','r');
-                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==0)),x),handles.score(intersect(plotInd,find(handles.cellFate==0)),y),handles.score(intersect(plotInd,find(handles.cellFate==0)),z),msize,'o','c');
-                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==1)),x),handles.score(intersect(plotInd,find(handles.cellFate==1)),y),handles.score(intersect(plotInd,find(handles.cellFate==1)),z),msize,'x','r');
-                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==2)),x),handles.score(intersect(plotInd,find(handles.cellFate==2)),y),handles.score(intersect(plotInd,find(handles.cellFate==2)),z),msize,'x','g');
-                    plot_h=scatter3(handles.score(intersect(plotInd,find(handles.cellFate==3)),x),handles.score(intersect(plotInd,find(handles.cellFate==3)),y),handles.score(intersect(plotInd,find(handles.cellFate==3)),z),msize,'x','b');hold off;
-                    
-                    set(handles.togglebutton_legendLogic,'Value',0);
-                case 3 % cluster
-                    set(handles.edit_commu,'String','Plot colors show cluster number.');
-                    cellcolor = [];
-                    mycolor = hsv(length(unique(handles.T(plotInd))));
-                    mydata = handles.T(plotInd);
-                    for i=1:length(mydata)
-                        cellcolor(i,:) = mycolor(mydata(i),:);
-                    end
-                    plot_h=scatter3(handles.score(plotInd,x),handles.score(plotInd,y),handles.score(plotInd,z),msize,cellcolor,mtype);
-                    set(handles.togglebutton_legendLogic,'Value',0);
-                case 4 % plot params
-                    set(handles.edit_commu,'String','Plot colors show intensity of the selected parameter.');
-                    chosen_param = handles.selectedparams(p);
-                    alldataset = handles.alldata(:,chosen_param);
-                    myx = [min(alldataset):(max(alldataset)-min(alldataset))/31:max(alldataset)];
-                    [~,bin] = histc(handles.alldata(plotInd,chosen_param),myx);
-                    mycolor = hot(32);
-                    for i=1:length(bin)
-                        cellcolor(i,:) = mycolor(bin(i),:);
-                    end
-                    plot_h=scatter3(handles.score(plotInd,x),handles.score(plotInd,y),handles.score(plotInd,z),msize,cellcolor,mtype);
-                    set(handles.togglebutton_legendLogic,'Value',0);
+            if ~isempty(plotInd)
+                switch c
+                    case 1 % well position
+                        set(handles.edit_commu,'String','Plot colors show well positions.');
+                        cellcolor = [];
+                        mycolor = jet(size(searchInd,2));
+                        mydata = handles.groupNo(plotInd);
+                        for i=1:length(mydata)
+                            cellcolor(i,:) = mycolor(mydata(i),:);
+                        end
+                        plot_h=scatter3(myplotdata(plotInd,x),myplotdata(plotInd,y),myplotdata(plotInd,z),msize,cellcolor,mtype);
+                        set(handles.togglebutton_legendLogic,'Value',0);
+                    case 2 % phenotype
+                        set(handles.edit_commu,'String','Plot colors show cell decision.');
+                        
+                        plot_h=scatter3(myplotdata(intersect(plotInd,find(handles.cellFate==-4)),x),myplotdata(intersect(plotInd,find(handles.cellFate==-4)),y),myplotdata(intersect(plotInd,find(handles.cellFate==-4)),z),msize,'v','k');hold on;
+                        plot_h=scatter3(myplotdata(intersect(plotInd,find(handles.cellFate==-3)),x),myplotdata(intersect(plotInd,find(handles.cellFate==-3)),y),myplotdata(intersect(plotInd,find(handles.cellFate==-3)),z),msize,'v','b');
+                        plot_h=scatter3(myplotdata(intersect(plotInd,find(handles.cellFate==-2)),x),myplotdata(intersect(plotInd,find(handles.cellFate==-2)),y),myplotdata(intersect(plotInd,find(handles.cellFate==-2)),z),msize,'v','g');
+                        plot_h=scatter3(myplotdata(intersect(plotInd,find(handles.cellFate==-1)),x),myplotdata(intersect(plotInd,find(handles.cellFate==-1)),y),myplotdata(intersect(plotInd,find(handles.cellFate==-1)),z),msize,'v','r');
+                        plot_h=scatter3(myplotdata(intersect(plotInd,find(handles.cellFate==0)),x),myplotdata(intersect(plotInd,find(handles.cellFate==0)),y),myplotdata(intersect(plotInd,find(handles.cellFate==0)),z),msize,'o','c');
+                        plot_h=scatter3(myplotdata(intersect(plotInd,find(handles.cellFate==1)),x),myplotdata(intersect(plotInd,find(handles.cellFate==1)),y),myplotdata(intersect(plotInd,find(handles.cellFate==1)),z),msize,'x','r');
+                        plot_h=scatter3(myplotdata(intersect(plotInd,find(handles.cellFate==2)),x),myplotdata(intersect(plotInd,find(handles.cellFate==2)),y),myplotdata(intersect(plotInd,find(handles.cellFate==2)),z),msize,'x','g');
+                        plot_h=scatter3(myplotdata(intersect(plotInd,find(handles.cellFate==3)),x),myplotdata(intersect(plotInd,find(handles.cellFate==3)),y),myplotdata(intersect(plotInd,find(handles.cellFate==3)),z),msize,'x','b');hold off;
+                        
+                        set(handles.togglebutton_legendLogic,'Value',0);
+                    case 3 % cluster
+                        set(handles.edit_commu,'String','Plot colors show cluster number.');
+                        cellcolor = [];
+                        mycolor = hsv(length(unique(handles.T(plotInd))));
+                        mydata = handles.T(plotInd);
+                        for i=1:length(mydata)
+                            cellcolor(i,:) = mycolor(mydata(i),:);
+                        end
+                        plot_h=scatter3(myplotdata(plotInd,x),myplotdata(plotInd,y),myplotdata(plotInd,z),msize,cellcolor,mtype);
+                        set(handles.togglebutton_legendLogic,'Value',0);
+                    case 4 % plot params
+                        set(handles.edit_commu,'String','Plot colors show intensity of the selected parameter.');
+                        
+                        chosen_param = selectedparams(p);
+                        alldataset = handles.alldata(:,chosen_param);
+                        myx = [min(alldataset):(max(alldataset)-min(alldataset))/31:max(alldataset)];
+                        [~,bin] = histc(handles.alldata(plotInd,chosen_param),myx);
+                        mycolor = hot(32);
+                        for i=1:length(bin)
+                            cellcolor(i,:) = mycolor(bin(i),:);
+                        end
+                        plot_h=scatter3(myplotdata(plotInd,x),myplotdata(plotInd,y),myplotdata(plotInd,z),msize,cellcolor,mtype);
+                        set(handles.togglebutton_legendLogic,'Value',0);
+                end
+                hold off;
+                xnames = get(handles.popupmenu_x_pca,'String');
+                ynames = get(handles.popupmenu_y_pca,'String');
+                znames = get(handles.popupmenu_z_pca,'String');
+                xlabel(xnames{get(handles.popupmenu_x_pca,'Value')});
+                ylabel(ynames{get(handles.popupmenu_y_pca,'Value')});
+                zlabel(znames{get(handles.popupmenu_z_pca,'Value')});
             end
-            hold off;
-            xnames = get(handles.popupmenu_x_pca,'String');
-            ynames = get(handles.popupmenu_y_pca,'String');
-            znames = get(handles.popupmenu_z_pca,'String');
-            xlabel(xnames{get(handles.popupmenu_x_pca,'Value')});
-            ylabel(ynames{get(handles.popupmenu_y_pca,'Value')});
-            zlabel(znames{get(handles.popupmenu_z_pca,'Value')});
         case 3
-            set(handles.togglebutton_legendLogic,'Value',0);
-            x=handles.score(plotInd,x);
-            y=handles.score(plotInd,y);
-            out = scatplot(x,y,'circles',str2num(get(handles.edit_contourcirclesize,'String')),str2num(get(handles.edit_meshsize,'String')),8,2,msize);
-            view(2);
-            xlabel([]);
-            ylabel([]);
-            zlabel([]);
+            if ~isempty(plotInd)
+                set(handles.togglebutton_legendLogic,'Value',0);
+                x=myplotdata(plotInd,x);
+                y=myplotdata(plotInd,y);
+                out = scatplot(x,y,'circles',str2num(get(handles.edit_contourcirclesize,'String')),str2num(get(handles.edit_meshsize,'String')),8,2,msize);
+                view(2);
+                xlabel([]);
+                ylabel([]);
+                zlabel([]);
+            end
 
         case 0 
             set(handles.togglebutton_legendLogic,'Value',0);
@@ -912,7 +1018,7 @@ if ~isempty(handles.score)
                     for i=1:length(mydata)
                         cellcolor(i,:) = mycolor(mydata(i),:);
                     end
-                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),msize,cellcolor,mtype);
+                    plot_h = scatter(myplotdata(plotInd,x),myplotdata(plotInd,y),msize,cellcolor,mtype);
                                         
                 case 2 % phenotype
 
@@ -922,7 +1028,7 @@ if ~isempty(handles.score)
                     for i=1:length(mydata)
                         cellcolor(i,:) = mycolor(mydata(i)+5,:);
                     end
-                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),msize,cellcolor,mtype);
+                    plot_h = scatter(myplotdata(plotInd,x),myplotdata(plotInd,y),msize,cellcolor,mtype);
                     
                 case 3 % cluster
                     cellcolor = [];
@@ -931,9 +1037,9 @@ if ~isempty(handles.score)
                     for i=1:length(mydata)
                         cellcolor(i,:) = mycolor(mydata(i),:);
                     end
-                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),msize,cellcolor,mtype);
+                    plot_h = scatter(myplotdata(plotInd,x),myplotdata(plotInd,y),msize,cellcolor,mtype);
                 case 4 % plot params
-                    chosen_param = handles.selectedparams(p);
+                    chosen_param = selectedparams(p);
                     alldataset = handles.alldata(:,chosen_param);
                     myx = [min(alldataset):(max(alldataset)-min(alldataset))/31:max(alldataset)];
                     [~,bin] = histc(handles.alldata(plotInd,chosen_param),myx);
@@ -941,10 +1047,10 @@ if ~isempty(handles.score)
                     for i=1:length(bin)
                         cellcolor(i,:) = mycolor(bin(i),:);
                     end
-                    plot_h = scatter(handles.score(plotInd,x),handles.score(plotInd,y),msize,cellcolor,mtype);
+                    plot_h = scatter(myplotdata(plotInd,x),myplotdata(plotInd,y),msize,cellcolor,mtype);
             end
     end
-    
+    hold off;
 else
     set(handles.edit_commu,'String','Must first process data');
 end
@@ -959,13 +1065,10 @@ function popupmenu_x_pca_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_x_pca contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_x_pca
 
-myx = get(hObject,'Value');
-myy = get(handles.popupmenu_y_pca,'Value');
-myz = get(handles.popupmenu_z_pca,'Value');
-myc = get(handles.popupmenu_c_pca,'Value');
-myp = get(handles.popupmenu_selectedparams,'Value');
-handles.plot_h = plotPCA(1,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
-
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
 guidata(hObject, handles); 
 
 % --- Executes during object creation, after setting all properties.
@@ -1035,24 +1138,13 @@ function popupmenu_selectedparams_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_selectedparams contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_selectedparams
+set(handles.popupmenu_c_pca,'Value',4);
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
+guidata(hObject, handles);
 
-axes(handles.axes_pca);
-score = handles.score;
-x = get(handles.popupmenu_x_pca,'Value');
-y = get(handles.popupmenu_y_pca,'Value');
-
-
-myx = get(handles.popupmenu_x_pca,'Value');
-myy = get(handles.popupmenu_y_pca,'Value');
-myz = get(handles.popupmenu_z_pca,'Value');
-myc = get(handles.popupmenu_c_pca,'Value');
-myp = get(hObject,'Value');
-
-if myc==4
-    handles.plot_h = plotPCA(1,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
-    
-    guidata(hObject, handles); 
-end
 
 
 % --- Executes during object creation, after setting all properties.
@@ -1100,12 +1192,10 @@ function popupmenu_c_pca_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_c_pca contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_c_pca
 
-myx = get(handles.popupmenu_x_pca,'Value');
-myy = get(handles.popupmenu_y_pca,'Value');
-myz = get(handles.popupmenu_z_pca,'Value');
-myc = get(hObject,'Value');
-myp = get(handles.popupmenu_selectedparams,'Value');
-handles.plot_h = plotPCA(1,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
 
 guidata(hObject, handles); 
 
@@ -1141,27 +1231,38 @@ function pushbutton_showpcaloading_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_showpcaloading (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+if get(handles.togglebutton_orthorotate,'Value')==0
+    myplotdata = handles.score;
+    mycoefforth = handles.coefforth;
+else
+    myplotdata = handles.rotated_score;
+    mycoefforth = handles.rotated_coefforth;
+end
+
+
+
 figure(1);
 paramNo = str2num(get(handles.edit_selectedparams,'String'));
 subplot(2,3,1);
-biplot(handles.coefforth(:,1:3),'scores',handles.score(:,1:3),'varlabels',get(handles.popupmenu_selectedparams,'String'));
+biplot(mycoefforth(:,1:3),'scores',myplotdata(:,1:3),'varlabels',get(handles.popupmenu_selectedparams,'String'));
 subplot(2,3,2:3);
 pareto(handles.explained);
 xlabel('Principal Component');
 ylabel('Variance Explained (%)');
 s(1) = subplot(2,4,5);
-barh(handles.coefforth(:,1));title('PC1');
+barh(mycoefforth(:,1));title('PC1');
 set(gca,'YLim',[0 length(paramNo)+1],'YTick',1:length(paramNo),'YTickLabel',get(handles.popupmenu_selectedparams,'String'));
 s(2) = subplot(2,4,6);
-barh(handles.coefforth(:,2));title('PC2');
+barh(mycoefforth(:,2));title('PC2');
 set(gca,'YTickLabel',[]);
 s(3) = subplot(2,4,7);
-barh(handles.coefforth(:,3));title('PC3');
+barh(mycoefforth(:,3));title('PC3');
 set(gca,'YTickLabel',[]);
 s(4) = subplot(2,4,8);
-barh(handles.coefforth(:,4));title('PC4');
+barh(mycoefforth(:,4));title('PC4');
 set(gca,'YTickLabel',[]);
-linkaxes(s);
+linkaxes(s,'y');
 % --- Executes on button press in pushbutton_cluster.
 function pushbutton_cluster_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_cluster (see GCBO)
@@ -1173,32 +1274,28 @@ searchInd(1,:)= str2num(get(handles.edit_selectedRows,'String'));
 searchInd(2,:)= str2num(get(handles.edit_selectedCols,'String'));
 searchInd(3,:)= str2num(get(handles.edit_selectedFields,'String'));
 
-selectedparams = str2num(get(handles.edit_selectedparams,'String'));
-table_data = get(handles.uitable_params,'Data');
-param_names = [];
-
-for i=1:size(table_data,1)
-    param_names{i} = table_data{i,1};
-end
-Ind=1;
-for i=selectedparams
-    selectedparams_name{Ind} = param_names{i};
-    Ind = Ind+1;
-end
-set(handles.popupmenu_selectedparams,'String',selectedparams_name);
-
-handles.selectedparams = selectedparams;
-
 w = 1./nanvar(handles.alldata(:,selectedparams));
-w(w==inf) = 1e-64;
+%w(w==inf) = 1e-64;
 [wcoeff,score,latent,tsquared,explained] = pca(handles.alldata(:,selectedparams),'VariableWeights',w);
+[wcoeff_rotated,rotationMat] = rotatefactors(wcoeff);
 coefforth = diag(sqrt(w))*wcoeff;
+rotated_coefforth = diag(sqrt(w))*wcoeff_rotated;
+rotated_score = zscore(handles.alldata(:,selectedparams))*rotated_coefforth;
 set(handles.edit_commu,'String','Finished calculating PCA');
-handles.score = score;
 handles.explained = explained;
+handles.score = score;
+handles.rotated_score = rotated_score;
 handles.coefforth = coefforth;
-Z = linkage(score(:,1:5),'ward','euclidean');
-T = cluster(Z,'maxclust',noCluster);
+handles.rotated_coefforth = rotated_coefforth;
+
+if get(handles.togglebutton_orthorotate,'Value')==0
+    Z = linkage(score(:,1:3),'ward','euclidean');
+else
+    Z = linkage(rotated_score(:,1:3),'ward','euclidean');
+end
+
+        
+T = cluster(Z,'maxclust',noCluster);        
 binning = [];
 for i=1:size(searchInd,2)
     binSize=[];
@@ -1305,19 +1402,18 @@ for i=1:length(newList)
     newT(T==newList(i)) = i;
 end
 handles.T = newT;
-set(handles.popupmenu_clusterNo,'String',unique(newT));
+choiceInput = sort(unique(T))';
+set(handles.edit_cluster_list,'String',num2str(choiceInput));
 linkaxes([handles.axes_posctrl  handles.axes_negctrl handles.axes_group handles.axes_selected],'x');
 handles.binning = binning;
 handles.newList = newList;
 guidata(hObject, handles);  
 handles = guidata(hObject); 
 
-myx = get(handles.popupmenu_x_pca,'Value');
-myy = get(handles.popupmenu_y_pca,'Value');
-myz = get(handles.popupmenu_z_pca,'Value');
-myc = get(handles.popupmenu_c_pca,'Value');
-myp = get(handles.popupmenu_selectedparams,'Value');
-handles.plot_h = plotPCA(1,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
 guidata(hObject, handles); 
 
 function edit_commu_Callback(hObject, eventdata, handles)
@@ -1342,27 +1438,33 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on selection change in popupmenu_clusterNo.
-function popupmenu_clusterNo_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu_clusterNo (see GCBO)
+% --- Executes on selection change in popupmenu_cluster.
+function popupmenu_cluster_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_cluster (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_clusterNo contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu_clusterNo
-old_plotInd = handles.plotInd;
-new_plotInd = sort(intersect(old_plotInd,find(handles.T==get(hObject,'Value'))));
-set(handles.edit_totalcellcount,'String',num2str(length(handles.plotInd)));
-myx = get(handles.popupmenu_x_pca,'Value');
-myy = get(handles.popupmenu_y_pca,'Value');
-myz = get(handles.popupmenu_z_pca,'Value');
-myc = get(handles.popupmenu_c_pca,'Value');
-myp = get(handles.popupmenu_selectedparams,'Value');
-plotPCA(1,handles,myx,myy,myz,myc,myp,sort(new_plotInd),sort(setdiff(1:size(handles.alldata,1),new_plotInd)),handles.selectedcellIndices);
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_cluster contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_cluster
+contents = cellstr(get(hObject,'String'));
+switch get(hObject,'Value')
+    case 1
+        choiceInput = sort(unique(handles.T))';
+        set(handles.edit_cluster_list,'String',num2str(choiceInput));
+    otherwise
+        cCluster = str2num(contents{get(hObject,'Value')});
+        set(handles.edit_cluster_list,'String',num2str(cCluster));
+end
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
+guidata(hObject, handles); 
+
 
 % --- Executes during object creation, after setting all properties.
-function popupmenu_clusterNo_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu_clusterNo (see GCBO)
+function popupmenu_cluster_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_cluster (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -1433,34 +1535,21 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in pushbutton_scatter3D.
-function pushbutton_scatter3D_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_scatter3D (see GCBO)
+% --- Executes on button press in togglebutton_scatter3D.
+function togglebutton_scatter3D_Callback(hObject, eventdata, handles)
+% hObject    handle to togglebutton_scatter3D (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 set(handles.edit_commu,'String','3D Scatter plot');
-myx = get(handles.popupmenu_x_pca,'Value');
-myy = get(handles.popupmenu_y_pca,'Value');
-myz = get(handles.popupmenu_z_pca,'Value');
-myc = get(handles.popupmenu_c_pca,'Value');
-myp = get(handles.popupmenu_selectedparams,'Value');
-handles.plot_h = plotPCA(2,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
-guidata(hObject, handles); 
 
 
-% --- Executes on button press in pushbutton_contour.
-function pushbutton_contour_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_contour (see GCBO)
+% --- Executes on button press in togglebutton_contour.
+function togglebutton_contour_Callback(hObject, eventdata, handles)
+% hObject    handle to togglebutton_contour (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 set(handles.edit_commu,'String','Contour plot');
-myx = get(handles.popupmenu_x_pca,'Value');
-myy = get(handles.popupmenu_y_pca,'Value');
-myz = get(handles.popupmenu_z_pca,'Value');
-myc = get(handles.popupmenu_c_pca,'Value');
-myp = get(handles.popupmenu_selectedparams,'Value');
-handles.plot_h = plotPCA(3,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
-guidata(hObject, handles); 
+
 
 
 % --- Executes on selection change in popupmenu23.
@@ -1509,19 +1598,13 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in pushbutton_scatter2D.
-function pushbutton_scatter2D_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_scatter2D (see GCBO)
+% --- Executes on button press in togglebutton_scatter2D.
+function togglebutton_scatter2D_Callback(hObject, eventdata, handles)
+% hObject    handle to togglebutton_scatter2D (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 set(handles.edit_commu,'String','2D Scatter plot');
-myx = get(handles.popupmenu_x_pca,'Value');
-myy = get(handles.popupmenu_y_pca,'Value');
-myz = get(handles.popupmenu_z_pca,'Value');
-myc = get(handles.popupmenu_c_pca,'Value');
-myp = get(handles.popupmenu_selectedparams,'Value');
-handles.plot_h = plotPCA(1,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
-guidata(hObject, handles); 
+
 
 function edit_selectedFields_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_selectedFields (see GCBO)
@@ -1567,7 +1650,6 @@ for i=selectedparams
 end
 set(handles.popupmenu_selectedparams,'String',selectedparams_name);
 set(handles.popupmenu_selectedparams,'Value',1);
-handles.selectedparams = selectedparams;
 guidata(hObject, handles);  
 
 % --- Executes during object creation, after setting all properties.
@@ -1603,22 +1685,20 @@ switch get(hObject,'Value')
     case 1 % all
         handles.plotInd = allInd;
         handles.grayInd = [];
-        set(handles.edit_choiceinputs,'String',[]);
+        set(handles.edit_phetype_list,'String',[]);
         guidata(hObject, handles);
         handles = guidata(hObject);
-        myx = get(handles.popupmenu_x_pca,'Value');
-        myy = get(handles.popupmenu_y_pca,'Value');
-        myz = get(handles.popupmenu_z_pca,'Value');
-        myc = get(handles.popupmenu_c_pca,'Value');
-        myp = get(handles.popupmenu_selectedparams,'Value');
-        handles.plot_h = plotPCA(1,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
+        [plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+        handles.plot_h = plot_h;
+        handles.plotInd = plotInd;
+        handles.grayInd = grayInd;
         
         
     case 2 % selected wells
-        choiceInput = str2num(get(handles.edit_choiceinputs,'String'));
+        choiceInput = str2num(get(handles.edit_phetype_list,'String'));
         if isempty(choiceInput)
             choiceInput = sort(unique(handles.groupNo))';
-            set(handles.edit_choiceinputs,'String',num2str(choiceInput));
+            set(handles.edit_phetype_list,'String',num2str(choiceInput));
         end
         plotInd = [];
         for i=1:length(choiceInput)
@@ -1627,10 +1707,10 @@ switch get(hObject,'Value')
         handles.plotInd = sort(plotInd);
         handles.grayInd = sort(setdiff(allInd,plotInd));
     case 3 % selected phenotypes
-        choiceInput = str2num(get(handles.edit_choiceinputs,'String'));
+        choiceInput = str2num(get(handles.edit_phetype_list,'String'));
         if isempty(choiceInput)
             choiceInput = sort(unique(handles.cellFate))';
-            set(handles.edit_choiceinputs,'String',num2str(choiceInput));
+            set(handles.edit_phetype_list,'String',num2str(choiceInput));
         end
         plotInd = [];
         for i=1:length(choiceInput)
@@ -1638,6 +1718,24 @@ switch get(hObject,'Value')
         end
         handles.plotInd = sort(plotInd);
         handles.grayInd = sort(setdiff(allInd,plotInd));
+    case 4 % selected cells
+        if ~isempty(handles.selectedcellIndices)
+            handles.plotInd = handles.selectedcellIndices;
+            handles.grayInd = sort(setdiff(allInd,handles.selectedcellIndices));
+        else
+            set(handles.edit_commu,'String','No cell selected.');
+        end
+        
+        set(handles.edit_phetype_list,'String',[]);
+        guidata(hObject, handles);
+        handles = guidata(hObject);
+        [plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+        handles.plot_h = plot_h;
+        handles.plotInd = plotInd;
+        handles.grayInd = grayInd;
+        
+        
+        
 end
 guidata(hObject, handles);
 handles = guidata(hObject);
@@ -1659,52 +1757,23 @@ end
 
 
 
-function edit_choiceinputs_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_choiceinputs (see GCBO)
+function edit_phetype_list_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_phetype_list (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit_choiceinputs as text
-%        str2double(get(hObject,'String')) returns contents of edit_choiceinputs as a double
-allInd = 1:size(handles.alldata,1);
-switch get(handles.popupmenu_plotchoice,'Value')
-    case 1 % all
-        handles.plotInd = allInd;
-        handles.grayInd = [];
-        set(hObject,'String',[]);
-    case 2 % selected wells
-        choiceInput = str2num(get(hObject,'String'));
-        plotInd = [];
-        for i=1:length(choiceInput)
-            plotInd = [plotInd;find(handles.groupNo==choiceInput(i))];
-        end
-        handles.plotInd = sort(plotInd);
-        handles.grayInd = sort(setdiff(allInd,plotInd));
-    case 3 % selected phenotypes
-        choiceInput = str2num(get(hObject,'String'));
-        plotInd = [];
-        for i=1:length(choiceInput)
-            plotInd = [plotInd;find(handles.cellFate==choiceInput(i))];
-        end
-        handles.plotInd = sort(plotInd);
-        handles.grayInd = sort(setdiff(allInd,plotInd));
-end
-guidata(hObject, handles);
-handles = guidata(hObject);
-set(handles.edit_totalcellcount,'String',num2str(length(handles.plotInd)));
-
-myx = get(handles.popupmenu_x_pca,'Value');
-myy = get(handles.popupmenu_y_pca,'Value');
-myz = get(handles.popupmenu_z_pca,'Value');
-myc = get(handles.popupmenu_c_pca,'Value');
-myp = get(handles.popupmenu_selectedparams,'Value');
-handles.plot_h = plotPCA(1,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
-
+% Hints: get(hObject,'String') returns contents of edit_phetype_list as text
+%        str2double(get(hObject,'String')) returns contents of edit_phetype_list as a double
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
 guidata(hObject, handles); 
 
+
 % --- Executes during object creation, after setting all properties.
-function edit_choiceinputs_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_choiceinputs (see GCBO)
+function edit_phetype_list_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_phetype_list (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -1866,15 +1935,12 @@ function togglebutton_showselectedpolygon_Callback(hObject, eventdata, handles)
 
 
 if ~isempty(handles.originData) && ~isempty(handles.selectedcellIndices)
-    
-    myx = get(handles.popupmenu_x_pca,'Value');
-    myy = get(handles.popupmenu_y_pca,'Value');
-    myz = get(handles.popupmenu_z_pca,'Value');
-    myc = get(handles.popupmenu_c_pca,'Value');
-    myp = get(handles.popupmenu_selectedparams,'Value');
     old_xlim = get(handles.axes_pca,'XLim');
     old_ylim = get(handles.axes_pca,'YLim');
-    handles.plot_h = plotPCA(1,handles,myx,myy,myz,myc,myp,handles.plotInd,handles.grayInd,handles.selectedcellIndices);
+    [plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+    handles.plot_h = plot_h;
+    handles.plotInd = plotInd;
+    handles.grayInd = grayInd;
     set(handles.axes_pca,'XLim',old_xlim );
     set(handles.axes_pca,'YLim',old_ylim );
     if get(hObject,'Value') == 1
@@ -2065,3 +2131,226 @@ function edit_outputsignalno_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in togglebutton_orthorotate.
+function togglebutton_orthorotate_Callback(hObject, eventdata, handles)
+% hObject    handle to togglebutton_orthorotate (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of togglebutton_orthorotate
+
+
+% --- Executes on selection change in popupmenu_phenotype.
+function popupmenu_phenotype_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_phenotype (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_phenotype contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_phenotype
+contents = cellstr(get(hObject,'String'));
+switch get(hObject,'Value')
+    case 1
+        choiceInput = sort(unique(handles.cellFate))';
+        set(handles.edit_phetype_list,'String',num2str(choiceInput));
+    otherwise
+        regexp(contents{get(hObject,'Value')},'(?<=().expr(?=))');
+        mycode = regexp(contents{get(hObject,'Value')},'.+\((?<code>.+)\)','tokens');
+        set(handles.edit_phetype_list,'String',mycode{1}{1});
+end
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
+guidata(hObject, handles); 
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu_phenotype_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_phenotype (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupmenu_wellposition.
+function popupmenu_wellposition_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_wellposition (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_wellposition contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_wellposition
+
+searchInd(1,:)= str2num(get(handles.edit_selectedRows,'String'));
+searchInd(2,:)= str2num(get(handles.edit_selectedCols,'String'));
+searchInd(3,:)= str2num(get(handles.edit_selectedFields,'String'));
+contents = cellstr(get(hObject,'String'));
+switch get(hObject,'Value')
+    case 1
+        choiceInput = sort(unique(handles.groupNo))';
+        set(handles.edit_position_list,'String',num2str(choiceInput));
+        
+    otherwise
+        location = regexp(contents{get(hObject,'Value')},'r(?<row>\d+)c(?<col>\d+)','tokens');
+        row = str2num(location{1}{1});
+        col = str2num(location{1}{2});
+        wells = sort(find(searchInd(1,:)==row & searchInd(2,:)==col));
+        set(handles.edit_position_list,'String',num2str(wells));
+end
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
+guidata(hObject, handles); 
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu_wellposition_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_wellposition (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in popupmenu_selection.
+function popupmenu_selection_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_selection (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_selection contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_selection
+
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
+guidata(hObject, handles); 
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu_selection_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_selection (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in togglebutton_reset.
+function togglebutton_reset_Callback(hObject, eventdata, handles)
+% hObject    handle to togglebutton_reset (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of togglebutton_reset
+
+set(handles.popupmenu_phenotype,'Value',1);
+set(handles.popupmenu_wellposition,'Value',1);
+set(handles.popupmenu_cluster,'Value',1);
+set(handles.popupmenu_selection,'Value',1);
+allInd = 1:size(handles.alldata,1);
+handles.plotInd = allInd;
+handles.grayInd = [];
+guidata(hObject, handles);
+handles = guidata(hObject);
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
+
+
+
+function edit_position_list_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_position_list (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_position_list as text
+%        str2double(get(hObject,'String')) returns contents of edit_position_list as a double
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
+guidata(hObject, handles); 
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_position_list_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_position_list (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_cluster_list_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_cluster_list (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_cluster_list as text
+%        str2double(get(hObject,'String')) returns contents of edit_cluster_list as a double
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
+guidata(hObject, handles); 
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_cluster_list_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_cluster_list (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes when selected object is changed in plotTypeChoice.
+function plotTypeChoice_SelectionChangeFcn(hObject, eventdata, handles)
+% hObject    handle to the selected object in plotTypeChoice 
+% eventdata  structure with the following fields (see UIBUTTONGROUP)
+%	EventName: string 'SelectionChanged' (read only)
+%	OldValue: handle of the previously selected object or empty if none was selected
+%	NewValue: handle of the currently selected object
+% handles    structure with handles and user data (see GUIDATA)
+
+switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
+    case 'togglebutton_scatter2D'
+        [plot_h,plotInd,grayInd] = plotPCA(1,handles,handles.selectedcellIndices);
+        handles.plottype = 1;
+    case 'togglebutton_scatter3D'
+        [plot_h,plotInd,grayInd] = plotPCA(2,handles,handles.selectedcellIndices);
+        handles.plottype = 2;
+    case 'togglebutton_contour'
+        [plot_h,plotInd,grayInd] = plotPCA(3,handles,handles.selectedcellIndices);
+        handles.plottype = 3;
+end
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
+guidata(hObject, handles);

@@ -2,12 +2,12 @@ function maskgeneratingND_local()
 
 clear all;
 % Define information about input images and necessary parameters-----------
-ndfilename = '02032013-r1.nd';
-templateCH = 4;
+ndfilename = '130722.nd';
+templateCH = 2;
 cellCH1 = 1;
 cellsize = 80; % should be at least 30
 dilateSize = 10;
-sourcefolder = 'c:\computation\02-03-2013';
+sourcefolder = 'Q:\sorger\data\NIC\Bernhard\130722';
 %sourcefolder = 'Q:\sorger\data\NIC\Pat\02-03-2013\';
 %sourcefolder = '~/files/ImStor/sorger/data/NIC/Pat/02-03-2013';
 %------------------------------------------------
@@ -15,11 +15,11 @@ prefix = ndfilename(1:(end-3));
 [notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename);
 
 tps = [1 notp];
-sites = 29;%1:length(stagePos);
+sites = [17 19 20 21 22 24 37];%1:length(stagePos);
 
 isOpen = matlabpool('size') > 0
 if ~isOpen
-    matlabpool local 4
+    matlabpool local 
 end
 
 
@@ -45,6 +45,7 @@ parfor i=1:length(sites)
 end
 
 
+% This is the main function used to determine the segmentation
 function [nucMask,cellMask] = templateToCentroid(nucOri,cellOri,cellCoord,neighborCoord,dilateSize,borderX,borderY)
 nucMask = zeros(size(nucOri));
 cellMask = zeros(size(nucOri));
@@ -53,23 +54,39 @@ nucOri = nucOri(borderY,borderX);
 cellOri = cellOri(borderY,borderX);
 
 allCoord = [cellCoord;neighborCoord];
-%allCoord = [allCoord(:,1)-borderX(1)+1 , allCoord(:,2)-borderY(1)+1] ;
 
 BWc = zeros(size(nucOri));
 
+% Loop through a range of sigma to better detect cell edges
 for i=1.2:1:6
+    
+    % reduce edged image down to closed object
     edgedIm = bwperim(edge(imadjust(nucOri),'canny',0,i));
+    % fill closed object
     BW = imfill(edgedIm,'holes');
     BW = bwmorph(BW,'open',1);
-%    
+    
+    % loop through both center cells and neighbor cells
     for j=1:size(allCoord,1)
+        
+        % only process cells within the assigned cropped image
         if allCoord(j,1)<=size(BW,2) && allCoord(j,2)<=size(BW,1) && allCoord(j,1)>0 && allCoord(j,2)>0
+            
+            % identify closed object at the current coordinate
             BW_ind = bwselect(BW,allCoord(j,1),allCoord(j,2));
             
+            % calculate perimeter, area and majorAxisLength 
             S  = regionprops(BW_ind,'Perimeter','Area','MajorAxisLength');
+            
+            % only update the mask if parameters stay within the specified
+            % constain
             if ~isempty(S) && S.MajorAxisLength < 30 &&  S.Area > 10 && 4*pi*S.Area/S.Perimeter^2 >0.9
                 BWc = BWc | BW_ind;
             else
+                
+                % if no nuclear mask is detected with template channel,
+                % attempt to detect nuclear segment using whole cell
+                % channel
                 BW_ind = bwperim(edge(imadjust(cellOri),'canny',0,i));
                 BW_ind = imfill(BW_ind,'holes');
                 BW_ind = bwmorph(BW_ind,'open',1);
@@ -78,6 +95,8 @@ for i=1.2:1:6
                 if ~isempty(S) && S.Area > 10 && 4*pi*S.Area/S.Perimeter^2 >0.5
                     BWc = BWc | BW_ind;    
                 else
+                    % if still cannot detect nucleus, imply use extended
+                    % disk with the radius of 10 pixel
                     BW_ind = zeros(size(BWc));
                     se = strel('disk',10);
                     BW_ind(allCoord(j,2),allCoord(j,1)) = 1;
@@ -90,11 +109,11 @@ for i=1.2:1:6
         clear S;
     end
 end
-%allCoord = [cellCoord;neighborCoord];
+
+% now, attempt to detect the cell boundary by extending from th nuclear
+% segment
 BW = bwselect(BWc,allCoord(:,1),allCoord(:,2));
 nucMask_temp = bwselect(BW,allCoord(1,1),allCoord(1,2));
-
-
 
 mydistBW = bwdist(BW);
 watershedBW  = watershed(mydistBW);
@@ -112,13 +131,12 @@ for i=2:length(watershedNo)
         temp(r(j),c(j)) = cellOri(r(j),c(j));
     end
     clear r c;
-
+    % determine local threshold based on the watershed area
     ind_ThresImage = im2bw(cellOri,2*graythresh(temp));
-    %ind_ThresImage = bwmorph(ind_ThresImage,'close','Inf');
     ind_ThresImage = imfill(ind_ThresImage,'holes');
     ind_ThresImage = bwmorph(ind_ThresImage,'open','Inf');
     ThresholdedOrigImage = ThresholdedOrigImage | ind_ThresImage;
-    %ThresholdedOrigImage = bwselect(ThresholdedOrigImage,allCoord(:,1),allCoord(:,2));
+
 end
 
 
@@ -128,50 +146,32 @@ end
 
 PrimaryLabelImage = bwlabel(BW);
 
-%if isempty(find(bwselect(ThresholdedOrigImage,cellOri(1),cellOri(2)) & bwselect(ThresholdedOrigImage,neighborCoord(:,1),neighborCoord(:,2)),1))
-%    cellMask_temp = bwselect(ThresholdedOrigImage,round(cellCoord(1)),round(cellCoord(2)));
-    
-%else
-    
-    [labels_out,d]=IdentifySecPropagateSubfunction(PrimaryLabelImage,cellOri,ThresholdedOrigImage|BW,0.1);
-    
-    secondaryLabel = imfill(labels_out);
-    selectedCell_group = secondaryLabel(allCoord(1,2),allCoord(1,1));
-    [Y,X] = find(secondaryLabel== selectedCell_group);
-    cellMask_temp = zeros(size(nucMask_temp));
-    
-    if ~isempty(find(nucMask_temp,1))
-        se = strel('disk',dilateSize);
-        se2 = strel('disk',3);
-        cellMask_Largest = imdilate(nucMask_temp,se);
-        cellMask_smallest = imdilate(nucMask_temp,se2);
-        for i=1:length(Y)
-            cellMask_temp(Y(i),X(i)) = 1;
-        end
-        
-        cellMask_temp = (cellMask_temp | cellMask_smallest) & cellMask_Largest ;
-        
-        cellMask_temp = bwselect(cellMask_temp,allCoord(1,1),allCoord(1,2));
+% use cellprofiler IdentifySecondaryObject by propagation
+[labels_out,d]=IdentifySecPropagateSubfunction(PrimaryLabelImage,cellOri,ThresholdedOrigImage|BW,0.1);
+
+secondaryLabel = imfill(labels_out);
+selectedCell_group = secondaryLabel(allCoord(1,2),allCoord(1,1));
+[Y,X] = find(secondaryLabel== selectedCell_group);
+cellMask_temp = zeros(size(nucMask_temp));
+
+% ensure that the cytosolic mask is at least 3 pixel in size 
+if ~isempty(find(nucMask_temp,1))
+    se = strel('disk',dilateSize);
+    se2 = strel('disk',3);
+    cellMask_Largest = imdilate(nucMask_temp,se);
+    cellMask_smallest = imdilate(nucMask_temp,se2);
+    for i=1:length(Y)
+        cellMask_temp(Y(i),X(i)) = 1;
     end
     
-%end
+    cellMask_temp = (cellMask_temp | cellMask_smallest) & cellMask_Largest ;
+    
+    cellMask_temp = bwselect(cellMask_temp,allCoord(1,1),allCoord(1,2));
+end
+
+
 nucMask(borderY,borderX) = nucMask_temp;
 cellMask(borderY,borderX) = cellMask_temp;
-
-%cellMask = modchenvese(cellOri,0.2,BW,500,cellCoord,neighborCoord,nucMask);
-%cellMask & ~
-
-% 
-% bwNucEdge = bwperim(nucMask_temp);
-% bwCellEdge = bwperim(cellMask_temp);
-% imAdj = imadjust(cellOri)-(bwNucEdge | bwCellEdge);
-% imOut=cat(3,max(imAdj,(bwNucEdge | bwCellEdge )),max(imAdj,bwNucEdge),max(imAdj,bwNucEdge));
-% allCoord = [cellCoord;neighborCoord];
-% figure(1);imshow(imOut);hold on; plot(allCoord(:,1),allCoord(:,2),'rx'); hold off;
-% figure(2);imshow(ThresholdedOrigImage|BW);
-% figure(3);imshow(mat2gray(mydistBW));
-% figure(4);imshow(label2rgb(watershedBW));
-% drawnow;
 
 
 function maskgen_commandline(filetype,targetfolder,row,col,field,plane,templateCH,cellCH1,tps,fileformat,channelnames,cellsize,dilateSize)
@@ -179,13 +179,13 @@ function maskgen_commandline(filetype,targetfolder,row,col,field,plane,templateC
 firsttp = tps(1);
 lasttp = tps(end);
 
+% This section specific the naming of HDF5 file and subfolder
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
-
-
-
 cellpath_name = ['/field' num2str(field) '/cellpath'];
 sisterList_name = ['/field' num2str(field) '/sisterList'];
 bg_name = ['/field' num2str(field) '/bg'];
+imagesegment = ['/field' num2str(field) '/segmentsCH' num2str(templateCH)];
+selectedcells_name = ['/field' num2str(field) '/selectedcells'];
 
 cellpathinfo = h5info(fullfile(targetfolder,H5filename), cellpath_name);
 sisterListinfo = h5info(fullfile(targetfolder,H5filename), sisterList_name);
@@ -195,6 +195,8 @@ fileattrib(fullfile(targetfolder,H5filename),'+w');
 fid = H5F.open(fullfile(targetfolder,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
     H5F.close(fid);
+    
+    % Read in the cellpath matrix
     cellpath_mat = h5read(fullfile(targetfolder,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
 
     for tp=firsttp:lasttp
@@ -205,6 +207,8 @@ end
 fid = H5F.open(fullfile(targetfolder,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 if H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
     H5F.close(fid);
+    
+    % Read in the sisterList matrix
     sisterList_mat = h5read(fullfile(targetfolder,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
 
     for tp=firsttp:lasttp
@@ -215,6 +219,8 @@ end
 fid = H5F.open(fullfile(targetfolder,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 if H5L.exists(fid,bg_name,'H5P_DEFAULT')
     H5F.close(fid);
+    
+    % Read in the background point matrix, currently are not being used
     bg_mat = h5read(fullfile(targetfolder,H5filename),bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
 
     for tp=firsttp:lasttp
@@ -222,21 +228,20 @@ if H5L.exists(fid,bg_name,'H5P_DEFAULT')
     end
 end
 
-datasetname = ['/field' num2str(field) '/segmentsCH' num2str(templateCH)];
-selectedcells_name = ['/field' num2str(field) '/selectedcells'];
-fileattrib(fullfile(targetfolder,H5filename),'+w');
 
 fid = H5F.open(fullfile(targetfolder,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 
-if ~H5L.exists(fid,datasetname,'H5P_DEFAULT')
+if ~H5L.exists(fid,imagesegment,'H5P_DEFAULT')
     H5F.close(fid);
-    display(['Initializing ' H5filename ':' datasetname]);
+    display(['Initializing ' H5filename ':' imagesegment]);
 else
-    H5L.delete(fid,datasetname,'H5P_DEFAULT');
-    display(['Overwriting ' H5filename ':' datasetname]);
+    H5L.delete(fid,imagesegment,'H5P_DEFAULT');
+    display(['Overwriting ' H5filename ':' imagesegment]);
     H5F.close(fid);
 end
-h5create(fullfile(targetfolder,H5filename), datasetname, [size(cellpath{lasttp},1), lasttp, 3, 2*cellsize+1, 2*cellsize+1], 'Datatype', 'uint8', 'ChunkSize', [1, 1, 3, 2*cellsize+1, 2*cellsize+1], 'Deflate', 9);
+
+% Initialize image segment matrix
+h5create(fullfile(targetfolder,H5filename), imagesegment, [size(cellpath{lasttp},1), lasttp, 3, 2*cellsize+1, 2*cellsize+1], 'Datatype', 'uint8', 'ChunkSize', [1, 1, 3, 2*cellsize+1, 2*cellsize+1], 'Deflate', 9);
 
 selected_cells = [];
 templateinfo = loadimageinfo(filetype,fileformat,[row col field plane templateCH],firsttp,channelnames,targetfolder);
@@ -248,18 +253,19 @@ nucmask = cell(size(cellpath{lasttp},1),1);
 cytomask = cell(size(cellpath{lasttp},1),1);
 cellmask = cell(size(cellpath{lasttp},1),1);
 
-
+% First convert cellpath coordinates to be independent of sisterList,
+% meaning no cells will have coordinate of -1,-1 due to sistering
 [new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,firsttp,lasttp,1:length(cellpath{lasttp}));
 tic
 for cellNo = CellInd
     
+    % Check to make sure that the current path is not out-of-bound in any
+    % frames and contain the necessary coordinates
     [pathLogic,c_cellpath] = check_path(new_cellpath,cellNo,firsttp,lasttp,imheight,imwidth);
     
     if pathLogic
-
-        
+        % If good track, adding current cell to the selected_cells List
         selected_cells = [selected_cells;cellNo];
-        
         
         template = zeros(2*cellsize+1,2*cellsize+1,lasttp);
         cellIm = zeros(2*cellsize+1,2*cellsize+1,lasttp);
@@ -267,11 +273,12 @@ for cellNo = CellInd
         display(['r' num2str(row) 'c' num2str(col) 'f' num2str(field) ',Processing cell:' num2str(cellNo)]);
         for tp = firsttp:lasttp
             if c_cellpath(tp,1)>0 && c_cellpath(tp,2)>0
+                
+                % Determine the image coordinate
                 xL=max(c_cellpath(tp,1)-cellsize,1);
                 xR=min(c_cellpath(tp,1)+cellsize,imwidth);
                 yL=max(c_cellpath(tp,2)-cellsize,1);
                 yR=min(c_cellpath(tp,2)+cellsize,imheight);
-
                 
                 if xR-xL == cellsize*2
                     borderX = 1:(cellsize*2+1);
@@ -300,9 +307,12 @@ for cellNo = CellInd
                 cellCoord = [c_cellpath(tp,1)-xL c_cellpath(tp,2)-yL];
                 neighborCoord = [new_cellpath{tp}(closebyCells,1)-xL new_cellpath{tp}(closebyCells,2)-yL];
                 
+                % Load the original images for the specified crop area, for
+                % both template channel and whole cell channel
                 template(borderY,borderX,tp) = loadimage(filetype,fileformat,[row col field plane templateCH -1],tp,channelnames,{[yL yR], [xL xR]},targetfolder);
                 cellIm(borderY,borderX,tp) =   loadimage(filetype,fileformat,[row col field plane cellCH1 -1],tp,channelnames,{[yL yR], [xL xR]},targetfolder);
-
+                
+                % Determine nuclear, cytosolic and cell segment
                 [nucMask,cellMask] = templateToCentroid(template(:,:,tp),cellIm(:,:,tp),cellCoord,neighborCoord,dilateSize,borderX,borderY);
                 
                 if ~isempty(find(nucMask==1,1))
@@ -315,15 +325,16 @@ for cellNo = CellInd
         end
         t=toc;
         display(['r' num2str(row) 'c' num2str(col) 'f' num2str(field) ',Done Processing cell:' num2str(cellNo), ' Elapsed time:' num2str(t) 's']);
-        % cell,time,segments,x,y
-        h5write(fullfile(targetfolder,H5filename), datasetname, newsegments, [cellNo firsttp 1 1 1], [1 lasttp-firsttp+1 3 size(template,1) size(template,2)]);
+        % write the output segment to HDF5 file
+        % order of the imagesegment matrix is : cell,time,segments,x,y
+        h5write(fullfile(targetfolder,H5filename), imagesegment, newsegments, [cellNo firsttp 1 1 1], [1 lasttp-firsttp+1 3 size(template,1) size(template,2)]);
 
         %[uv sv] = memory;
         %fprintf('%f GB\n', uv.MemUsedMATLAB/1e9);
     end
 end
 
-
+% write the selectedcells list to HDF5 file
 fid = H5F.open(fullfile(targetfolder,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 
 if ~H5L.exists(fid,selectedcells_name,'H5P_DEFAULT')
@@ -339,6 +350,184 @@ h5create(fullfile(targetfolder,H5filename), selectedcells_name, length(selected_
 h5write(fullfile(targetfolder,H5filename), selectedcells_name, uint32(selected_cells));
 
 
+% This code is used to convert cellTrack coordinates to individual separate
+% coordinate without the embeded sister information
+function [new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,first_tp,last_tp,testList)
+sis_cellpath = cell(last_tp,1);
+sis_sisterList = cell(last_tp,1);
+cInd=1;
+% Determine cells with sisters
+withSisInd = intersect(find(sisterList{last_tp}(:,1)~=-1),testList);
+% Determine cells without sisters
+
+while ~isempty(withSisInd) 
+    SisList = withSisInd(1);
+    firstSis = setdiff(sisterList{last_tp}(withSisInd(1),:),-1);
+    secondSis = firstSis;
+    for s = 1:length(firstSis)
+        secondSis = [secondSis setdiff(sisterList{last_tp}(firstSis(s),:),-1)];
+    end
+    thirdSis = secondSis;
+    for s = 1:length(secondSis)
+        thirdSis = [thirdSis setdiff(sisterList{last_tp}(secondSis(s),:),-1)];
+    end
+    
+    SisList = unique(thirdSis);
+    
+    for s=1:length(SisList)
+        
+        for t = first_tp:last_tp
+            if cellpath{t}(SisList(s),1) ~= -1 && cellpath{t}(SisList(s),2) ~= -1
+                sis_cellpath{t}(cInd,:)   = cellpath{t}(SisList(s),:);
+                sis_sisterList{t}(cInd,:) = [-1 -1 -1];
+            else
+                havecoordInd = find(cellpath{t}(SisList,1) ~= -1 & cellpath{t}(SisList,2) ~= -1);
+                if length(havecoordInd) == 1
+                    sis_cellpath{t}(cInd,:)   = cellpath{t}(SisList(havecoordInd),:);
+                    sis_sisterList{t}(cInd,:) = [-1 -1 -1];
+                else
+                    oriSis = sisterList{last_tp}(SisList(s),:);
+                    NegOneInd = find(oriSis==-1,1,'first');
+                    if ~isempty(NegOneInd)
+                        mySis = oriSis(1:(NegOneInd-1));
+                    else
+                        mySis = oriSis;
+                    end
+                    for ms = length(mySis):-1:1
+                        if cellpath{t}(mySis(ms),1) ~= -1 || cellpath{t}(mySis(ms),2) ~= -1
+                            mytrueParent = mySis(ms);
+                            break
+                        end
+                    end
+                    sis_cellpath{t}(cInd,:)   = cellpath{t}(mytrueParent,:);
+                    sis_sisterList{t}(cInd,:) = [-1 -1 -1];
+                end
+            end
+        end
+        cInd = cInd+1;
+    end
+    
+    withSisInd = setdiff(withSisInd,SisList);
+end
+
+noSisterInd = intersect(find(sisterList{last_tp}(:,1)==-1 & cellpath{last_tp}(:,1)~=-1),testList);
+for t = first_tp:last_tp
+    nosis_cellpath{t}   = cellpath{t}(noSisterInd,:);
+    nosis_sisterList{t} = sisterList{t}(noSisterInd,:) ;
+end
+
+% Combine data
+for t = first_tp:last_tp
+    new_cellpath{t} =[sis_cellpath{t};nosis_cellpath{t}];
+    new_sisterList{t} = [sis_sisterList{t};nosis_sisterList{t}];
+end
+
+display('Done removing sisters');
+
+function [pathLogic,ind_cellpath] = check_path(cellpath,cellNo,firsttp,lasttp,imheight,imwidth)
+% check if this path is good
+%#1 if acquiring and being inferior sister, combine trace of self with
+%prior-sister
+% has sister?
+
+ind_cellpath = zeros(lasttp,2);
+
+for t=firsttp:lasttp
+    ind_cellpath(t,:) = cellpath{t}(cellNo,:);
+end
+deathInd = find(ind_cellpath(:,1)==-2,1,'first');
+
+if isempty(deathInd)
+    temp_cellpath = ind_cellpath;
+else
+    temp_cellpath = ind_cellpath(1:(deathInd-1),:);
+end
+
+% Containing large x-y drift in comparison to background points ?
+
+% Is there any point that lies outside the image area.
+if isempty(  find(temp_cellpath(:,1)>imwidth | temp_cellpath(:,1)<0 | temp_cellpath(:,2)>imheight | temp_cellpath(:,2)<0,1)  )
+
+    diff_X = diff(temp_cellpath(:,1));
+    diff_Y = diff(temp_cellpath(:,2));
+    med_XY = median([diff_X;diff_Y]);
+    std_XY = std([diff_X;diff_Y]);
+    
+    if isempty(  find(diff_X > (med_XY+30*std_XY) | diff_Y > (med_XY+30*std_XY) ,1)  )
+        pathLogic = 1;
+    else
+        pathLogic = 0;
+    end
+    
+else
+    display(['cell ' num2str(cellNo) ':cell track out of bound']);
+    pathLogic = 0;
+end
+
+% This code is used to code original images from the different image input type 
+function outputim = loadimage(filetype,fileformat,imlocation,tp,channelnames,pixelsreg,targetfolder)
+row = imlocation(1);
+col = imlocation(2);
+field = imlocation(3);
+plane = imlocation(4);
+channel1 = imlocation(5);
+channel2 = imlocation(6);
+totalCH = length(channelnames);
+
+if channel2 == -1
+    switch filetype
+        case 1
+            filename = sprintf(fileformat,row,col,field,plane,channel1,tp);
+            outputim = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg); 
+        case 2
+            outputim = imread(fullfile(targetfolder,fileformat),'Index',totalCH*(tp-1)+channel1,'PixelRegion',pixelsreg);
+        case 3
+            filename = sprintf(fileformat,channelnames{channel1},tp);
+            outputim = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
+    end
+
+    outputim = mat2gray(outputim);
+
+else
+    switch filetype
+        case 1
+            filename = sprintf(fileformat,row,col,field,plane,channel1,tp);
+            nominim = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
+            filename = sprintf(fileformat,row,col,field,plane,channel2,tp);
+            denomin = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
+        case 2
+            nominim = imread(fullfile(targetfolder,fileformat),'Index',totalCH*(tp-1)+channel1,'PixelRegion',pixelsreg);
+            denomin = imread(fullfile(targetfolder,fileformat),'Index',totalCH*(tp-1)+channel2,'PixelRegion',pixelsreg);
+        case 3
+            filename = sprintf(fileformat,channelnames{channel1},tp);
+            nominim = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
+            filename = sprintf(fileformat,channelnames{channel2},tp);
+            denomin = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
+    end
+    outputim = mat2gray((im2double(nominim))./(im2double(denomin)));
+end
+
+function iminfo = loadimageinfo(filetype,fileformat,imlocation,tp,channelnames,targetfolder)
+row = imlocation(1);
+col = imlocation(2);
+field = imlocation(3);
+plane = imlocation(4);
+channel = imlocation(5);
+totalCH = length(channelnames);
+
+switch filetype
+    case 1
+        filename = sprintf(fileformat,row,col,field,plane,channel,tp);
+        iminfo = imfinfo(fullfile(targetfolder,filename));
+    case 2
+        iminfo = imfinfo(fullfile(targetfolder,fileformat),'Index',totalCH*(tp-1)+channel);
+    case 3
+        filename = sprintf(fileformat,channelnames{channel},tp);
+        iminfo = imfinfo(fullfile(targetfolder,filename));
+end
+
+
+% for contour tracking analysis, currently not being used
 function seg = modchenvese(I,mu,BW,maxIter,cellCoord,neighborCoord,nucMask)
 I = imadjust(I);
 mask = bwperim(BW);
@@ -599,178 +788,3 @@ if exist(fullfile(sourcefolder,filename),'file')
     end
     fclose(fid);
 end
-
-function [new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,first_tp,last_tp,testList)
-sis_cellpath = cell(last_tp,1);
-sis_sisterList = cell(last_tp,1);
-cInd=1;
-% Determine cells with sisters
-withSisInd = intersect(find(sisterList{last_tp}(:,1)~=-1),testList);
-% Determine cells without sisters
-
-while ~isempty(withSisInd) 
-    SisList = withSisInd(1);
-    firstSis = setdiff(sisterList{last_tp}(withSisInd(1),:),-1);
-    secondSis = firstSis;
-    for s = 1:length(firstSis)
-        secondSis = [secondSis setdiff(sisterList{last_tp}(firstSis(s),:),-1)];
-    end
-    thirdSis = secondSis;
-    for s = 1:length(secondSis)
-        thirdSis = [thirdSis setdiff(sisterList{last_tp}(secondSis(s),:),-1)];
-    end
-    
-    SisList = unique(thirdSis);
-    
-    for s=1:length(SisList)
-        
-        for t = first_tp:last_tp
-            if cellpath{t}(SisList(s),1) ~= -1 && cellpath{t}(SisList(s),2) ~= -1
-                sis_cellpath{t}(cInd,:)   = cellpath{t}(SisList(s),:);
-                sis_sisterList{t}(cInd,:) = [-1 -1 -1];
-            else
-                havecoordInd = find(cellpath{t}(SisList,1) ~= -1 & cellpath{t}(SisList,2) ~= -1);
-                if length(havecoordInd) == 1
-                    sis_cellpath{t}(cInd,:)   = cellpath{t}(SisList(havecoordInd),:);
-                    sis_sisterList{t}(cInd,:) = [-1 -1 -1];
-                else
-                    oriSis = sisterList{last_tp}(SisList(s),:);
-                    NegOneInd = find(oriSis==-1,1,'first');
-                    if ~isempty(NegOneInd)
-                        mySis = oriSis(1:(NegOneInd-1));
-                    else
-                        mySis = oriSis;
-                    end
-                    for ms = length(mySis):-1:1
-                        if cellpath{t}(mySis(ms),1) ~= -1 || cellpath{t}(mySis(ms),2) ~= -1
-                            mytrueParent = mySis(ms);
-                            break
-                        end
-                    end
-                    sis_cellpath{t}(cInd,:)   = cellpath{t}(mytrueParent,:);
-                    sis_sisterList{t}(cInd,:) = [-1 -1 -1];
-                end
-            end
-        end
-        cInd = cInd+1;
-    end
-    
-    withSisInd = setdiff(withSisInd,SisList);
-end
-
-noSisterInd = intersect(find(sisterList{last_tp}(:,1)==-1 & cellpath{last_tp}(:,1)~=-1),testList);
-for t = first_tp:last_tp
-    nosis_cellpath{t}   = cellpath{t}(noSisterInd,:);
-    nosis_sisterList{t} = sisterList{t}(noSisterInd,:) ;
-end
-
-% Combine data
-for t = first_tp:last_tp
-    new_cellpath{t} =[sis_cellpath{t};nosis_cellpath{t}];
-    new_sisterList{t} = [sis_sisterList{t};nosis_sisterList{t}];
-end
-
-display('Done removing sisters');
-
-function [pathLogic,ind_cellpath] = check_path(cellpath,cellNo,firsttp,lasttp,imheight,imwidth)
-% check if this path is good
-%#1 if acquiring and being inferior sister, combine trace of self with
-%prior-sister
-% has sister?
-
-ind_cellpath = zeros(lasttp,2);
-
-for t=firsttp:lasttp
-    ind_cellpath(t,:) = cellpath{t}(cellNo,:);
-end
-deathInd = find(ind_cellpath(:,1)==-2,1,'first');
-
-if isempty(deathInd)
-    temp_cellpath = ind_cellpath;
-else
-    temp_cellpath = ind_cellpath(1:(deathInd-1),:);
-end
-
-% Containing large x-y drift in comparison to background points ?
-
-% Is there any point that lies outside the image area.
-if isempty(  find(temp_cellpath(:,1)>imwidth | temp_cellpath(:,1)<0 | temp_cellpath(:,2)>imheight | temp_cellpath(:,2)<0,1)  )
-
-    diff_X = diff(temp_cellpath(:,1));
-    diff_Y = diff(temp_cellpath(:,2));
-    med_XY = median([diff_X;diff_Y]);
-    std_XY = std([diff_X;diff_Y]);
-    
-    if isempty(  find(diff_X > (med_XY+30*std_XY) | diff_Y > (med_XY+30*std_XY) ,1)  )
-        pathLogic = 1;
-    else
-        pathLogic = 0;
-    end
-    
-else
-    display(['cell ' num2str(cellNo) ':cell track out of bound']);
-    pathLogic = 0;
-end
-
-function outputim = loadimage(filetype,fileformat,imlocation,tp,channelnames,pixelsreg,targetfolder)
-row = imlocation(1);
-col = imlocation(2);
-field = imlocation(3);
-plane = imlocation(4);
-channel1 = imlocation(5);
-channel2 = imlocation(6);
-totalCH = length(channelnames);
-
-if channel2 == -1
-    switch filetype
-        case 1
-            filename = sprintf(fileformat,row,col,field,plane,channel1,tp);
-            outputim = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg); 
-        case 2
-            outputim = imread(fullfile(targetfolder,fileformat),'Index',totalCH*(tp-1)+channel1,'PixelRegion',pixelsreg);
-        case 3
-            filename = sprintf(fileformat,channelnames{channel1},tp);
-            outputim = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
-    end
-
-    outputim = mat2gray(outputim);
-
-else
-    switch filetype
-        case 1
-            filename = sprintf(fileformat,row,col,field,plane,channel1,tp);
-            nominim = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
-            filename = sprintf(fileformat,row,col,field,plane,channel2,tp);
-            denomin = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
-        case 2
-            nominim = imread(fullfile(targetfolder,fileformat),'Index',totalCH*(tp-1)+channel1,'PixelRegion',pixelsreg);
-            denomin = imread(fullfile(targetfolder,fileformat),'Index',totalCH*(tp-1)+channel2,'PixelRegion',pixelsreg);
-        case 3
-            filename = sprintf(fileformat,channelnames{channel1},tp);
-            nominim = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
-            filename = sprintf(fileformat,channelnames{channel2},tp);
-            denomin = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
-    end
-    outputim = mat2gray((im2double(nominim))./(im2double(denomin)));
-end
-
-function iminfo = loadimageinfo(filetype,fileformat,imlocation,tp,channelnames,targetfolder)
-row = imlocation(1);
-col = imlocation(2);
-field = imlocation(3);
-plane = imlocation(4);
-channel = imlocation(5);
-totalCH = length(channelnames);
-
-switch filetype
-    case 1
-        filename = sprintf(fileformat,row,col,field,plane,channel,tp);
-        iminfo = imfinfo(fullfile(targetfolder,filename));
-    case 2
-        iminfo = imfinfo(fullfile(targetfolder,fileformat),'Index',totalCH*(tp-1)+channel);
-    case 3
-        filename = sprintf(fileformat,channelnames{channel},tp);
-        iminfo = imfinfo(fullfile(targetfolder,filename));
-end
-
-

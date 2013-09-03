@@ -53,7 +53,11 @@ switch filetype
             outputim = imread(fullfile(SourceF,fileformat),'Index',totalCH*(tp-1)+channel);
         end
     case 3
-        filename = sprintf(fileformat,channelnames{channel},tp);
+        if ~isempty(channelnames)
+            filename = sprintf(fileformat,channelnames{channel},tp);
+        else
+            filename = sprintf(fileformat,tp);
+        end
         if exist(fullfile(SourceF,filename),'file');
             outputim = imread(fullfile(SourceF,filename));
         end
@@ -1223,10 +1227,17 @@ set(handles.edit_currentFrame,'String',num2str(tp));
 
 set(handles.slider_frames,'Value',tp);
 if handles.filetype == 3
-    filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+    if ~isempty(handles.channelnames)
+        filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+    else
+        filename = sprintf(fileformat,first_tp);
+    end
     first_info = imfinfo(fullfile(handles.SourceF,filename));
-    
-    filename = sprintf(fileformat,handles.channelnames{channel},tp);
+    if ~isempty(handles.channelnames)
+        filename = sprintf(fileformat,handles.channelnames{channel},tp);
+    else
+        filename = sprintf(fileformat,tp);
+    end
     current_info = imfinfo(fullfile(handles.SourceF,filename));
     [Y, M, D, H, MN, S]  = datevec(datenum(current_info.DateTime,'yyyymmdd HH:MM:SS.FFF')-datenum(first_info.DateTime,'yyyymmdd HH:MM:SS.FFF'));
     hour = 24*D+round(H);
@@ -1383,9 +1394,17 @@ end
 set(handles.slider_frames,'Value',pre_tp);
 previousframe = loadimage(handles.filetype,fileformat,[row col field plane channel],pre_tp,handles.channelnames,handles.SourceF);
 if handles.filetype == 3
-    filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+    if ~isempty(handles.channelnames)
+        filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+    else
+        filename = sprintf(fileformat,first_tp);
+    end
     first_info = imfinfo(fullfile(handles.SourceF,filename));
-    filename = sprintf(fileformat,handles.channelnames{channel},pre_tp);
+    if ~isempty(handles.channelnames)
+        filename = sprintf(fileformat,handles.channelnames{channel},pre_tp);
+    else
+        filename = sprintf(fileformat,pre_tp);
+    end
     current_info = imfinfo(fullfile(handles.SourceF,filename));
     [Y, M, D, H, MN, S]  = datevec(datenum(current_info.DateTime,'yyyymmdd HH:MM:SS.FFF')-datenum(first_info.DateTime,'yyyymmdd HH:MM:SS.FFF'));
     hour = 24*D+round(H);
@@ -1433,13 +1452,21 @@ else
     post_tp=c_tp+1;
 end
 if handles.filetype == 3
-    filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+    if ~isempty(handles.channelnames)
+        filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+    else
+        filename = sprintf(fileformat,first_tp);
+    end
     first_info = imfinfo(fullfile(handles.SourceF,filename));
 end
 set(handles.slider_frames,'Value',post_tp);
 nextframe = loadimage(handles.filetype,fileformat,[row col field plane channel],post_tp,handles.channelnames,handles.SourceF);
 if handles.filetype == 3
-    filename = sprintf(fileformat,handles.channelnames{channel},post_tp);
+    if ~isempty(handles.channelnames)
+        filename = sprintf(fileformat,handles.channelnames{channel},post_tp);
+    else
+        filename = sprintf(fileformat,post_tp);
+    end
     current_info = imfinfo(fullfile(handles.SourceF,filename));
     [Y, M, D, H, MN, S]  = datevec(datenum(current_info.DateTime,'yyyymmdd HH:MM:SS.FFF')-datenum(first_info.DateTime,'yyyymmdd HH:MM:SS.FFF'));
     hour = 24*D+round(H);
@@ -1488,10 +1515,19 @@ set(handles.edit_currentFrame,'String',num2str(tp));
 
 
 if handles.filetype == 3
-    filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+
+    if ~isempty(handles.channelnames)
+        filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+    else
+        filename = sprintf(fileformat,first_tp);
+    end
     first_info = imfinfo(fullfile(handles.SourceF,filename));
     
-    filename = sprintf(fileformat,handles.channelnames{channel},tp);
+    if ~isempty(handles.channelnames)
+        filename = sprintf(fileformat,handles.channelnames{channel},tp);
+    else
+        filename = sprintf(fileformat,tp);
+    end
     current_info = imfinfo(fullfile(handles.SourceF,filename));
     [Y, M, D, H, MN, S]  = datevec(datenum(current_info.DateTime,'yyyymmdd HH:MM:SS.FFF')-datenum(first_info.DateTime,'yyyymmdd HH:MM:SS.FFF'));
     hour = 24*D+round(H);
@@ -1623,14 +1659,23 @@ if c_tp~=endFrame+handles.increment
     handles = guidata(hObject);
     
     if handles.filetype == 3
-        filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+        if ~isempty(handles.channelnames)
+            filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+        else
+            filename = sprintf(fileformat,first_tp);
+        end
+
         first_info = imfinfo(fullfile(handles.SourceF,filename));
     end
     for tp=c_tp:handles.increment:endFrame
         set(handles.slider_frames,'Value',tp);
         currentframe = loadimage(handles.filetype,fileformat,[row col field plane channel],tp,handles.channelnames,handles.SourceF);
         if handles.filetype == 3
-            filename = sprintf(fileformat,handles.channelnames{channel},tp);
+            if ~isempty(handles.channelnames)
+                filename = sprintf(fileformat,handles.channelnames{channel},tp);
+            else
+                filename = sprintf(fileformat,tp);
+            end
             current_info = imfinfo(fullfile(handles.SourceF,filename));
             [Y, M, D, H, MN, S]  = datevec(datenum(current_info.DateTime,'yyyymmdd HH:MM:SS.FFF')-datenum(first_info.DateTime,'yyyymmdd HH:MM:SS.FFF'));
             hour = 24*D+round(H);
@@ -3148,13 +3193,21 @@ fileformat = get(handles.edit_fileformat,'String');
 
 first_tp = str2num(get(handles.edit_firstframe,'String'));
 if handles.filetype == 3
-    filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+    if ~isempty(handles.channelnames)
+        filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+    else
+        filename = sprintf(fileformat,first_tp);
+    end
     first_info = imfinfo(fullfile(handles.SourceF,filename));
 end
 
 currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
 if handles.filetype == 3
-    filename = sprintf(fileformat,handles.channelnames{channel},tp);
+    if ~isempty(handles.channelnames)
+        filename = sprintf(fileformat,handles.channelnames{channel},tp);
+    else
+        filename = sprintf(fileformat,tp);
+    end
     current_info = imfinfo(fullfile(handles.SourceF,filename));
 end
 
@@ -3218,7 +3271,7 @@ first_tp = str2num(get(handles.edit_firstframe,'String'));
 last_tp = str2num(get(handles.edit_lastframe,'String'));
 n=1;
 
-aviobj = VideoWriter(['myMov_r' num2str(row) 'c' num2str(col) 'f' num2str(field) 'ch' num2str(channel) '.avi']);
+aviobj = VideoWriter(fullfile(get(handles.edit_sourceF,'String'),['myMov_r' num2str(row) 'c' num2str(col) 'f' num2str(field) 'ch' num2str(channel) '.avi']));
 aviobj.FrameRate = 12;
 aviobj.Quality = 80;
 open(aviobj);
@@ -3228,14 +3281,22 @@ set(gca,'nextplot','replacechildren');
 set(gcf,'Renderer','zbuffer');
 
 if handles.filetype == 3
-    filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+    if ~isempty(handles.channelnames)
+        filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+    else
+        filename = sprintf(fileformat,first_tp);
+    end
     first_info = imfinfo(fullfile(handles.SourceF,filename));
 end
 
 for tp=first_tp:last_tp
     currentframe = loadimage(handles.filetype,fileformat,[row col field plane channel],tp,handles.channelnames,handles.SourceF);
     if handles.filetype == 3
-        filename = sprintf(fileformat,handles.channelnames{channel},tp);
+        if ~isempty(handles.channelnames)
+            filename = sprintf(fileformat,handles.channelnames{channel},tp);
+        else
+            filename = sprintf(fileformat,tp);
+        end
         current_info = imfinfo(fullfile(handles.SourceF,filename));
     end
     
@@ -3538,7 +3599,11 @@ first_tp = str2num(get(handles.edit_firstframe,'String'));
 last_tp = str2num(get(handles.edit_lastframe,'String'));
 
 if handles.filetype == 3
-    filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+    if ~isempty(handles.channelnames)
+        filename = sprintf(fileformat,handles.channelnames{channel},first_tp);
+    else
+        filename = sprintf(fileformat,first_tp);
+    end
     first_info = imfinfo(fullfile(handles.SourceF,filename));
 end
 if c_tp>last_tp
@@ -3551,7 +3616,11 @@ end
 
 currentframe = loadimage(handles.filetype,fileformat,[row col field plane channel],tp,handles.channelnames,handles.SourceF);
 if handles.filetype == 3
-    filename = sprintf(fileformat,handles.channelnames{channel},tp);
+    if ~isempty(handles.channelnames)
+        filename = sprintf(fileformat,handles.channelnames{channel},tp);
+    else
+        filename = sprintf(fileformat,tp);
+    end
     current_info = imfinfo(fullfile(handles.SourceF,filename));
     [Y, M, D, H, MN, S]  = datevec(datenum(current_info.DateTime,'yyyymmdd HH:MM:SS.FFF')-datenum(first_info.DateTime,'yyyymmdd HH:MM:SS.FFF'));
     hour = 24*D+round(H);
@@ -3913,12 +3982,11 @@ if exist(filename,'file')
             sind=sind+1;
         end
         
-        % Find stage naming
         testInd = regexp(tline,'WaveName\d+');
         num = length(testInd);
         if num > 0
-            wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match');
-            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_)\w+(?=")', 'match');
+            wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match')
+            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_).+(?=")', 'match')
             waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
             wind=wind+1;
         end
@@ -3940,6 +4008,9 @@ if notp==-1
     return;
 end
 
+
+handles.filetype = 3;
+set(handles.radiobutton_customtiff,'Value',1);
 set(handles.edit_firstframe,'String',num2str(1));
 set(handles.edit_lastframe,'String',num2str(notp));
 set(handles.edit_currentFrame,'String',num2str(1));
@@ -3951,23 +4022,37 @@ handles.channelnames = waveName;
 
 prefix = handles.ndfilename(1:(end-3));
 handles.prefix = prefix;
-fileformat = [prefix '_%s_s1_t%g.TIF'];
+
+if ~isempty(waveName)
+    fileformat = [prefix '_%s_s1_t%g.TIF'];
+else
+    fileformat = [prefix '_s1_t%g.TIF'];
+end
 set(handles.edit_fileformat,'String',fileformat);
 
-tokens   = regexp(stageName{1}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
-if ~isempty(tokens)
-    
-    row = tokens{1}{1};
-    col = tokens{1}{2};
+L = regexp(stageName{1}, 'r(?<row>\d+)','names');
+if ~isempty(L)
+    row = L.row;
     set(handles.edit_row,'String',row);
-    set(handles.edit_col,'String',col);
 else
     set(handles.edit_row,'String','1');
-    set(handles.edit_col,'String','1');
 end
 
-handles.filetype = 3;
-set(handles.radiobutton_customtiff,'Value',1);
+L = regexp(stageName{1}, 'c(?<col>\d+)','names');
+if ~isempty(L)
+    col = L.col;
+    set(handles.edit_col,'String',col);
+else
+    set(handles.edit_col,'String','1');
+end
+L = regexp(stageName{1}, 'f(?<field>\d+)','names');
+
+if ~isempty(L)
+    field = L.field;
+    set(handles.edit_field,'String',field);
+else
+    set(handles.edit_field,'String','1');
+end
 
 guidata(hObject, handles);
 
@@ -3979,26 +4064,45 @@ function popupmenu_stagePos_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 set(handles.edit_stageInfo,'String',handles.stageName{get(hObject,'Value')});
-fileformat = [handles.prefix '_%s_s' num2str(get(hObject,'Value')) '_t%g.TIF'];
+
+
+if ~isempty(handles.channelnames)
+    fileformat = [handles.prefix '_%s_s' num2str(get(hObject,'Value')) '_t%g.TIF'];
+else
+    fileformat = [handles.prefix '_s' num2str(get(hObject,'Value')) '_t%g.TIF'];
+end
+
 set(handles.edit_fileformat,'String',fileformat);
 
-tokens   = regexp(handles.stageName{get(hObject,'Value')}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
-row = tokens{1}{1};
-col = tokens{1}{2};
-set(handles.edit_row,'String',row);
-set(handles.edit_col,'String',col);
+L = regexp(handles.stageName{get(hObject,'Value')}, 'r(?<row>\d+)','names');
 
-
-tokens   = regexp(handles.stageName{get(hObject,'Value')}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
-if ~isempty(tokens)
-    row = tokens{1}{1};
-    col = tokens{1}{2};
+if ~isempty(L)
+    row = L.row;
     set(handles.edit_row,'String',row);
+else
+    set(handles.edit_row,'String','1');
+end
+
+L = regexp(handles.stageName{get(hObject,'Value')}, 'c(?<col>\d+)','names');
+
+if ~isempty(L)
+    col = L.col;
     set(handles.edit_col,'String',col);
 else
-    set(handles.edit_row,'String',num2str(get(hObject,'Value')));
     set(handles.edit_col,'String','1');
 end
+L = regexp(handles.stageName{get(hObject,'Value')}, 'f(?<field>\d+)','names');
+
+if ~isempty(L)
+    field = L.field;
+    set(handles.edit_field,'String',field);
+else
+    set(handles.edit_field,'String','1');
+end
+
+
+
+
 
 guidata(hObject, handles);
 

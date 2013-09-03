@@ -15,7 +15,7 @@ end
 
 fileattrib(fullfile(SourceF,H5filename),'+w');
 
-load fftexecutiontimes
+load('~/fftexecutiontimes.mat');
 % calculate optimal conditions for fft analysis
 fftw('planner', 'hybrid');
 opt = detbestlength2(FFTrv,FFTiv,IFFTiv,2*[outersize outersize],2*[cellsize cellsize],1,1);
@@ -195,7 +195,7 @@ end
 
 function [x y BW] = templateToCentroid(M,xg,yg)
 BWc = zeros(size(M));
-for i=1.2:0.6:3
+for i=1.2:0.6:5
     edgedIm = edge(M,'canny',0,i);
     BW = imfill(edgedIm,'holes');
     

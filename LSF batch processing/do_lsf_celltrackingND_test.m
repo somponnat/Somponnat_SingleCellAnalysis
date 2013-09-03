@@ -2,22 +2,18 @@ function do_lsf_celltrackingND_test()
 clc;
 clear all;
 % Define information about input images and necessary parameters-----------
-ndfilename ='130404.nd';
+ndfilename = '130825.nd';
 templateCH = 2;
 increment = 1;
-cellsize = 40;
-outersize = 65;
+cellsize = 30;
+outersize = 60;
 similarityThres = 0.9;
-sourcefolder = 'Z:\sorger\data\NIC\Bernhard\130404';
+sourcefolder = '/hms/scratch1/ss240/130825/130825';
 %------------------------------------------------
-currentF = pwd;
-cd(sourcefolder);
 prefix = ndfilename(1:(end-3));
-[notp stagePos stageName channelnames] = readndfile(ndfilename);
-cd(currentF);
-tps = [1 3];
+[notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename)
+tps = [1 2];
 sites = 1;
-
 
 for site = sites
     
@@ -41,16 +37,18 @@ end
 
 
 
-function [notp stagePos stageName waveName] = readndfile(filename)
+
+function [notp stagePos stageName waveName] = readndfile(sourcefolder,filename)
 % Search for number of string matches per line.
 notp=-1;
 stagePos = [];
 stageName = [];
 waveName = [];
 
+fullfile(sourcefolder,filename)
 
-if exist(filename,'file')
-    fid = fopen(filename);
+if exist(fullfile(sourcefolder,filename),'file')
+    fid = fopen(fullfile(sourcefolder,filename));
     y = 0;
     tline = fgetl(fid);
     sind = 1;
@@ -93,5 +91,3 @@ if exist(filename,'file')
     end
     fclose(fid);
 end
-
-

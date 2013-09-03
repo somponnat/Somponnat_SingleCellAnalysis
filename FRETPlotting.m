@@ -4613,7 +4613,7 @@ if exist(fullfile(pathname,filename),'file')
         num = length(testInd);
         if num > 0
             wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match');
-            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_)\w+(?=")', 'match');
+            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_).+(?=")', 'match');
             waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
             wind=wind+1;
         end

@@ -2,21 +2,22 @@ function do_lsf_celltrackingND()
 
 clear all;
 % Define information about input images and necessary parameters-----------
-ndfilename = '130404.nd';
+ndfilename = '130825.nd';
 templateCH = 2;
 increment = 1;
-cellsize = 40;
-outersize = 90;
+cellsize = 30;
+outersize = 60;
 similarityThres = 0.9;
-sourcefolder = '/files/ImStor/sorger/data/NIC/Bernhard/130404';
+sourcefolder = '/hms/scratch1/ss240/130825/130825';
 %------------------------------------------------
 currentF = pwd;
 cd(sourcefolder);
 prefix = ndfilename(1:(end-3));
-[notp stagePos stageName channelnames] = readndfile(ndfilename);
+[notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename);
 cd(currentF);
-tps = [1 notp];
-sites = 1:length(stagePos);
+tps = [56 400];
+sites = 1:32;
+%sites = 1:length(stagePos);
 
 jobmgr = findResource('scheduler', 'type', 'lsf');
 jobmgr.ClusterMatlabRoot = '/opt/matlab';
@@ -47,16 +48,18 @@ end
 
 job.submit();
 
-function [notp stagePos stageName waveName] = readndfile(filename)
+
+function [notp stagePos stageName waveName] = readndfile(sourcefolder,filename)
 % Search for number of string matches per line.
 notp=-1;
 stagePos = [];
 stageName = [];
 waveName = [];
 
+fullfile(sourcefolder,filename)
 
-if exist(filename,'file')
-    fid = fopen(filename);
+if exist(fullfile(sourcefolder,filename),'file')
+    fid = fopen(fullfile(sourcefolder,filename));
     y = 0;
     tline = fgetl(fid);
     sind = 1;
@@ -99,5 +102,4 @@ if exist(filename,'file')
     end
     fclose(fid);
 end
-
 

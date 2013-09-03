@@ -1,4 +1,4 @@
-function do_lsf_moviemakingND()
+function do_lsf_moviemakingND_test()
 
 
 % Define parameters related to the process---------
@@ -9,7 +9,7 @@ illumcorlogic = 1; % Algorithmic illumination correction by high-pass filter
 framshift_logic = 0;
 ImageIndex = 1; % 1=nomin/denomin, 2=templateCH, 3=nomin,4=denomin
 intensityrange = [0.0030213 0.009]; % For other images
-displaygate = [0.277 1.9]; % For FRET Only
+displaygate = [0.21967 2.188]; % For FRET Only
 filterParam = [2 2]; 
 cellsize = 15;
 timestamplogic = 2; % 1 = frame no, 2 = actual time
@@ -18,11 +18,11 @@ save videoparameters;
 clear all;
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename = '07112013-r1.nd';
+ndfilename = '07232013-r1.nd';
 templateCH = 4;
 nominCH = 2;
 denominCH = 3;
-sourcefolder = 'Q:\sorger\data\NIC\Pat\07-11-2013';
+sourcefolder = 'L:\NIC\07-23-2013\';
 %------------------------------------------------
 
 prefix = ndfilename(1:(end-3));
@@ -38,10 +38,10 @@ end
 parfor site = sites
     
     fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
-    tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
+    tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)f(?<field>\d+)','tokens');
     row = tokens{1}{1};
     col = tokens{1}{2};
-    field = 1;
+    field = tokens{1}{3};
     plane = 1;
     GenMov_commandline(3,sourcefolder, row, col,field,plane,templateCH,nominCH,denominCH, tps,fileformat,channelnames);
 end

@@ -638,21 +638,42 @@ else
     y = round(S.Centroid(2));
 end
 
-function [x y outBW] = templateToCentroid2(M,xg,yg,maxI,invertLog,outerbox)
+function [x y BW] = templateToCentroid2(M,xg,yg,maxI,invertLog)
 if invertLog
     M = ((maxI)-1)-M;
 end
 
+BW = im2bw(imadjust(M), 1.3*graythresh(imadjust(M)));
+BW = bwselect(BW,xg,yg);
+
+S  = regionprops(BW, 'centroid');
+
+if ~isfield(S,'Centroid') || length(S)>1
+    x = xg;
+    y = yg;
+    
+else
+    x = round(S.Centroid(1));
+    y = round(S.Centroid(2));
+end
+
+
+function [x y BW] = templateToCentroid3(M,xg,yg,maxI,invertLog,outerbox)
+if invertLog
+    M = ((maxI)-1)-M;
+end
+M = imadjust(M);
 M(1,:) = 0;
 M(end,:) = 0;
 M(:,1) = 0;
 M(:,end) = 0;
-outBW = modchenvese(M,150,0.1,outerbox);
+outBW = modchenvese(M,30,0.1,outerbox);
 outBW(1,:) = 0;
 outBW(end,:) = 0;
 outBW(:,1) = 0;
 outBW(:,end) = 0;
-S  = regionprops(outBW, 'centroid');
+BW = bwselect(outBW,xg,yg);
+S  = regionprops(BW, 'centroid');
 
 if ~isfield(S,'Centroid') || length(S)>1
     x = xg;
@@ -672,7 +693,7 @@ s = outerbox./min(size(I,1),size(I,2)); % resize scale
 n = zeros(size(I));
 midY = round(size(n,1)/2);
 midX = round(size(n,2)/2);
-boxsize = round(outerbox/2*.9);
+boxsize = round(size(I,1)*0.2);%round(outerbox/2*.9);
 n(midY-boxsize:midY+boxsize,midX-boxsize:midX+boxsize) = 1;
 I = imresize(I,s);
 mask = imresize(n,s);
@@ -877,51 +898,6 @@ for i=1:length(idx2)
 end;
 
 
-
-function [x y outBW] = templateToCentroid3(M,xg,yg,maxI,thresLow,thresHigh,step,invertLog,sizeThres)
-
-
-
-
-if invertLog
-    IM = ((maxI)-1)-M;
-else
-    IM = M;
-end
-thres = linspace(thresLow,thresHigh,step);
-for i=1:step
-    BW = edge(IM,'sobel',thres(i),'nothinning');
-    se = strel('disk',2);
-    closeBW = imclose(BW,se);
-    closeBW = bwmorph(closeBW,'remove',Inf);
-    chosenBW = bwselect(imfill(closeBW,[xg yg]),xg,yg);
-    mask{i} = bwmorph(chosenBW,'majority',10);
-    figure(1),subplot(1,step,i),imshow(mask{i});
-    cellarea(i) = bwarea(mask{i});
-    title(num2str(cellarea(i)));
-end
-
-ind = find(cellarea>sizeThres(1) & cellarea<sizeThres(2));
-if ~isempty(ind)
-    outind = find(max(cellarea(ind))==cellarea);
-    outBW = mask{outind};
-    %BW2 = bwmorph(outBW,'erode',1);
-    %BW3 = bwmorph(outBW,'dilate',3);
-    %BW4 = BW3-BW2;
-else
-    outBW = im2bw(IM,graythresh(IM));
-end
-
-S  = regionprops(outBW, 'centroid');
-
-if isempty(find(outBW==0, 1)) || isempty(find(outBW==1, 1))
-    x = xg;
-    y = yg;
-    
-else
-    x = round(S.Centroid(1));
-    y = round(S.Centroid(2));
-end
 
 % --- Executes on button press in pushbutton_optimizeall.
 function pushbutton_optimizeall_Callback(hObject, eventdata, handles)
@@ -1128,7 +1104,10 @@ if cellpath{tp}(selected_cell,1) ~= -1 || cellpath{tp}(selected_cell,2) ~= -1
         case 1
             [x1 y1 BW] = templateToCentroid(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
         case 2
-            [x1 y1 BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
+            [x1 y1 BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
+        case 3
+            [x1 y1 BW] = templateToCentroid3(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
+
     end
     
     edge = bwmorph(BW,'remove');
@@ -1802,11 +1781,14 @@ function uibuttongroup_cellrecogmethod_SelectionChangeFcn(hObject, eventdata, ha
 
 switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
     case 'radiobutton_method1'
-        set(handles.edit_commu,'String','Cell edging1 (Canny) chosen');
+        set(handles.edit_commu,'String','Canny Edging chosen');
         handles.cellrecogmethod = 1;
     case 'radiobutton_method2'
-        set(handles.edit_commu,'String','Cell edging2 (Sobel with multiple thresholding params) chosen');
+        set(handles.edit_commu,'String','Otsu Thresholding');
         handles.cellrecogmethod = 2;
+    case 'radiobutton_method3'
+        set(handles.edit_commu,'String','Contour tracking');
+        handles.cellrecogmethod = 3;
     otherwise
 end
 guidata(hObject, handles);
@@ -2133,7 +2115,9 @@ if cFrame~=endFrame
             case 1
                 [x1 y1 BW] = templateToCentroid(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
             case 2
-                [x1 y1 BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
+                [x1 y1 BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
+            case 3
+                [x1 y1 BW] = templateToCentroid3(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
         end
         cellpath{tp}(cell,:) = [xL+x1 yL+y1];
         clear xL xR yL yR x1 x1 BW
@@ -2241,7 +2225,9 @@ if cFrame~=endFrame+handles.increment
                 case 1
                     [x1 y1 BW] = templateToCentroid(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
                 case 2
-                    [x1 y1 BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
+                    [x1 y1 BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
+                case 3
+                    [x1 y1 BW] = templateToCentroid3(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
             end
             cellpath{tp}(cell,:) = [xL+x1 yL+y1];
         end
@@ -4699,7 +4685,9 @@ if res_cellpath{tp}(selected_cell,1) ~= -1 && res_cellpath{tp}(selected_cell,2) 
         case 1
             [x1 y1 BW] = templateToCentroid(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
         case 2
-            [x1 y1 BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
+            [x1 y1 BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
+        case 3
+            [x1 y1 BW] = templateToCentroid3(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
     end
     
     edge = bwmorph(BW,'remove');

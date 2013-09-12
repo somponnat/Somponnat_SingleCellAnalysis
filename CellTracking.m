@@ -666,11 +666,14 @@ M(1,:) = 0;
 M(end,:) = 0;
 M(:,1) = 0;
 M(:,end) = 0;
-outBW = modchenvese(M,30,0.1,outerbox);
+outBW = modchenvese(M,50,0.1,outerbox);
+se = strel('disk',3);
+outBW = imclose(outBW,se);
 outBW(1,:) = 0;
 outBW(end,:) = 0;
 outBW(:,1) = 0;
 outBW(:,end) = 0;
+
 BW = bwselect(outBW,xg,yg);
 S  = regionprops(BW, 'centroid');
 
@@ -3970,8 +3973,8 @@ if exist(filename,'file')
         testInd = regexp(tline,'WaveName\d+');
         num = length(testInd);
         if num > 0
-            wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match')
-            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_).+(?=")', 'match')
+            wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match');
+            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_).+(?=")', 'match');
             waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
             wind=wind+1;
         end

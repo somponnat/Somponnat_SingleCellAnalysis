@@ -62,8 +62,7 @@ switch filetype
             outputim = imread(fullfile(SourceF,filename));
         end
     case 4
-        
-        filename = sprintf(fileformat,row,col,field,tp,plane,channel)
+        filename = sprintf(fileformat,row,col,field,tp,plane,channel);
         if exist(fullfile(SourceF,filename),'file')
             outputim = imread(fullfile(SourceF,filename));
         end  

@@ -22,7 +22,7 @@ function varargout = SignalClustering(varargin)
 
 % Edit the above text to modify the response to help SignalClustering
 
-% Last Modified by GUIDE v2.5 02-Aug-2013 09:19:48
+% Last Modified by GUIDE v2.5 17-Sep-2013 15:19:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -235,18 +235,21 @@ if isempty(handles.ndpathname)
     return;
 end
 
+
 searchInd(1,:)= str2num(get(handles.edit_selectedRows,'String'));
 searchInd(2,:)= str2num(get(handles.edit_selectedCols,'String'));
 searchInd(3,:)= str2num(get(handles.edit_selectedFields,'String'));
+searchInd(4,:)= str2num(get(handles.edit_selectedcolors,'String'));
 
 phenotypeList = {'Dead(-4)';'Dead,Divided 3 times(-3)';'Dead,Divided twice(-2)';'Dead,Divided once(-1)';'Quiescent(0)';'Divided once(1)';'Divided twice(2)';'Divided 3 times(3)'};
 
 outputsignalNo = str2num(get(handles.edit_outputsignalno,'String'));
+sequenceNo = str2num(get(handles.edit_sequenceNo,'String'));
 alldata=[];
 groupNo=[];
 originData=[];
 cellFate=[];
-
+selectedColor = [];
 for i = 1:size(searchInd,2)
         switch mod(i,3)
             case 1
@@ -261,6 +264,8 @@ for i = 1:size(searchInd,2)
         row = searchInd(1,i);
         col = searchInd(2,i);
         field = searchInd(3,i);
+        sColor = searchInd(4,i);
+        
         H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
         param_name = ['/field' num2str(field)  '/clusterparams' num2str(outputsignalNo)];
         
@@ -276,12 +281,13 @@ for i = 1:size(searchInd,2)
             param_mat = double(h5read(fullfile(handles.ndpathname,H5filename),param_name,startind, countind));
             alldata = [alldata;param_mat];
             groupNo = [groupNo;i*ones(size(param_mat,1),1)];
+            selectedColor = [selectedColor;sColor*ones(size(param_mat,1),1)];
             
             signalinfo = h5info(fullfile(handles.ndpathname,H5filename), signal_name);
             %sisterListinfo = h5info(fullfile(handles.SourceF,H5filename), sisterList_name);
             %sisterList = h5read(fullfile(handles.SourceF,H5filename),sisterList_name,[1 1 1],...
             %                 [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
-            startind = double([1 1 2]);
+            startind = double([1 1 sequenceNo]);
             countind = [signalinfo.Dataspace.Size(1) signalinfo.Dataspace.Size(2) 1];
             signal = permute(h5read(fullfile(handles.ndpathname,H5filename),signal_name,startind, countind),[2 1 3]);
 
@@ -351,6 +357,7 @@ set(handles.edit_position_list,'String',num2str(choiceInput));
 choiceInput = 1:str2num(get(handles.edit_clusterno,'String'));
 set(handles.edit_cluster_list,'String',num2str(choiceInput));
 
+handles.selectedColor = selectedColor;
 handles.timestamp = timestamp;
 handles.plotInd = 1:size(alldata,1);
 handles.grayInd = [];
@@ -927,11 +934,20 @@ if ~isempty(myplotdata)
                         end
                         plot_h = scatter(myplotdata(plotInd,x),myplotdata(plotInd,y),msize,cellcolor,mtype);
                         set(handles.togglebutton_legendLogic,'Value',0);
+                        
+                    case 5 % assigned color
+                        c_sColor = unique(handles.selectedColor(plotInd));
+                        for i=1:length(c_sColor)
+                            myLegend{i} = [num2str(c_sColor(i))];
+                        end
+                        
+                        plot_h = gscatter(myplotdata(plotInd,x),myplotdata(plotInd,y),nominal(handles.selectedColor(plotInd),myLegend),hsv(length(unique(handles.selectedColor(plotInd)))),mtype,msize-6,'on');
+                        set(handles.togglebutton_legendLogic,'Value',1);
                 end
                 hold off;
                 colorbar('off');
             end
-        case 2
+        case 2 %Plot 3D
             if ~isempty(selectedcellInd) && get(handles.togglebutton_showselectedpolygon,'Value')==1;
                 scatter3(myplotdata(intersect(plotInd,selectedcellInd),x),myplotdata(intersect(plotInd,selectedcellInd),y),myplotdata(intersect(plotInd,selectedcellInd),z),msize,'k','o','fill');hold on;
             end
@@ -943,10 +959,13 @@ if ~isempty(myplotdata)
                     case 1 % well position
                         set(handles.edit_commu,'String','Plot colors show well positions.');
                         cellcolor = [];
-                        mycolor = jet(size(searchInd,2));
+                        groupList = unique(handles.groupNo(plotInd));
+                        colorsize = length(groupList);
+                        mycolor = jet(colorsize);
+                        
                         mydata = handles.groupNo(plotInd);
                         for i=1:length(mydata)
-                            cellcolor(i,:) = mycolor(mydata(i),:);
+                            cellcolor(i,:) = mycolor(find(groupList==mydata(i)),:);
                         end
                         plot_h=scatter3(myplotdata(plotInd,x),myplotdata(plotInd,y),myplotdata(plotInd,z),msize,cellcolor,mtype);
                         set(handles.togglebutton_legendLogic,'Value',0);
@@ -986,6 +1005,20 @@ if ~isempty(myplotdata)
                         end
                         plot_h=scatter3(myplotdata(plotInd,x),myplotdata(plotInd,y),myplotdata(plotInd,z),msize,cellcolor,mtype);
                         set(handles.togglebutton_legendLogic,'Value',0);
+                        
+                    case 5 % assigned color
+                        set(handles.edit_commu,'String','Plot colors show chosen colors');
+                        cellcolor = [];
+                        mycolor = hsv(length(unique(handles.selectedColor(plotInd))));
+                        mydata = handles.selectedColor(plotInd);
+                        for i=1:length(mydata)
+                            cellcolor(i,:) = mycolor(mydata(i),:);
+                        end
+                        
+                        plot_h=scatter3(myplotdata(plotInd,x),myplotdata(plotInd,y),myplotdata(plotInd,z),msize,cellcolor,mtype);
+                        set(handles.togglebutton_legendLogic,'Value',0);
+                        
+                        
                 end
                 hold off;
                 xnames = get(handles.popupmenu_x_pca,'String');
@@ -995,7 +1028,7 @@ if ~isempty(myplotdata)
                 ylabel(ynames{get(handles.popupmenu_y_pca,'Value')});
                 zlabel(znames{get(handles.popupmenu_z_pca,'Value')});
             end
-        case 3
+        case 3 % Plot contour
             if ~isempty(plotInd)
                 set(handles.togglebutton_legendLogic,'Value',0);
                 x=myplotdata(plotInd,x);
@@ -1251,16 +1284,18 @@ pareto(handles.explained);
 xlabel('Principal Component');
 ylabel('Variance Explained (%)');
 s(1) = subplot(2,4,5);
-barh(mycoefforth(:,1));title('PC1');
-set(gca,'YLim',[0 length(paramNo)+1],'YTick',1:length(paramNo),'YTickLabel',get(handles.popupmenu_selectedparams,'String'));
+[~,IX] = sort(abs(mycoefforth(:,1)));
+barh(mycoefforth(IX,1));title('PC1');
+paramNames = get(handles.popupmenu_selectedparams,'String');
+set(gca,'YLim',[0 length(paramNo)+1],'YTick',1:length(paramNo),'YTickLabel',paramNames(IX));
 s(2) = subplot(2,4,6);
-barh(mycoefforth(:,2));title('PC2');
+barh(mycoefforth(IX,2));title('PC2');
 set(gca,'YTickLabel',[]);
 s(3) = subplot(2,4,7);
-barh(mycoefforth(:,3));title('PC3');
+barh(mycoefforth(IX,3));title('PC3');
 set(gca,'YTickLabel',[]);
 s(4) = subplot(2,4,8);
-barh(mycoefforth(:,4));title('PC4');
+barh(mycoefforth(IX,4));title('PC4');
 set(gca,'YTickLabel',[]);
 linkaxes(s,'y');
 % --- Executes on button press in pushbutton_cluster.
@@ -2354,3 +2389,49 @@ handles.plot_h = plot_h;
 handles.plotInd = plotInd;
 handles.grayInd = grayInd;
 guidata(hObject, handles);
+
+
+
+function edit_sequenceNo_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_sequenceNo (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_sequenceNo as text
+%        str2double(get(hObject,'String')) returns contents of edit_sequenceNo as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_sequenceNo_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_sequenceNo (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_selectedcolors_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_selectedcolors (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_selectedcolors as text
+%        str2double(get(hObject,'String')) returns contents of edit_selectedcolors as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_selectedcolors_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_selectedcolors (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

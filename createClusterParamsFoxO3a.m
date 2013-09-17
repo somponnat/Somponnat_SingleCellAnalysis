@@ -1,10 +1,11 @@
-function createClusterParams()
+function createClusterParamsFoxO3a()
 clc;
-
+addpath(genpath([pwd filesep 'ThirdParty']),'-end');
 % Define location of HDF5 files and the original ND file
 ndfilename = '130722.nd';
 %sourcefolder = 'C:\computation\02-03-2013';
-sourcefolder = '/home/ss240/files/CellBiology/IDAC/Somponnat/FOXO3a dynamics/Images and Data';
+%sourcefolder = '/home/ss240/files/CellBiology/IDAC/Somponnat/FOXO3a dynamics/Images and Data';
+sourcefolder = 'Z:\Somponnat\FOXO3a dynamics\Images and Data';
 
 prefix = ndfilename(1:(end-3));
 [notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename); % read in information about the experiment
@@ -16,15 +17,15 @@ outputsignalNo = 1;
 sequenceNo = 4;
 
 % specific the site(s) to be processed
-sites = [4:9 12:17];
+sites = 4;%[4:9 12:17];
 
 %check with matlabpool is already initiated
-if matlabpool('size') == 0
-  matlabpool open;
-end
+% if matlabpool('size') == 0
+%   matlabpool open;
+% end
 
 % loop through all sites and dispatch jobs using parfor
-parfor s=1:length(sites)
+for s=1:length(sites)
     site = sites(s);
     tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
     if ~isempty(tokens)
@@ -184,7 +185,7 @@ if exist(fullfile(ndpathname,H5filename),'file')
                 % calculating parameters for the selected cells
                 
                 
-                [NLinparams,NLinparamNames] = nonlinearTrendParams(xs(51:end),ys(51:end),'RunMIC',false);
+                [NLinparams,NLinparamNames] = nonlinearTrendParams(xs(51:end),ys(51:end));
                 
                 
                 

@@ -1,4 +1,4 @@
-function [MIC,NLR,MAS,MEV,MCN] = maxInformationCoef(data,varargin)
+function [MIC,NLR,MAS,MEV,MCN] = maxInformationCoef(data,P,varargin)
 % This is just a wrapper for the MINE java function 
 %
 %Synopsis: [MIC,NLR,MAS,MEV,MCN] = maxInformationCoef(data,style,exp,cv,c)
@@ -36,8 +36,9 @@ function [MIC,NLR,MAS,MEV,MCN] = maxInformationCoef(data,varargin)
 %Science 16 December 2011: 334 (6062), 1518-1524. [DOI:10.1126/science.1205438]
 %
 %Marco Vilela, 2012
-P = mfilename('fullpath');
-P(end-18:end) = [];
+
+%P = mfilename('fullpath');
+%P(end-18:end) = [];
 
 ip=inputParser;
 ip.addRequired('data',@(x) isnumeric(x) && size(x,2)>2);
@@ -45,6 +46,8 @@ ip.addOptional('style','-allPairs',@ischar);
 ip.addOptional('exp',0.6,@isscalar);
 ip.addOptional('cv',0.0,@isscalar);
 ip.addOptional('c',15,@isscalar);
+ip.addOptional('norm',false,@isscalar);
+ip.addOptional('prec',5,@(x)(isscalar(x) && isposint(x)));
 
 ip.parse(data,varargin{:});
 style = ip.Results.style;
@@ -52,8 +55,17 @@ exp   = ip.Results.exp;
 cv    = ip.Results.cv;
 c     = ip.Results.c;
 
+%Normalization shouldn't effect correlation scores, and will reduce risk of
+%rounding error when converting to .csv
+if ip.Results.norm
+    for j = 1:size(data,1)
+        data(j,:) = data(j,:) - mean(data(j,:));
+        data(j,:) = data(j,:) ./ std(data(j,:));
+    end
+end
+
 [nVar,~] = size(data);
-precN    = 5;
+precN    = ip.Results.prec;
 dlm      = ',';
 MIC      = eye(nVar);%Maximum Information Coefficent
 NLR      = nan(nVar);%Nonlinear measure
@@ -63,7 +75,7 @@ MCN      = nan(nVar);%Minimum Cell Number
 
 varName  = repmat('Var',nVar,1);
 varName  = strcat(varName,num2str([1:nVar]'),repmat(dlm,nVar,1));
-fileName = 'temp.csv';
+fileName = ['tmpFile_' num2str(feature('getpid')) '.csv'];
 fid      = fopen(fileName, 'w');
 format   = sprintf('%%.%dg%s',precN,dlm);
 
@@ -76,7 +88,7 @@ for i=1:nVar
 end
 fclose(fid);
 
-comd = ['java -jar ',P, [filesep 'MINE.jar'],' ',fileName,' ',...
+comd = ['java -jar ',fullfile(P,'MINE.jar'),' ',fileName,' ',...
               style,...
               ' 0',...
               ' cv=',num2str(cv),...
@@ -108,7 +120,11 @@ rFile = strcat(fileName,',',fStr,',cv=',sCv,',B=n^',num2str(exp),...
                ',Results.csv');
            
 javaResult = csv2cell(rFile);
-system(['rm ',' ',fileName(1:end-3),'*']);
+% if ispc
+%     system(['del ',' ',fileName(1:end-3),'*']);
+% else
+%     system(['rm ',' ',fileName(1:end-3),'*']);
+% end
 
 idx = cellfun(@(x) str2num(x(end)), javaResult(2:end,1:2) );
 

@@ -17,15 +17,15 @@ outputsignalNo = 1;
 sequenceNo = 4;
 
 % specific the site(s) to be processed
-sites = 4;%[4:9 12:17];
+sites = [4:9 12:17 32:37] ;%4:9 12:17 32:37 44:49 52:57 64:69];%32:37 44:49 52:57 64:69];
 
 %check with matlabpool is already initiated
-% if matlabpool('size') == 0
-%   matlabpool open;
-% end
+if matlabpool('size') == 0
+  matlabpool open;
+end
 
 % loop through all sites and dispatch jobs using parfor
-for s=1:length(sites)
+parfor s=1:length(sites)
     site = sites(s);
     tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
     if ~isempty(tokens)
@@ -185,7 +185,7 @@ if exist(fullfile(ndpathname,H5filename),'file')
                 % calculating parameters for the selected cells
                 
                 
-                [NLinparams,NLinparamNames] = nonlinearTrendParams(xs(51:end),ys(51:end));
+                [NLinparams,NLinparamNames] = nonlinearTrendParams(xs(1:end),ys(1:end),'RunMIC',false);
                 
                 
                 

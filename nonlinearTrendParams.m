@@ -99,7 +99,8 @@ for iScale = 1:nScales
     if p.RunMIC
     
 
-        [MIC,NLR,MAS,MEV,MCN] = maxInformationCoef(vertcat(x',currY'),'-onePair 0 1');
+        [MIC,NLR,MAS,MEV,MCN] = maxInformationCoef(vertcat(x',currY'),[pwd filesep 'ThirdParty' filesep 'MINE'],'-onePair 0 1','prec',12,'norm',true);
+        %[MIC,NLR,MAS,MEV,MCN] = maxInformationCoef(vertcat(x',currY'),'-onePair 0 1');
 
         iPar = (iScale-1)*nPar + 5;
         paramNames{iPar} = [scaleStr{iScale} ' Maximum Information Coefficient'];

@@ -22,7 +22,7 @@ function varargout = SignalClustering(varargin)
 
 % Edit the above text to modify the response to help SignalClustering
 
-% Last Modified by GUIDE v2.5 17-Sep-2013 15:19:50
+% Last Modified by GUIDE v2.5 26-Sep-2013 16:02:41
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -87,34 +87,7 @@ function popupmenu_posCtrl_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_posCtrl contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_posCtrl
-if isempty(handles.originData)
-    set(handles.edit_commu,'String','No data. Please first initialize dataset.');
-    return;
-else
-    axes(handles.axes_individual);
-    plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(hObject,'Value'),:),1),'g'); hold on;
-    plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_negCtrl,'Value'),:),1),'r'); 
-    plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_group,'Value'),:),1),'b');hold off;
-    
-    table_data = get(handles.uitable_params,'Data');
-    for i=[1:3 5:size(table_data,1)]
-        table_data{i,3} = nanmean(handles.alldata(handles.groupNo==get(hObject,'Value'),i));
-    end
-    table_data{4,3} = [];
-    set(handles.uitable_params,'Data',table_data);
-end
-
-if ~isempty(handles.score)
-    axes(handles.axes_posctrl);
-    countInd=1;
-    binSize=[];
-    for j=handles.newList
-        binSize(countInd) = numel(handles.binning{get(handles.popupmenu_posCtrl,'Value'),j});
-        countInd=countInd+1;
-    end
-    bar(1:str2num(get(handles.edit_clusterno,'String')),binSize);
-    set(handles.axes_posctrl,'XTickLabel',[]);
-end
+plot_populationlevel(handles);
 
 % --- Executes during object creation, after setting all properties.
 function popupmenu_posCtrl_CreateFcn(hObject, eventdata, handles)
@@ -215,7 +188,7 @@ function pushbutton_locatendfile_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_locatendfile (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-[filename,PathName,FilterIndex] = uigetfile('*.nd', 'Choose metamorph ND file','C:\computation\02-03-2013\02032013-r1.nd');
+[filename,PathName,FilterIndex] = uigetfile('*.nd', 'Choose metamorph ND file','Z:\Somponnat\FOXO3a dynamics\Images and Data\130722.nd');
 if FilterIndex~=0
     set(handles.edit_ndfilename,'String',filename);
     handles.ndfilename = filename;
@@ -315,6 +288,9 @@ for i=1:length(R)
     originData(R(i),C(i)) = NaN;
 end
 
+set(handles.togglebutton_signalInvert,'Value',0);
+set(handles.togglebutton_populationMean,'Value',1);
+handles.ytype = 1;
 set(handles.togglebutton_showselectedpolygon,'Value',0);
 handles.plottype = 1;
 set(handles.togglebutton_scatter2D,'Value',1);
@@ -342,9 +318,17 @@ for i=1:ClusterNo
     Clusterlabel{i+1} = [num2str(i)];
 end
 
+AssignedColorlabel{1} = 'All';
+AssignedColor = unique(selectedColor);
+for i=1:length(AssignedColor)
+    AssignedColorlabel{i+1} = [num2str(AssignedColor(i))];
+end
+
+
 set(handles.popupmenu_phenotype,'String',Phenolabel);
 set(handles.popupmenu_wellposition,'String',Groupnolabel);
 set(handles.popupmenu_cluster,'String',Clusterlabel);
+set(handles.popupmenu_assignedC,'String',AssignedColorlabel);
 
 handles.cellFate = cellFate;
 choiceInput = sort(unique(cellFate))';
@@ -358,30 +342,17 @@ choiceInput = 1:str2num(get(handles.edit_clusterno,'String'));
 set(handles.edit_cluster_list,'String',num2str(choiceInput));
 
 handles.selectedColor = selectedColor;
+choiceInput = sort(unique(selectedColor))';
+set(handles.edit_assignedC_list,'String',num2str(choiceInput));
+
 handles.timestamp = timestamp;
 handles.plotInd = 1:size(alldata,1);
 handles.grayInd = [];
 guidata(hObject, handles);
 handles = guidata(hObject);
-axes(handles.axes_individual);
-plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_posCtrl,'Value'),:),1),'g'); hold on;
-plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_negCtrl,'Value'),:),1),'r');
-plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_group,'Value'),:),1),'b');hold off;
 
-for i=[1:3 5:size(table_data,1)]
-    table_data{i,3} = nanmean(handles.alldata(handles.groupNo==get(handles.popupmenu_posCtrl,'Value'),i));
-end
-table_data{4,3} = [];
-for i=[1:3 5:size(table_data,1)]
-    table_data{i,4} = nanmean(handles.alldata(handles.groupNo==get(handles.popupmenu_negCtrl,'Value'),i));
-end
-table_data{4,4} = [];
-for i=[1:3 5:size(table_data,1)]
-    table_data{i,5} = nanmean(handles.alldata(handles.groupNo==get(handles.popupmenu_group,'Value'),i));
-end
-table_data{4,5} = [];
+plot_populationlevel(handles);
 
-set(handles.uitable_params,'Data',table_data);
 set(handles.edit_commu,'String','Finished initializing parameters');
 guidata(hObject, handles);
 
@@ -479,34 +450,7 @@ function popupmenu_group_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_group contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_group
-if isempty(handles.originData)
-    set(handles.edit_commu,'String','No data. Please first initialize dataset.');
-    return;
-else
-    axes(handles.axes_individual);
-    plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_negCtrl,'Value'),:),1),'r'); hold on;
-    plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_posCtrl,'Value'),:),1),'g');
-    plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(hObject,'Value'),:),1),'b'); hold off;
-    
-    table_data = get(handles.uitable_params,'Data');
-    for i=[1:3 5:size(table_data,1)]
-        table_data{i,5} = nanmean(handles.alldata(handles.groupNo==get(hObject,'Value'),i));
-    end
-    table_data{4,5} = [];
-    set(handles.uitable_params,'Data',table_data);
-end
-
-if ~isempty(handles.score)
-    axes(handles.axes_group);
-    countInd=1;
-    binSize=[];
-    for j=handles.newList
-        binSize(countInd) = numel(handles.binning{get(handles.popupmenu_group,'Value'),j});
-        countInd=countInd+1;
-    end
-    bar(1:str2num(get(handles.edit_clusterno,'String')),binSize);
-    set(handles.axes_group,'XTickLabel',[]);
-end
+plot_populationlevel(handles);
 
 % --- Executes during object creation, after setting all properties.
 function popupmenu_group_CreateFcn(hObject, eventdata, handles)
@@ -520,29 +464,53 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
+function plot_populationlevel(handles)
+invertLogic = get(handles.togglebutton_signalInvert,'Value');
 
-% --- Executes on selection change in popupmenu_negCtrl.
-function popupmenu_negCtrl_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu_negCtrl (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_negCtrl contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu_negCtrl
 if isempty(handles.originData)
     set(handles.edit_commu,'String','No data. Please first initialize dataset.');
     return;
 else
     axes(handles.axes_individual);
-    plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(hObject,'Value'),:),1),'r'); hold on;
-    plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_posCtrl,'Value'),:),1),'g');
-    plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_group,'Value'),:),1),'b');hold off;
+    
+    switch handles.ytype
+        case 1
+            if invertLogic
+                plot(handles.timestamp,1./nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_negCtrl,'Value'),:),1),'r'); hold on;
+                plot(handles.timestamp,1./nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_posCtrl,'Value'),:),1),'g');
+                plot(handles.timestamp,1./nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_group,'Value'),:),1),'b');hold off;
+            else
+                plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_negCtrl,'Value'),:),1),'r'); hold on;
+                plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_posCtrl,'Value'),:),1),'g');
+                plot(handles.timestamp,nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_group,'Value'),:),1),'b');hold off;
+            end
+            
+        case 2
+            plot(handles.timestamp,nanstd(handles.originData(handles.groupNo==get(handles.popupmenu_negCtrl,'Value'),:),0,1)./nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_negCtrl,'Value'),:),1),'r'); hold on;
+            plot(handles.timestamp,nanstd(handles.originData(handles.groupNo==get(handles.popupmenu_posCtrl,'Value'),:),0,1)./nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_posCtrl,'Value'),:),1),'g');
+            plot(handles.timestamp,nanstd(handles.originData(handles.groupNo==get(handles.popupmenu_group,  'Value'),:),0,1)./nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_group,'Value'),:),1),'b');hold off;
+    end
+    
+
     
     table_data = get(handles.uitable_params,'Data');
+    
     for i=[1:3 5:size(table_data,1)]
-        table_data{i,4} = nanmean(handles.alldata(handles.groupNo==get(hObject,'Value'),i));
+        table_data{i,3} = nanmean(handles.alldata(handles.groupNo==get(handles.popupmenu_posCtrl,'Value'),i));
+    end
+    table_data{4,3} = [];
+    
+    
+    for i=[1:3 5:size(table_data,1)]
+        table_data{i,4} = nanmean(handles.alldata(handles.groupNo==get(handles.popupmenu_negCtrl,'Value'),i));
     end
     table_data{4,4} = [];
+    
+    for i=[1:3 5:size(table_data,1)]
+        table_data{i,5} = nanmean(handles.alldata(handles.groupNo==get(handles.popupmenu_group,'Value'),i));
+    end
+    table_data{4,5} = [];
+    
     set(handles.uitable_params,'Data',table_data);
 end
 
@@ -557,6 +525,16 @@ if ~isempty(handles.score)
     bar(1:str2num(get(handles.edit_clusterno,'String')),binSize);
     set(handles.axes_negctrl,'XTickLabel',[]);
 end
+
+% --- Executes on selection change in popupmenu_negCtrl.
+function popupmenu_negCtrl_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_negCtrl (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_negCtrl contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_negCtrl
+plot_populationlevel(handles);
 
 % --- Executes during object creation, after setting all properties.
 function popupmenu_negCtrl_CreateFcn(hObject, eventdata, handles)
@@ -811,6 +789,7 @@ allInd = 1:size(handles.alldata,1);
 PhenoInd = str2num(get(handles.edit_phetype_list,'String'));
 WellInd = str2num(get(handles.edit_position_list,'String'));
 CInd = str2num(get(handles.edit_cluster_list,'String'));
+SCInd = str2num(get(handles.edit_assignedC_list,'String'));
 SInd = get(handles.popupmenu_selection,'Value');
 if SInd == 2
     selectedCells = handles.selectedcellIndices;
@@ -835,7 +814,15 @@ for i=1:length(CInd)
 end
 selectedC = sort(selectedC);
 
-plotInd = sort(intersect(intersect(intersect(selectedPheno,selectedWell),selectedC),selectedCells));
+
+selectedSC = [];
+for i=1:length(SCInd)
+    selectedSC = [selectedSC;find(handles.selectedColor == SCInd(i))];
+end
+selectedSC = sort(selectedSC);
+
+
+plotInd = sort(intersect(intersect(intersect(intersect(selectedPheno,selectedWell),selectedC),selectedSC),selectedCells));
 grayInd = sort(setdiff(1:size(handles.alldata,1),plotInd));
 set(handles.edit_totalcellcount,'String',num2str(length(plotInd)));
 set(handles.edit_commu,'String',['Total cell selected: ' num2str(length(plotInd))]);
@@ -866,7 +853,12 @@ searchInd(2,:)= str2num(get(handles.edit_selectedCols,'String'));
 searchInd(3,:)= str2num(get(handles.edit_selectedFields,'String'));
 
 if ~isempty(myplotdata)
-    axes(handles.axes_pca);
+    
+    if get(handles.togglebutton_newplot,'Value')
+        figure(1);
+    else
+        axes(handles.axes_pca);
+    end
     
     switch plottype
         case 1 % scatter-2D
@@ -928,9 +920,16 @@ if ~isempty(myplotdata)
                         alldataset = handles.alldata(:,chosen_param);
                         myx = [min(alldataset):(max(alldataset)-min(alldataset))/31:max(alldataset)];
                         [~,bin] = histc(handles.alldata(plotInd,chosen_param),myx);
+                        
                         mycolor = hot(32);
-                        for i=1:length(bin)
-                            cellcolor(i,:) = mycolor(bin(i),:);
+                        if bin~=0
+                            for i=1:length(bin)
+                                cellcolor(i,:) = mycolor(bin(i),:);
+                            end
+                        else
+                            for i=1:length(bin)
+                                cellcolor(i,:) = mycolor(1,:);
+                            end
                         end
                         plot_h = scatter(myplotdata(plotInd,x),myplotdata(plotInd,y),msize,cellcolor,mtype);
                         set(handles.togglebutton_legendLogic,'Value',0);
@@ -1008,11 +1007,15 @@ if ~isempty(myplotdata)
                         
                     case 5 % assigned color
                         set(handles.edit_commu,'String','Plot colors show chosen colors');
+                        
                         cellcolor = [];
-                        mycolor = hsv(length(unique(handles.selectedColor(plotInd))));
+                        groupList = unique(handles.selectedColor(plotInd));
+                        colorsize = length(groupList);
+                        mycolor = hsv(colorsize);
+                        
                         mydata = handles.selectedColor(plotInd);
                         for i=1:length(mydata)
-                            cellcolor(i,:) = mycolor(mydata(i),:);
+                            cellcolor(i,:) = mycolor(find(groupList==mydata(i)),:);
                         end
                         
                         plot_h=scatter3(myplotdata(plotInd,x),myplotdata(plotInd,y),myplotdata(plotInd,z),msize,cellcolor,mtype);
@@ -1084,6 +1087,7 @@ if ~isempty(myplotdata)
             end
     end
     hold off;
+    set(handles.axes_pca,'color',[0.85 0.85 0.85]);
 else
     set(handles.edit_commu,'String','Must first process data');
 end
@@ -1848,15 +1852,13 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-% --- Executes on button press in pushbutton_plotIndividual.
-function pushbutton_plotIndividual_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton_plotIndividual (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
+function plot_individual(ytype,handles)
 searchInd(1,:)= str2num(get(handles.edit_selectedRows,'String'));
 searchInd(2,:)= str2num(get(handles.edit_selectedCols,'String'));
 searchInd(3,:)= str2num(get(handles.edit_selectedFields,'String'));
+
+
+invertLogic = get(handles.togglebutton_signalInvert,'Value');
 
 outputsignalNo = str2num(get(handles.edit_outputsignalno,'String'));
 dcm_obj = datacursormode(gcf);
@@ -1918,7 +1920,12 @@ if ~isempty(infs)
         t_PeakDuration = t_PeakDuration(t_truePeak~=0);
         t_peakSelection = t_peakSelection(t_truePeak~=0);
         axes(handles.axes_individual);
-        plot(handles.timestamp(currentOriginalData(observationNo,:)~=0),currentOriginalData(observationNo,currentOriginalData(observationNo,:)~=0),'k');
+        
+        if invertLogic
+            plot(handles.timestamp(currentOriginalData(observationNo,:)~=0),1./currentOriginalData(observationNo,currentOriginalData(observationNo,:)~=0),'k');
+        else
+            plot(handles.timestamp(currentOriginalData(observationNo,:)~=0),currentOriginalData(observationNo,currentOriginalData(observationNo,:)~=0),'k');
+        end
         YLim = get(handles.axes_individual,'YLim');
         for i=find(p_peakSelection==1)
             rectangle('Position',[p_truePeak(i),YLim(1),p_PeakDuration(i),YLim(2)-YLim(1)],...
@@ -1929,7 +1936,12 @@ if ~isempty(infs)
             rectangle('Position',[t_truePeak(i),YLim(1),t_PeakDuration(i),YLim(2)-YLim(1)],...
                 'FaceColor',[ 0.8 0.8 0.95],'EdgeColor','none','EraseMode','normal');hold on;
         end
-        plot(handles.timestamp(currentOriginalData(observationNo,:)~=0),currentOriginalData(observationNo,currentOriginalData(observationNo,:)~=0),'k');hold off;
+        
+        if invertLogic
+            plot(handles.timestamp(currentOriginalData(observationNo,:)~=0),1./currentOriginalData(observationNo,currentOriginalData(observationNo,:)~=0),'k');hold off;
+        else
+            plot(handles.timestamp(currentOriginalData(observationNo,:)~=0),currentOriginalData(observationNo,currentOriginalData(observationNo,:)~=0),'k');hold off;
+        end
         
         table_data = get(handles.uitable_params,'Data');
         for i=1:size(table_data,1)
@@ -1943,6 +1955,15 @@ if ~isempty(infs)
 else
     set(handles.edit_commu,'String','Select a cell with cursor.');
 end
+
+
+
+% --- Executes on button press in pushbutton_plotIndividual.
+function pushbutton_plotIndividual_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_plotIndividual (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+plot_individual(handles.ytype,handles)
 
 
 % --------------------------------------------------------------------
@@ -2435,3 +2456,103 @@ function edit_selectedcolors_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on selection change in popupmenu_assignedC.
+function popupmenu_assignedC_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu_assignedC (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_assignedC contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu_assignedC
+contents = cellstr(get(hObject,'String'));
+switch get(hObject,'Value')
+    case 1
+        choiceInput = sort(unique(handles.selectedColor))';
+        set(handles.edit_assignedC_list,'String',num2str(choiceInput));
+    otherwise
+        sColor = str2num(contents{get(hObject,'Value')});
+        set(handles.edit_assignedC_list,'String',num2str(sColor));
+end
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
+guidata(hObject, handles); 
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu_assignedC_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu_assignedC (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_assignedC_list_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_assignedC_list (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_assignedC_list as text
+%        str2double(get(hObject,'String')) returns contents of edit_assignedC_list as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_assignedC_list_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_assignedC_list (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in togglebutton_newplot.
+function togglebutton_newplot_Callback(hObject, eventdata, handles)
+% hObject    handle to togglebutton_newplot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of togglebutton_newplot
+
+
+% --- Executes on button press in togglebutton_signalInvert.
+function togglebutton_signalInvert_Callback(hObject, eventdata, handles)
+% hObject    handle to togglebutton_signalInvert (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of togglebutton_signalInvert
+
+
+% --- Executes when selected object is changed in uipanel_yType.
+function uipanel_yType_SelectionChangeFcn(hObject, eventdata, handles)
+% hObject    handle to the selected object in uipanel_yType 
+% eventdata  structure with the following fields (see UIBUTTONGROUP)
+%	EventName: string 'SelectionChanged' (read only)
+%	OldValue: handle of the previously selected object or empty if none was selected
+%	NewValue: handle of the currently selected object
+% handles    structure with handles and user data (see GUIDATA)
+
+
+switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
+    case 'togglebutton_populationMean'
+        handles.ytype = 1;
+        
+    case 'togglebutton_populationCV'
+        handles.ytype = 2;
+
+end
+plot_populationlevel(handles);
+guidata(hObject, handles);

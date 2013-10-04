@@ -88,6 +88,7 @@ function popupmenu_posCtrl_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_posCtrl contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_posCtrl
 plot_populationlevel(handles);
+plot_populationhistogram(handles,1);
 
 % --- Executes during object creation, after setting all properties.
 function popupmenu_posCtrl_CreateFcn(hObject, eventdata, handles)
@@ -288,7 +289,6 @@ for i=1:length(R)
     originData(R(i),C(i)) = NaN;
 end
 
-set(handles.togglebutton_signalInvert,'Value',0);
 set(handles.togglebutton_populationMean,'Value',1);
 handles.ytype = 1;
 set(handles.togglebutton_showselectedpolygon,'Value',0);
@@ -350,16 +350,19 @@ handles.plotInd = 1:size(alldata,1);
 handles.grayInd = [];
 guidata(hObject, handles);
 handles = guidata(hObject);
-
+set(handles.uitable_params,'Data',table_data);
 plot_populationlevel(handles);
-
+plot_populationlevel(handles);
+plot_populationlevel(handles);
+plot_populationhistogram(handles,1);
+plot_populationhistogram(handles,2);
+plot_populationhistogram(handles,3);
 set(handles.edit_commu,'String','Finished initializing parameters');
 guidata(hObject, handles);
 
 selectedparams = str2num(get(handles.edit_selectedparams,'String'));
-table_data = get(handles.uitable_params,'Data');
-param_names = [];
 
+param_names = [];
 for i=1:size(table_data,1)
     param_names{i} = table_data{i,1};
 end
@@ -451,7 +454,7 @@ function popupmenu_group_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_group contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_group
 plot_populationlevel(handles);
-
+plot_populationhistogram(handles,3);
 % --- Executes during object creation, after setting all properties.
 function popupmenu_group_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to popupmenu_group (see GCBO)
@@ -490,11 +493,9 @@ else
             plot(handles.timestamp,nanstd(handles.originData(handles.groupNo==get(handles.popupmenu_posCtrl,'Value'),:),0,1)./nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_posCtrl,'Value'),:),1),'g');
             plot(handles.timestamp,nanstd(handles.originData(handles.groupNo==get(handles.popupmenu_group,  'Value'),:),0,1)./nanmean(handles.originData(handles.groupNo==get(handles.popupmenu_group,'Value'),:),1),'b');hold off;
     end
-    
 
-    
     table_data = get(handles.uitable_params,'Data');
-    
+
     for i=[1:3 5:size(table_data,1)]
         table_data{i,3} = nanmean(handles.alldata(handles.groupNo==get(handles.popupmenu_posCtrl,'Value'),i));
     end
@@ -514,16 +515,36 @@ else
     set(handles.uitable_params,'Data',table_data);
 end
 
+function plot_populationhistogram(handles,plotno)
+
 if ~isempty(handles.score)
-    axes(handles.axes_negctrl);
+    switch plotno
+        case 1
+            axes(handles.axes_posctrl);
+            ptChoice = get(handles.popupmenu_posCtrl,'Value');
+        case 2
+            axes(handles.axes_negctrl);
+            ptChoice = get(handles.popupmenu_negCtrl,'Value');
+        case 3
+            axes(handles.axes_group);
+            ptChoice = get(handles.popupmenu_group,'Value');
+    end
     countInd=1;
     binSize=[];
     for j=handles.newList
-        binSize(countInd) = numel(handles.binning{get(handles.popupmenu_negCtrl,'Value'),j});
+        binSize(countInd) = numel(handles.binning{ptChoice,j});
         countInd=countInd+1;
     end
     bar(1:str2num(get(handles.edit_clusterno,'String')),binSize);
-    set(handles.axes_negctrl,'XTickLabel',[]);
+    switch plotno
+        case 1
+            set(handles.axes_posctrl,'XTickLabel',[]);
+        case 2
+            set(handles.axes_negctrl,'XTickLabel',[]);
+        case 3
+            set(handles.axes_group,'XTickLabel',[]);
+    end
+    
 end
 
 % --- Executes on selection change in popupmenu_negCtrl.
@@ -535,7 +556,7 @@ function popupmenu_negCtrl_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_negCtrl contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_negCtrl
 plot_populationlevel(handles);
-
+plot_populationhistogram(handles,2);
 % --- Executes during object creation, after setting all properties.
 function popupmenu_negCtrl_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to popupmenu_negCtrl (see GCBO)
@@ -1032,16 +1053,52 @@ if ~isempty(myplotdata)
                 zlabel(znames{get(handles.popupmenu_z_pca,'Value')});
             end
         case 3 % Plot contour
-            if ~isempty(plotInd)
-                set(handles.togglebutton_legendLogic,'Value',0);
-                x=myplotdata(plotInd,x);
-                y=myplotdata(plotInd,y);
-                out = scatplot(x,y,'circles',str2num(get(handles.edit_contourcirclesize,'String')),str2num(get(handles.edit_meshsize,'String')),8,2,msize);
-                view(2);
-                xlabel([]);
-                ylabel([]);
-                zlabel([]);
-            end
+%             SCInd = [1:7];
+%             selectedSC = [];
+%             selectedSC{1} = 1:size(handles.alldata,1);
+%             for i= 2: (length(SCInd)+1)
+%                 selectedSC{i} = sort(find(handles.selectedColor == SCInd(i-1)));
+%             end
+%             
+%             if get(handles.togglebutton_newplot,'Value')
+%                 figure(1);
+%                 axesInd=1;
+%                 for i= [7 8 2 6 5 3]%1:length(selectedSC)
+%                     px=myplotdata(selectedSC{i},x);
+%                     py=myplotdata(selectedSC{i},y);
+%                     subplot(2,3,axesInd);
+%                     if i==1
+%                         %out = scatplot(px,py,'circle',str2num(get(handles.edit_contourcirclesize,'String')),str2num(get(handles.edit_meshsize,'String')),5,1,msize);
+%                         plot(px,py,'o','MarkerFaceColor','k','MarkerEdgeColor','k','MarkerSize',1);
+%                     else
+%                         out = scatplot(px,py,'circle',str2num(get(handles.edit_contourcirclesize,'String')),str2num(get(handles.edit_meshsize,'String')),5,5,msize);
+%                     end
+%                     view(2);
+%                     xlabel([]);
+%                     ylabel([]);
+%                     zlabel([]);
+%                     xlim([-3.5 7]);
+%                     ylim([-5 5]);
+%                     axesInd= axesInd+1;
+%                 end
+%             else
+                if ~isempty(plotInd)
+                    set(handles.togglebutton_legendLogic,'Value',0);
+                    x=myplotdata(plotInd,x);
+                    y=myplotdata(plotInd,y);
+                    out = scatplot(x,y,'circle',str2num(get(handles.edit_contourcirclesize,'String')),str2num(get(handles.edit_meshsize,'String')),8,2,msize);
+                    view(2);
+                    xlabel([]);
+                    ylabel([]);
+                    zlabel([]);
+                    xlim([-3.5 7]);
+                    ylim([-5 5]);
+                end
+%            end
+            
+            
+            
+            
 
         case 0 
             set(handles.togglebutton_legendLogic,'Value',0);
@@ -1315,8 +1372,9 @@ searchInd(3,:)= str2num(get(handles.edit_selectedFields,'String'));
 
 w = 1./nanvar(handles.alldata(:,selectedparams));
 %w(w==inf) = 1e-64;
+
 [wcoeff,score,latent,tsquared,explained] = pca(handles.alldata(:,selectedparams),'VariableWeights',w);
-[wcoeff_rotated,rotationMat] = rotatefactors(wcoeff);
+[wcoeff_rotated,rotationMat] = rotatefactors(wcoeff,'method','orthomax','Normalize','off');
 coefforth = diag(sqrt(w))*wcoeff;
 rotated_coefforth = diag(sqrt(w))*wcoeff_rotated;
 rotated_score = zscore(handles.alldata(:,selectedparams))*rotated_coefforth;
@@ -2503,7 +2561,11 @@ function edit_assignedC_list_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of edit_assignedC_list as text
 %        str2double(get(hObject,'String')) returns contents of edit_assignedC_list as a double
-
+[plot_h,plotInd,grayInd] = plotPCA(handles.plottype,handles,handles.selectedcellIndices);
+handles.plot_h = plot_h;
+handles.plotInd = plotInd;
+handles.grayInd = grayInd;
+guidata(hObject, handles); 
 
 % --- Executes during object creation, after setting all properties.
 function edit_assignedC_list_CreateFcn(hObject, eventdata, handles)

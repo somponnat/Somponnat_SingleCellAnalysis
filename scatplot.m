@@ -117,22 +117,28 @@ ddf = griddata(xi,yi,zif,x,y);
 %----------- Plotting --------------------
 switch po
     case {1,2}
+        colormap jet
         if po==2
             [c,h] = contour(xi,yi,zif);
             out.c = c;
             out.h = h;
-        end %if
+        end 
         hs = gsp(x,y,ddf,ms);
         out.hs = hs;
 
     case {3,4}
         if po>3
+            colormap jet
             [c,h] = contour(xi,yi,zi);
             out.c = c;
-        end %if
+        end 
         hs = gsp(x,y,dd,ms);
         out.hs = hs;
-  
+    case 5
+        surf(xi,yi,zi,'FaceColor','flat','LineStyle','none');
+        %out.c = c;
+        
+        
 end %switch
 %------Relocate variables and place NaN's ----------
 dd(idat) = dd;

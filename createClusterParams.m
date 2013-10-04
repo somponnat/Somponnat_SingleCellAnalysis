@@ -3,8 +3,8 @@ clc;
 
 % Define location of HDF5 files and the original ND file
 ndfilename = '02032013-r1.nd';
-sourcefolder = 'C:\computation\02-03-2013';
-%sourcefolder = '~/files/ImStor/sorger/data/NIC/Pat/02-03-2013/'
+%sourcefolder = 'C:\computation\02-03-2013';
+sourcefolder = '~/files/ImStor/sorger/data/NIC/Pat/02-03-2013/';
 
 prefix = ndfilename(1:(end-3));
 [notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename); % read in information about the experiment
@@ -16,15 +16,15 @@ outputsignalNo = 1;
 sequenceNo = 2;
 
 % specific the site(s) to be processed
-sites = [1:7 15:19];
+sites = 1;
 
 % check with matlabpool is already initiated
-if matlabpool('size') == 0
-  matlabpool open;
-end
+% if matlabpool('size') == 0
+%   matlabpool open;
+% end
 
 % loop through all sites and dispatch jobs using parfor
-parfor s=1:length(sites)
+for s=1:length(sites)
     site = sites(s);
     tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
     if ~isempty(tokens)

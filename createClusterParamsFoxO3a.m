@@ -5,7 +5,7 @@ addpath(genpath([pwd filesep 'ThirdParty']),'-end');
 ndfilename = '130722.nd';
 %sourcefolder = 'C:\computation\02-03-2013';
 %sourcefolder = '/home/ss240/files/CellBiology/IDAC/Somponnat/FOXO3a dynamics/Images and Data';
-sourcefolder = 'Z:\Somponnat\FOXO3a dynamics\Images and Data';
+sourcefolder = 'C:\computation\FOXO3a dynamics';
 
 prefix = ndfilename(1:(end-3));
 [notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename); % read in information about the experiment
@@ -17,7 +17,7 @@ outputsignalNo = 1;
 sequenceNo = 4;
 
 % specific the site(s) to be processed
-sites = [4:9 12:17 32:37] ;%4:9 12:17 32:37 44:49 52:57 64:69];%32:37 44:49 52:57 64:69];
+sites = [4:9 12:17 24:29 32:37 44:49 52:57 64:68];%4:9 12:17 24:29 32:37 44:49 52:57 64:69];
 
 %check with matlabpool is already initiated
 if matlabpool('size') == 0
@@ -43,15 +43,14 @@ end
 % This is the main function that preprocess signal and convert original
 % time-series to parameters.
 function cal_clusterparam(row,col,field,ndpathname,outputsignalNo,sequenceNo)
-minimumSignalSize = 100;
-MiddleToTop = 1; % 1 = assugb the middle cluster to top group, 0 = assign the middle cluster to bottom group
+minimumSignalSize = 30;
+MiddleToTop = 0; % 1 = assugb the middle cluster to top group, 0 = assign the middle cluster to bottom group
 showPlots = 0; % change to 1 if needing to visualize the peak detection
-midHgating = 0.08; % x the median of lowest peak cluster
-delayGate = 0.5; % fraction of height that must decay to consider as peak tail
+midHgating = 0.01; % Minimum height of peaks
+delayGate = 0.35; % fraction of height that must decay to consider as peak tail
 
 % specifying the pre- and post-treatment time
-PreTime = 1:25;
-PostTime = 40:244;
+
 
 % this section specific the naming of HDF5 file as well as subdirectories
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
@@ -177,48 +176,78 @@ if exist(fullfile(ndpathname,H5filename),'file')
                 %save information about cell division time
                 h5write(fullfile(ndpathname,H5filename), division_name, divisionTime, [double(scell) 1], [1 3]);
                 
-                
+                clear p_params p_names  param_names
                 ys = 1./signal(:,selected_cells(scell));
                 xs   = timestamp;
                 
                 
                 % calculating parameters for the selected cells
+                outTS = getTimeSeriesTrend(ys,'trendType',4);
+                ys_d = outTS.dTS;
                 
+                %p_peaks = zeros(4,200,'double');
                 
-                [NLinparams,NLinparamNames] = nonlinearTrendParams(xs(1:end),ys(1:end),'RunMIC',false);
+                p_temp = findTruePeaks(xs,ys_d,showPlots,MiddleToTop,midHgating,delayGate,[timestamp(45) timestamp(end)],divisionTime);
+                %p_peaks(1:size(p_temp,1),1:size(p_temp,2)) = double(p_temp);
+                %combinedpeaks(1,1,:,:) = p_peaks;
                 
+                [p_params,p_names] = peaksParam(p_temp);
                 
+
+                [peaktime,peakvalue,peakheight,Settlingheight,changedheight] = stimulationParams(xs(15:55),ys(15:55));
                 
-                % putting together parameter matrix
                 param_mat = [param_mat;...
                     double(row),double(col),double(field),double(scell),double(phenotype),...
-                    double(NLinparams'),...
+                    nanstd(ys(50:end))/nanmean(ys(50:end)),... % CV of one Cell to own Median (Fluctuations)
+                    peaktime,...
+                    peakvalue,...
+                    peakheight,...
+                    Settlingheight,...
+                    changedheight,...
+                    double(p_params),...
                     ];
-                
-                % putting together parameter name
                 
                 param_names{1} = 'Row';
                 param_names{2} = 'Column';
                 param_names{3} = 'Field';
                 param_names{4} = 'Cell Number';
                 param_names{5} = 'Phenotype';
+                param_names{6} = 'Fluctuations';
+                param_names{7} = 'Peak Time';
+                param_names{8} = 'Peak Value';
+                param_names{9} = 'Peak Height';
+                param_names{10} = 'Settling Height';
+                param_names{11} = 'Gained height';
                 oldsize = length(param_names);
-                
-                for i=1:length(NLinparamNames)
-                    param_names{oldsize+i} = [NLinparamNames{i}];
+                for i=1:length(p_names)
+                    param_names{oldsize+i} = [p_names{i}];
                 end
                 
+                
+                %[NLinparams,NLinparamNames] = nonlinearTrendParams(xs(1:end),ys(1:end),'RunMIC',false);
+                
+                
+                
+                % putting together parameter matrix
+                %param_mat = [param_mat;...
+                %    double(row),double(col),double(field),double(scell),double(phenotype),...
+                %    double(NLinparams'),...
+                %    ];
+                
+                % putting together parameter name
+                
+
                 %oldsize = length(param_names);
-                %for i=1:length(t_names)
-                %    param_names{oldsize+i} = ['Post-' t_names{i}];
+                
+                %for i=1:length(NLinparamNames)
+                %    param_names{oldsize+i} = [NLinparamNames{i}];
                 %end
                 
-                %param_names{length(param_names)+1} = '1st peak delay';
+                
                 
                 
             end
         end
-        
         % if param_mat was assigned, write the new param_mat to the HDF5 file
         if numel(param_mat)>0
             fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
@@ -418,18 +447,19 @@ matOrder(3,:) = [1 2 3];
 matOrder = sortrows(matOrder',1)';
 
 TopP = locs(idx == matOrder(3,3));
+midP = locs(idx == matOrder(3,2));
 BotP = locs(idx == matOrder(3,1));
 
 if ToTop
-    TopP = sort([TopP locs(idx == matOrder(3,2))]);
+    TopP = sort([TopP(:)' midP(:)']);
 end
 
 [pks2,locs2] = findpeaks(-d_y);
 all_data = double([]);
 
 all_data(1,:) = ([ones(1,length(pks)) -1*ones(1,length(pks2))]);
-all_data(2,:) = ([pks -pks2]);
-all_data(3,:) = ([locs locs2]);
+all_data(2,:) = ([pks(:)' -pks2(:)']);
+all_data(3,:) = ([locs(:)' locs2(:)']);
 
 sorted_data = sortrows(all_data',3)';
 sorted_data(4,:) = diff([d_y(1) sorted_data(2,:)]);
@@ -447,7 +477,7 @@ if ToTop
     midD = find(idxn == matOrder(2,2));
     
     for i = midD'
-        if abs(sorted_data(4,i)) > midHgating% midHgating*median_BotD
+        if abs(sorted_data(4,i)) > 5*median_BotD
             TopD = sort([TopD;i]);
         end
     end
@@ -457,7 +487,7 @@ PosTopDTail = [];
 PosTopDTailH = [];
 countind=1;
 
-PosTopD = intersect(TopD, find(sorted_data(4,:)>0.04 & sorted_data(4,:)<0.4));
+PosTopD = intersect(TopD, find(sorted_data(4,:)>midHgating & sorted_data(4,:)<0.4));
 %median_PosTopD = median(sorted_data(4,PosTopD));
 if ~isempty(PosTopD)
     for i=PosTopD'

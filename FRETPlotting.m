@@ -2520,7 +2520,7 @@ if ~isempty(bg)
     maxshiftY = max(abs(imshift(:,2)));
 end
 
-aviobj = VideoWriter(['myMov_r' num2str(row) 'c' num2str(col) 'f' num2str(field) 'ch' num2str(handles.ImageIndex) '.avi']);
+aviobj = VideoWriter(fullfile(handles.ndpathname,['myMov_r' num2str(row) 'c' num2str(col) 'f' num2str(field) 'ch' num2str(handles.ImageIndex) '.avi']));
 aviobj.FrameRate = str2num(get(handles.edit_framerate,'String'));
 aviobj.Quality = 80;
 open(aviobj);
@@ -2640,23 +2640,23 @@ for tp=first_tp:last_tp
         switch handles.overlayIndex
             
             case 3
-                I2 = mat2gray(loadsignal(handles,CH1,tp));
+                I2 = mat2gray(loadsignal(handles,CH1,tp),[str2num(get(handles.edit_ch1L,'String')) str2num(get(handles.edit_ch1H,'String'))]);
                 
             case 4
-                I2 = mat2gray(loadsignal(handles,CH2,tp));
+                I2 = mat2gray(loadsignal(handles,CH2,tp),[str2num(get(handles.edit_ch2L,'String')) str2num(get(handles.edit_ch2H,'String'))]);
                 
             case 5
-                I2 = mat2gray(loadsignal(handles,CH3,tp));
+                I2 = mat2gray(loadsignal(handles,CH3,tp),[str2num(get(handles.edit_ch3L,'String')) str2num(get(handles.edit_ch3H,'String'))]);
                 
             case 2
-                I2 = mat2gray(template);
+                I2 = mat2gray(template,[str2num(get(handles.edit_templateL,'String')) str2num(get(handles.edit_templateH,'String'))]);
                 
             case 1
-                I2 = mat2gray(calculateFRET(handles,tp,nominCH,denominCH,bg));
+                I2 = mat2gray(calculateFRET(handles,tp,nominCH,denominCH,bg),[str2num(get(handles.edit_mathL,'String')) str2num(get(handles.edit_mathH,'String'))]);
         end
         
         combinedI(:,:,1) = 0.8*I1;
-        combinedI(:,:,2) = 0.8*I1+0.6*I2;
+        combinedI(:,:,2) = 0.8*I1+0.8*I2;
         combinedI(:,:,3) = 0.8*I1;
         imshow(combinedI,'Parent',gca,'InitialMagnification',50);
         
@@ -4694,16 +4694,32 @@ switch handles.filetype
         fileformat = [handles.prefix '_%s_s' num2str(get(hObject,'Value')) '_t%g.TIF'];
         set(handles.edit_signalformat,'String',fileformat);
         
-        tokens   = regexp(handles.stageName{get(hObject,'Value')}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
-        if ~isempty(tokens)
-            row = tokens{1}{1};
-            col = tokens{1}{2};
+        L = regexp(handles.stageName{get(hObject,'Value')}, 'r(?<row>\d+)','names');
+        
+        if ~isempty(L)
+            row = L.row;
             set(handles.edit_row,'String',row);
+        else
+            set(handles.edit_row,'String','1');
+        end
+        
+        L = regexp(handles.stageName{get(hObject,'Value')}, 'c(?<col>\d+)','names');
+        
+        if ~isempty(L)
+            col = L.col;
             set(handles.edit_col,'String',col);
         else
-            set(handles.edit_row,'String',num2str(get(hObject,'Value')));
             set(handles.edit_col,'String','1');
         end
+        L = regexp(handles.stageName{get(hObject,'Value')}, 'f(?<field>\d+)','names');
+        
+        if ~isempty(L)
+            field = L.field;
+            set(handles.edit_field,'String',field);
+        else
+            set(handles.edit_field,'String','1');
+        end
+
     case 1
         row = str2num(get(handles.edit_row,'String'));
         col = str2num(get(handles.edit_col,'String'));

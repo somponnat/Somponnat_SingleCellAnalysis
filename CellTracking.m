@@ -2307,9 +2307,9 @@ cellpath_mat = h5read(fullfile(handles.SourceF,H5filename),cellpath_name,[1 1 1]
 sisterList_mat = h5read(fullfile(handles.SourceF,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
 bg_mat = h5read(fullfile(handles.SourceF,H5filename),bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
 
-cellpath = cell(last_tp,1);
-sisterList = cell(last_tp,1);
-bg = cell(last_tp,1);
+cellpath = cell(size(cellpath_mat,3),1);
+sisterList = cell(size(sisterList_mat,3),1);
+bg = cell(size(bg_mat,3),1);
 
 for tp=first_tp:size(cellpath_mat,3)
     cellpath{tp} = cellpath_mat(:,:,tp);

@@ -2300,22 +2300,51 @@ cellpath_name = ['/field' num2str(field) '/cellpath'];
 sisterList_name = ['/field' num2str(field) '/sisterList'];
 bg_name = ['/field' num2str(field) '/bg'];
 
-cellpathinfo = h5info(fullfile(handles.SourceF,H5filename), cellpath_name);
-sisterListinfo = h5info(fullfile(handles.SourceF,H5filename), sisterList_name);
-bginfo = h5info(fullfile(handles.SourceF,H5filename), bg_name);
-cellpath_mat = h5read(fullfile(handles.SourceF,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
-sisterList_mat = h5read(fullfile(handles.SourceF,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
-bg_mat = h5read(fullfile(handles.SourceF,H5filename),bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
+SourceF = handles.SourceF;
 
-cellpath = cell(size(cellpath_mat,3),1);
-sisterList = cell(size(sisterList_mat,3),1);
-bg = cell(size(bg_mat,3),1);
-
-for tp=first_tp:size(cellpath_mat,3)
-    cellpath{tp} = cellpath_mat(:,:,tp);
-    sisterList{tp} = sisterList_mat(:,:,tp);
-    bg{tp} = bg_mat(:,:,tp);
+if ~exist(fullfile(SourceF,H5filename),'file') 
+    display([H5filename '.mat does not exist.']);
+    return
+else
+    fileattrib(fullfile(SourceF,H5filename),'+w');
 end
+
+% Load Original seed points
+
+fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    cellpathinfo = h5info(fullfile(SourceF,H5filename), cellpath_name);
+    
+    cellpath_mat = h5read(fullfile(SourceF,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
+    
+    for tp=first_tp:cellpathinfo.Dataspace.Size(3)
+        cellpath{tp} = cellpath_mat(:,:,tp);
+    end
+end
+
+fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    sisterListinfo = h5info(fullfile(SourceF,H5filename), sisterList_name);
+    sisterList_mat = h5read(fullfile(SourceF,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
+    
+    for tp=first_tp:sisterListinfo.Dataspace.Size(3)
+        sisterList{tp} = sisterList_mat(:,:,tp);
+    end
+end
+
+fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if H5L.exists(fid,bg_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    bginfo = h5info(fullfile(SourceF,H5filename), bg_name);
+    bg_mat = h5read(fullfile(SourceF,H5filename),bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
+    
+    for tp=first_tp:bginfo.Dataspace.Size(3)
+        bg{tp} = bg_mat(:,:,tp);
+    end
+end
+
 
 handles.cellpath=cellpath;
 handles.sisterList=sisterList;

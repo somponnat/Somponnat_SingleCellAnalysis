@@ -66,6 +66,12 @@ switch filetype
         if exist(fullfile(SourceF,filename),'file')
             outputim = imread(fullfile(SourceF,filename));
         end  
+    case 5
+        filename = sprintf(fileformat,channelnames{channel},tp);
+        if exist(fullfile(SourceF,filename),'file')
+            outputim = imread(fullfile(SourceF,filename));
+        end  
+        
 end
 
 % --- Executes just before CellTracking is made visible.
@@ -111,6 +117,14 @@ switch length(varargin)
         imagelocation = varargin{3};
         channelnames = varargin{4};
         fileformat = varargin{5};%
+    case 6
+        filetype = varargin{1};
+        trackinginfo = varargin{2};
+        imagelocation = varargin{3};
+        channelnames = varargin{4};
+        fileformat = varargin{5};%
+        SourceF = varargin{6};%
+        set(handles.edit_sourceF,'String',SourceF);
     case 0
         filetype = 0;
 end
@@ -122,6 +136,32 @@ end
 
 
 switch filetype
+    case 5 % custom file naming
+        filetype = 5;
+        set(handles.radiobutton_custom,'Value',1);
+        row = 1;
+        col = 1;
+        field = 1;
+        plane = 1;
+
+        if ~isempty(channelnames)
+            totalCHs = length(channelnames);
+            set(handles.edit_totalCHs,'String',num2str(totalCHs));
+        end
+        
+        channel = trackinginfo(1);
+        set(handles.edit_CH,'String',num2str(channel));
+        set(handles.edit_firstframe,'String',num2str(trackinginfo(2)));
+        set(handles.edit_lastframe,'String',num2str(trackinginfo(3)));
+        set(handles.edit_currentFrame,'String',num2str(trackinginfo(2)));
+        
+        handles.channelnames = channelnames;
+        set(handles.edit_row,'String',num2str(row));
+        set(handles.edit_col,'String',num2str(col));
+        set(handles.edit_field,'String',num2str(field));
+        set(handles.edit_plane,'String',num2str(plane));
+        set(handles.edit_fileformat,'String',fileformat);
+    
     case 1 % PE tiff input
         
         if isempty(imagelocation)
@@ -274,11 +314,11 @@ switch filetype
 end
 
 handles.filetype = filetype;
+handles.SourceF = SourceF;
 handles.cellpath = [];
 handles.sisterList = [];
 handles.res_cellpath = [];
 handles.res_sisterList = [];
-handles.SourceF = '/home/ss240/files/ImStor/sorger/data/NIC/Pat/';
 guidata(hObject, handles);
 handles = guidata(hObject);
 
@@ -406,11 +446,11 @@ set(handles.slider_frames,'Min',minF);
 set(handles.slider_frames,'Value',minF);
 set(handles.edit_currentFrame,'String',num2str(minF));
 set(handles.slider_frames,'SliderStep',[1/(maxF-minF) 1/(maxF-minF)]);
-if handles.filetype~=3
-    handles.channelnames = [];
-    guidata(hObject, handles);
-    handles = guidata(hObject);
-end
+% if handles.filetype~=3
+%     handles.channelnames = [];
+%     guidata(hObject, handles);
+%     handles = guidata(hObject);
+% end
 initialframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
 
 set(handles.edit_currentFrame,'String',num2str(tp));
@@ -3437,6 +3477,10 @@ switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
         set(handles.edit_commu,'String','Columbus tif chosen for inputs. Edit file structure if needed.');
         set(handles.edit_fileformat,'String','%03.0f%03.0f-%u-%03.0f%03.0f%03.0f.tif');
         handles.filetype = 4;     
+    case 'radiobutton_custom'
+        set(handles.edit_commu,'String','Custom file naming');
+        handles.filetype = 5;    
+        
         
 end
 guidata(hObject, handles);

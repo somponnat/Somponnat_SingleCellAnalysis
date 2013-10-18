@@ -91,7 +91,7 @@ trackinginfo = [];
 imagelocation = [];
 channelnames = [];
 fileformat = [];
-
+SourceF = [];
 switch length(varargin)
     case 1
         filetype = varargin{1};

@@ -1,4 +1,4 @@
-LiveCellImaging Tookit
+LiveCellImaging Toolkit
 
 © Copyright. Somponnat Sampattavanich 2013. May be used for academic research purposes when citing this source. Commercial usages are prohibited without written permission.
 

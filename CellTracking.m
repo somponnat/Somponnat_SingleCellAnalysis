@@ -1068,7 +1068,7 @@ if button_state == get(hObject,'Max')
     cellsize = str2num(get(handles.edit_cellsize,'String'));
     outersize = str2num(get(handles.edit_outersize,'String'));
     tp = str2num(get(handles.edit_currentFrame,'String'));
-    cell = get(handles.listbox_cells,'Value');
+    cell = str2num(get(handles.edit_cellNo,'String'));
     fcn = makeConstrainToRectFcn('imrect',get(handles.axes1,'XLim'),get(handles.axes1,'YLim'));
     h1 = imrect(handles.axes1, [cellpath{tp}(cell,1)-cellsize cellpath{tp}(cell,2)-cellsize 2*cellsize-1 2*cellsize-1]);
     

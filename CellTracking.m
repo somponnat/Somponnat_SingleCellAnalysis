@@ -312,7 +312,8 @@ switch filetype
         end
         
 end
-
+handles.cellrecogmethod =1 ;
+set(handles.radiobutton_method1,'Value',1);
 handles.filetype = filetype;
 handles.SourceF = SourceF;
 handles.cellpath = [];
@@ -3536,7 +3537,7 @@ function uibuttongroup_cellrecogmethod_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to uibuttongroup_cellrecogmethod (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
-handles.cellrecogmethod =1 ;
+
 guidata(hObject, handles);
 
 

@@ -447,11 +447,11 @@ set(handles.slider_frames,'Min',minF);
 set(handles.slider_frames,'Value',minF);
 set(handles.edit_currentFrame,'String',num2str(minF));
 set(handles.slider_frames,'SliderStep',[1/(maxF-minF) 1/(maxF-minF)]);
-% if handles.filetype~=3
-%     handles.channelnames = [];
-%     guidata(hObject, handles);
-%     handles = guidata(hObject);
-% end
+if handles.filetype==4
+    handles.channelnames = [];
+    guidata(hObject, handles);
+    handles = guidata(hObject);
+end
 initialframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
 
 set(handles.edit_currentFrame,'String',num2str(tp));
@@ -1204,11 +1204,14 @@ if get(handles.togglebutton_editable,'Value') == get(handles.togglebutton_editab
         end
     end
     
-    for i=1:length(bg_p)
-        xy_bg(i,:) = getPosition(bg_p{i});
-    end
+
     
     if ~isempty(bg) && ~isempty(bg{c_tp})
+        for i=1:length(bg_p)
+            xy_bg(i,:) = getPosition(bg_p{i});
+        end
+        
+        
         bg{c_tp} = round([xy_bg(:,1) xy_bg(:,2)]);
         set(handles.listbox_bgs,'String',num2str( [(1:size(bg{c_tp},1))' bg{c_tp}] ));
     end
@@ -1384,6 +1387,7 @@ if ~isempty(bg) && ~isempty(bg{tp})
     set(handles.listbox_bgs,'String',num2str( [(1:size(bg{tp},1))' bg{tp}] ));
 else
     set(handles.listbox_bgs,'String',[]);
+    set(handles.listbox_bgs,'Value',1);
 end
 
 % --- Executes on button press in pushbutton_topreviousframe.
@@ -2384,6 +2388,8 @@ if H5L.exists(fid,bg_name,'H5P_DEFAULT')
     for tp=first_tp:bginfo.Dataspace.Size(3)
         bg{tp} = bg_mat(:,:,tp);
     end
+else
+    bg = [];
 end
 
 
@@ -2430,13 +2436,12 @@ c_tp = str2num(get(handles.edit_currentFrame,'String'));
 
 cellpath_mat = -1*(ones(size(cellpath{c_tp},1),2,length(cellpath)));
 sisterList_mat = -1*(ones(size(sisterList{c_tp},1),size(sisterList{c_tp},2),length(sisterList)));
-bg_mat = -1*(ones(size(bg{c_tp},1),2,length(bg)));
+
 
 for tp=1:length(cellpath)
     if ~isempty(cellpath{tp})
         cellpath_mat(:,:,tp) = cellpath{tp};
         sisterList_mat(:,:,tp) = sisterList{tp};
-        bg_mat(:,:,tp) = bg{tp};
     end
 end
 
@@ -2475,18 +2480,38 @@ end
 h5create(fullfile(handles.SourceF,H5filename), sisterList_name, [size(sisterList_mat,1), size(sisterList_mat,2), size(sisterList_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(sisterList_mat,2), size(sisterList_mat,3)], 'Deflate', 9);
 h5write(fullfile(handles.SourceF,H5filename), sisterList_name, sisterList_mat, [1 1 1], [size(sisterList_mat,1) size(sisterList_mat,2) size(sisterList_mat,3)]);
 
-fid = H5F.open(fullfile(handles.SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-if ~H5L.exists(fid,bg_name,'H5P_DEFAULT')
-    H5F.close(fid);
-    display(['Initializing ' H5filename ':' bg_name]);
-else
-    H5L.delete(fid,bg_name,'H5P_DEFAULT');
-    display(['Overwriting ' H5filename ':' bg_name]);
-    H5F.close(fid);
-end
+if ~isempty(bg)
+    bg_mat = -1*(ones(size(bg{c_tp},1),2,length(bg)));
+    for tp=1:length(bg)
+        if ~isempty(bg{tp})
+            bg_mat(:,:,tp) = bg{tp};
+        end
+    end
+    
+    
+    fid = H5F.open(fullfile(handles.SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    if ~H5L.exists(fid,bg_name,'H5P_DEFAULT')
+        H5F.close(fid);
+        display(['Initializing ' H5filename ':' bg_name]);
+    else
+        H5L.delete(fid,bg_name,'H5P_DEFAULT');
+        display(['Overwriting ' H5filename ':' bg_name]);
+        H5F.close(fid);
+    end
+    
+    h5create(fullfile(handles.SourceF,H5filename), bg_name, [size(bg_mat,1), size(bg_mat,2), size(bg_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(bg_mat,2), size(bg_mat,3)], 'Deflate', 9);
+    h5write(fullfile(handles.SourceF,H5filename), bg_name, bg_mat, [1 1 1], [size(bg_mat,1) size(bg_mat,2) size(bg_mat,3)]);
 
-h5create(fullfile(handles.SourceF,H5filename), bg_name, [size(bg_mat,1), size(bg_mat,2), size(bg_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(bg_mat,2), size(bg_mat,3)], 'Deflate', 9);
-h5write(fullfile(handles.SourceF,H5filename), bg_name, bg_mat, [1 1 1], [size(bg_mat,1) size(bg_mat,2) size(bg_mat,3)]);
+else
+    
+    fid = H5F.open(fullfile(handles.SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    if H5L.exists(fid,bg_name,'H5P_DEFAULT')
+        H5L.delete(fid,bg_name,'H5P_DEFAULT');
+        display(['Removed previously-existing ' H5filename ':' bg_name]);
+        H5F.close(fid);
+    end
+    
+end
 
 set(handles.edit_commu,'String',['Your data is saved to ' H5filename]);
 
@@ -3559,6 +3584,48 @@ function listbox_bgs_Callback(hObject, eventdata, handles)
 
 % Hints: contents = cellstr(get(hObject,'String')) returns listbox_bgs contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from listbox_bgs
+
+selected_bg = get(hObject,'Value');
+selected_cell = handles.oldchosencell;
+
+cellpath = handles.cellpath;
+sisterList = handles.sisterList;
+bg=handles.bg;
+c_tp = str2num(get(handles.edit_currentFrame,'String'));
+
+first_tp = str2num(get(handles.edit_firstframe,'String'));
+last_tp = str2num(get(handles.edit_lastframe,'String'));
+if c_tp>last_tp
+    tp=last_tp;
+elseif c_tp<first_tp
+    tp=first_tp;
+else
+    tp=c_tp;
+end
+
+if bg{tp}(selected_bg,1) ~= -1 || bg{tp}(selected_bg,2) ~= -1
+    
+
+    cellsize = str2num(get(handles.edit_cellsize,'String'));
+    row = str2num(get(handles.edit_row,'String'));
+    col = str2num(get(handles.edit_col,'String'));
+    field = str2num(get(handles.edit_field,'String'));
+    plane = str2num(get(handles.edit_plane,'String'));
+    channel= str2num(get(handles.edit_CH,'String'));
+    
+    
+    currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+    set(handles.edit_currentFrame,'String',num2str(tp));
+    imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
+    if get(handles.checkbox_cellmarking,'Value')
+        [p bg_p] = plotTrackpoints(handles,cellpath,sisterList,handles.res_cellpath,handles.res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+        handles.p = p;
+        handles.bg_p = bg_p;
+    end
+    
+end
+
+
 
 % --- Executes during object creation, after setting all properties.
 function listbox_bgs_CreateFcn(hObject, eventdata, handles)

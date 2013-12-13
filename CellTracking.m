@@ -10,7 +10,7 @@ function varargout = CellTracking(varargin)
 %  CellTracking(2,[templateCH tp_1 tp_end],[],{'1';'2';'3'},<tiff stack file>)
 %  CellTracking(3,[templateCH tp_1 tp_end],[],{'CFP';'YFP';'RFP'},'2012-11-16_%s_xy087_t%03g.tif')
 %
-% Last Modified by GUIDE v2.5 28-May-2013 23:07:13
+% Last Modified by GUIDE v2.5 12-Dec-2013 21:13:03
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -252,7 +252,7 @@ switch filetype
         end
         
         filetype = 3;
-        set(handles.radiobutton_customtiff,'Value',1);
+        set(handles.radiobutton_metamorphtiff,'Value',1);
         
         if isempty(imagelocation)
             row = 1;
@@ -3489,8 +3489,8 @@ function uibuttongroup_filetype_SelectionChangeFcn(hObject, eventdata, handles)
 %	NewValue: handle of the currently selected object
 % handles    structure with handles and user data (see GUIDATA)
 switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
-    case 'radiobutton_petiffs'
-        set(handles.edit_commu,'String','PE tiffs chosen for inputs');
+    case 'radiobutton_harmony'
+        set(handles.edit_commu,'String','Harmony tiffs chosen for inputs');
         set(handles.edit_fileformat,'String','r%02.0fc%02.0ff%02.0fp%02.0frc%1.0f-ch1sk%ufk1fl1.tiff');
         handles.filetype = 1;
     case 'radiobutton_tiffstack'
@@ -4139,7 +4139,7 @@ end
 
 
 handles.filetype = 3;
-set(handles.radiobutton_customtiff,'Value',1);
+set(handles.radiobutton_metamorphtiff,'Value',1);
 set(handles.edit_firstframe,'String',num2str(1));
 set(handles.edit_lastframe,'String',num2str(notp));
 set(handles.edit_currentFrame,'String',num2str(1));

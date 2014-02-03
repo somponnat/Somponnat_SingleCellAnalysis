@@ -32,8 +32,8 @@ if matlabpool('size') == 0
   matlabpool open;
 end
 
-parfor site = sites
-
+parfor s = 1:length(sites)
+    site = sites(s);
     fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
     L = regexp(stageName{site}, 'r(?<row>\d+)','names');
     if ~isempty(L)

@@ -1,55 +1,42 @@
-function do_lsf_collectDataND_test()
+function do_lsf_celltrackingND_tiao()
+% clc;
+% clear all;
+% Define information about input images and necessary parameters-----------
 
-% Define parameters related to the process---------
-nucCH = 1;
-cellCH = 2;
-CH1 = 1;
-CH2 = 2;
-outputname = 'signals';
-cytosize = 4;
-cellsize = 40;
-filterParam1 = 2;
-filterParam2 = 2;
-bgsize = 30;
-signalShiftN = 0.001;
-signalShiftD = 0.001;
-regiontype = [1 2 3 4]; %1=nuc/cyto,2=nuc,3=cyto,4=cell
-signaltype = [2 2 2 2];%4=math,1=ch1,2=ch2
-regions = {'Nuc/Cyto';'Nuclei';'Cytosol';'Cell'};
-signals = {'CH1';'CH2';'CH3';'Math'};
-output_name = 'FOXO3a_ratio';
-nucFolder = 'nuclearMask';
-cellFolder = 'cellMask';
-minstamp = 5;
-secstamp = 0;
-useblank_LOG = 0; % 1 = use BLANK for illumination correction, 0 = not using
-bgnomin_LOG = 0 ; % 1 = median of BG points in SIGNAL, 2=median of BLANK
-bgdenomin_LOG = 0; % 1 = median of BG points in SIGNAL, 2=median of BLANK
-illumlogic = 0; % 1 = use high-pass filtering, 0 = no filtering
-image_width = 1344;
-image_height = 1024;
 
-save trackingparameters;
+cellsize = 50;
+outersize = 75;
+avgNucDiameter = 20;
+maxWholeImShift = 50;
+maxNucMaskShift = 10;
+similarityThres = 0.9;
+ffactorCutoff = 0.85; %roundness
+thresParam = 3; % The higher the more stringent the threshold
+minAreaRatio=1.25;
+minCytosolWidth=5;
+save celltrackingparameters;
+% clear all;
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename ='01262014-r1.nd';
-sourcefolder = '/hms/scratch1/ss240/01-26-2014';
+ndfilename ='12082013-r1.nd';
+NucCH = 1;
+CellCH = 2;
+increment = 1;
+sourcefolder = 'Q:\sorger\data\NIC\Pat\12-08-2013';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
-[notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
-tps = [1 notp];
-sites = 1:length(stagePos);
+[notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename);
 
-jobmgr = findResource('scheduler', 'type', 'lsf');
-jobmgr.ClusterMatlabRoot = '/opt/matlab';
-jobmgr.SubmitArguments = '-q sysbio_7d -M 8388608 -n 1 -R "rusage[matlab_dc_lic=1]" ';
-job = jobmgr.createJob();
+tps = [1 3];
+sites = 2;
 
-for site = sites
+if matlabpool('size') == 0
+  matlabpool open;
+end
+
+parfor site = sites
     
-    signalformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
-    blankformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
-    
+    fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
     L = regexp(stageName{site}, 'r(?<row>\d+)','names');
     if ~isempty(L)
         row = L.row;
@@ -68,16 +55,17 @@ for site = sites
     if ~isempty(L)
         field = L.field;
     else
-        field = 1;
+        field = 1
     end
-
-    job.createTask(@CollectData_commandline, 0, ...
-        {3,sourcefolder,row,col,field,tps,signalformat,blankformat,channelnames,2});
+    
+    plane = 1;
+    
+    CellTracking_commandline_tiao(3,sourcefolder,row,col,field,plane,NucCH,CellCH,tps,increment,fileformat,channelnames);
 end
 
-job.submit();
 
-function [notp,stagePos,stageName,waveName] = readndfile(sourcefolder,filename)
+
+function [notp stagePos stageName waveName] = readndfile(sourcefolder,filename)
 % Search for number of string matches per line.
 notp=-1;
 stagePos = [];

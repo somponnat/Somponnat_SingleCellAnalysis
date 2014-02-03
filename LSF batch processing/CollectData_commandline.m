@@ -1,11 +1,10 @@
-function CollectData_commandline(filetype,targetfolder,row,col,field,tps,signalformat,blankformat,channelnames,totalCHs,templateCH)
+function CollectData_commandline(filetype,ndpathname,row,col,field,tps,signalformat,blankformat,channelnames,totalCHs)
 load trackingparameters
 
-warning('off', 'all');
-
-currentF = pwd;
-cd(targetfolder);
-
+currentPath = pwd;
+eval('cd ..');
+addpath(genpath([pwd filesep 'ThirdParty']),'-end');
+cd(currentPath);
 
 first_tp = tps(1);
 last_tp = tps(end);
@@ -13,66 +12,71 @@ load fftexecutiontimes
 h_gaussian = 1/273*[1 4 7 4 1;4 16 26 26 4;7 26 41 26 7;4 16 26 16 4;1 4 7 4 1];
 smooth_opt = detbestlength2(FFTrv,FFTiv,IFFTiv,[image_height image_width],size(h_gaussian),1,1);
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
-fileattrib(H5filename,'+w');
+fileattrib(fullfile(ndpathname,H5filename),'+w');
 cellpath_name = ['/field' num2str(field) '/cellpath'];
-sisterList_name = ['/field' num2str(field) '/sisterList'];
-bg_name = ['/field' num2str(field) '/bg'];
-maskdatasetname = ['/field' num2str(field) '/segmentsCH' num2str(templateCH)];
-signal_name = ['/field' num2str(field) '/' outputname];
-timestamp_name = ['/field' num2str(field) '/timestamp'];
 selectedcells_name = ['/field' num2str(field) '/selectedcells'];
+signal_name = ['/field' num2str(field) '/outputsignal1'];
+timestamp_name = ['/field' num2str(field) '/timestamp1'];
 
-cellpathinfo = h5info(H5filename, cellpath_name);
-sisterListinfo = h5info(H5filename, sisterList_name);
-bginfo = h5info(H5filename, bg_name);
-maskinfo = h5info(H5filename, maskdatasetname);
+cellpathinfo = h5info(fullfile(ndpathname,H5filename), cellpath_name);
 
-fid = H5F.open(H5filename,'H5F_ACC_RDWR','H5P_DEFAULT');
+fileattrib(fullfile(ndpathname,H5filename),'+w');
+
+fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if H5L.exists(fid,signal_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    display(['Skipping ' H5filename ':' signal_name ' already exists.']);
+    return;
+end
+
+fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
     H5F.close(fid);
-    cellpath_mat = h5read(H5filename,cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
-
-    for tp=first_tp:last_tp
-        cellpath{tp} = cellpath_mat(:,:,tp);
-    end
+    cellpath_mat = h5read(fullfile(ndpathname,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
 else
     return
-end
-
-fid = H5F.open(H5filename,'H5F_ACC_RDWR','H5P_DEFAULT');
-if H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
-    H5F.close(fid);
-    sisterList_mat = h5read(H5filename,sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
-
-    for tp=first_tp:last_tp
-        sisterList{tp} = sisterList_mat(:,:,tp);
-    end
-else
-    return
-end
-
-fid = H5F.open(H5filename,'H5F_ACC_RDWR','H5P_DEFAULT');
-if H5L.exists(fid,bg_name,'H5P_DEFAULT')
-    H5F.close(fid);
-    bg_mat = h5read(H5filename,bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
-
-    for tp=first_tp:last_tp
-        bg{tp} = bg_mat(:,:,tp);
-    end
 end
 
 % Initializing storage variables
-mysignal = zeros(size(cellpath{last_tp},1),last_tp-first_tp+1,4);
-selected_cells = h5read(H5filename,selectedcells_name);
-timestamp = 1:(last_tp-first_tp+1);
+mysignal = zeros(size(cellpath_mat,3),last_tp-first_tp+1,4);
+timestamp = first_tp:(last_tp-first_tp+1);
+
+i=1;
+serpen = [];
+for c=1:size(cellpath_mat,1)
+    myX = squeeze(cellpath_mat(c,1,:));
+    myY = squeeze(cellpath_mat(c,2,:));
+    pos_time = find(myX >0 & myY >0);
+    
+    if ~isempty(pos_time)
+        
+        end_p_idx = find(diff(pos_time)~=1,1,'first');
+        start_p = min(pos_time);
+        
+        if isempty(end_p_idx)
+            end_p = max(pos_time);
+        else
+            end_p = pos_time(end_p_idx);
+        end
+        serpen(i,:) = [end_p-start_p+1, c, start_p, end_p,];
+        i=i+1;
+    end
+
+    clear myX myY pos_time;
+end
+serpen = sortrows(serpen,[-1 2 3 4]);
+sSerpen_idx = find(serpen(:,1)> size(cellpath_mat,3)*0.8);
+selected_cells = sort(serpen(sSerpen_idx,2));
+
+
 
 for tp=first_tp:last_tp
     % Determine image capture time based on the template channel
     if filetype == 3
-        filename = sprintf(signalformat,channelnames{templateCH},first_tp);
-        first_info = imfinfo(filename);
-        filename = sprintf(signalformat,channelnames{templateCH},tp);
-        current_info = imfinfo(filename);
+        filename = sprintf(signalformat,channelnames{cellCH},first_tp);
+        first_info = imfinfo(fullfile(ndpathname,filename));
+        filename = sprintf(signalformat,channelnames{cellCH},tp);
+        current_info = imfinfo(fullfile(ndpathname,filename));
     end
 
     switch filetype
@@ -89,117 +93,58 @@ for tp=first_tp:last_tp
     
     timestep = hour*60+ minute + second/60;
 
-    clc;display(['Processing time point:' num2str(tp) ' of ' num2str(last_tp)]);
+    clc;display(['Processing time point:' num2str(tp) ' of ' num2str(last_tp) ',' H5filename]);
 
     
     % Determine signals
-    CH1im = loadsignal(filetype,signalformat,blankformat,channelnames,totalCHs,CH1,tp,h_gaussian,smooth_opt);
-    CH2im = loadsignal(filetype,signalformat,blankformat,channelnames,totalCHs,CH2,tp,h_gaussian,smooth_opt);
-    CH3im = loadsignal(filetype,signalformat,blankformat,channelnames,totalCHs,CH3,tp,h_gaussian,smooth_opt);
-    ratioIm = calculateFRET(filetype,signalformat,blankformat,channelnames,totalCHs,tp,nominCH,denominCH,bg,filterParam1,filterParam2,bgsize,signalShiftN,signalShiftD);
+    CH1im = loadsignal(filetype,ndpathname,signalformat,blankformat,channelnames,totalCHs,CH1,tp,h_gaussian,smooth_opt,useblank_LOG);
+    CH2im = loadsignal(filetype,ndpathname,signalformat,blankformat,channelnames,totalCHs,CH2,tp,h_gaussian,smooth_opt,useblank_LOG);
+    %ratioIm = calculateFRET(filetype,signalformat,blankformat,channelnames,totalCHs,tp,nominCH,denominCH,bg,filterParam1,filterParam2,bgsize,signalShiftN,signalShiftD);
     
-    imwidth = size(CH1im,2);
-    imheight = size(CH1im,1);
-    
-    startind = double([1 tp 1 1 1]);
-    countind = [maskinfo.Dataspace.Size(1) 1 3 maskinfo.Dataspace.Size(4) maskinfo.Dataspace.Size(5)];
-    allmasks = permute(h5read(H5filename,maskdatasetname,startind, countind),[4 5 1 3 2]);
-    
-    
-    nucmask  = double(allmasks(:,:,:,1));
-    cellmask  = double(allmasks(:,:,:,2));
-    cytomask  = double(allmasks(:,:,:,3));
-    
-    for cellNo=selected_cells'
+    imwidth = size(CH2im,2);
+    imheight = size(CH2im,1);
 
-        ind_cellpath = pos_path(cellpath,sisterList,cellNo,first_tp,last_tp,imheight,imwidth);
-        
-        if tp <= size(ind_cellpath,1)
+    nuc_im   = imread(fullfile(ndpathname,nucFolder, sprintf(signalformat,channelnames{nucCH},tp)));
+    if exist(fullfile(ndpathname,cellFolder,sprintf(signalformat,channelnames{cellCH},tp)),'file')
+        cell_im  = imread(fullfile(ndpathname,cellFolder,sprintf(signalformat,channelnames{cellCH},tp)));
+    else
+        cell_im  = imread(fullfile(ndpathname,cellFolder,sprintf(signalformat,channelnames{nucCH},tp)));
+    end
+    
+    for s=sSerpen_idx'
+        pos_time = (serpen(s,3):serpen(s,4));
+        if ismember(tp,pos_time)
+            cellNo = serpen(s,2);
+            cX = cellpath_mat(cellNo,1,tp);
+            cY = cellpath_mat(cellNo,2,tp);
+
+            NucMask  = bwselect(nuc_im,cX,cY,8);
+            CellMask = bwselect(cell_im,cX,cY,8);
+            CytoMask = CellMask-NucMask;
             
-            if ~isempty(find(nucmask(:,:,cellNo),1))
-                
-                if cellsize~=(size(nucmask(:,:,cellNo),1)-1)/2
-                    cellsize = (size(nucmask(:,:,cellNo),1)-1)/2;
-                end
-                
-                xL=max(ind_cellpath(tp,1)-cellsize,1);
-                xR=min(ind_cellpath(tp,1)+cellsize,imwidth);
-                yL=max(ind_cellpath(tp,2)-cellsize,1);
-                yR=min(ind_cellpath(tp,2)+cellsize,imheight);
-                
-                if xR-xL == cellsize*2
-                    borderX = 1:(cellsize*2+1);
-                elseif xR == imwidth
-                    shiftX = imwidth-xL;
-                    borderX = 1:(shiftX+1);
-                elseif xL == 1
-                    shiftX = cellsize*2+1-xR;
-                    borderX = (xL+shiftX):(cellsize*2+1);
-                end
-                
-                if yR-yL == cellsize*2
-                    borderY = 1:(cellsize*2+1);
-                elseif yR == imheight
-                    shiftY = imheight-yL;
-                    borderY = 1:(shiftY+1);
-                elseif yL == 1
-                    shiftY = cellsize*2+1-yR;
-                    borderY = (yL+shiftY):(cellsize*2+1);
-                end
-                cell_ch1 = zeros(2*cellsize+1,2*cellsize+1);
-                cell_ch2 = zeros(2*cellsize+1,2*cellsize+1);
-                cell_ch3 = zeros(2*cellsize+1,2*cellsize+1);
-                mini_ratioIm = zeros(2*cellsize+1,2*cellsize+1);
-                
-                cell_ch1(borderY,borderX) = CH1im(yL:yR,xL:xR);
-                cell_ch2(borderY,borderX) = CH2im(yL:yR,xL:xR);
-                cell_ch3(borderY,borderX) = CH3im(yL:yR,xL:xR);
-                mini_ratioIm(borderY,borderX) = ratioIm(yL:yR,xL:xR);
-                
-                NucMask  = nucmask(:,:,cellNo) ;
-                
-                if ~isempty(find(cellmask(:,:,cellNo),1))
-                    CellMask = cellmask(:,:,cellNo);
-                else
-                    CellMask = bwmorph(NucMask,'dilate',cytosize);
-                    cellmask(:,:,cellNo) = CellMask;
-                end
-                
-                if ~isempty(find(cytomask(:,:,cellNo),1))
-                    CytoMask = cytomask(:,:,cellNo);
-                else
-                    CytoMask = CellMask-NucMask;
-                    cytomask(:,:,cellNo) = CytoMask;
-                end
-                
-                %for Nuclei region
-                [nuc_Y, nuc_X] = find(NucMask);
-                %for Cytosol region
-                [cyto_Y, cyto_X] = find(CytoMask);
-                %for Cell region
-                [cell_Y, cell_X] = find(CellMask);
-                
-                clear NucMask CytoMask CellMask; 
-                
-                mysignal(cellNo,tp-first_tp+1,1) = signalOutputing(regiontype(1),signaltype(1),mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
-                mysignal(cellNo,tp-first_tp+1,2) = signalOutputing(regiontype(2),signaltype(2),mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
-                mysignal(cellNo,tp-first_tp+1,3) = signalOutputing(regiontype(3),signaltype(3),mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
-                mysignal(cellNo,tp-first_tp+1,4) = signalOutputing(regiontype(4),signaltype(4),mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
-                
-                clear nuc_X nuc_Y cyto_X cyto_Y cell_X cell_Y cell_template mini_ratioIm cell_ch1 cell_ch2 cell_ch3
-            end
+            %for Nuclei region
+            [nuc_Y, nuc_X] = find(NucMask);
+            %for Cytosol region
+            [cyto_Y, cyto_X] = find(CytoMask);
+            %for Cell region
+            [cell_Y, cell_X] = find(CellMask);
+            
+            mysignal(cellNo,tp-first_tp+1,1) = signalOutputing(regiontype(1),signaltype(1),CH1im,CH2im,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
+            mysignal(cellNo,tp-first_tp+1,2) = signalOutputing(regiontype(2),signaltype(2),CH1im,CH2im,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
+            mysignal(cellNo,tp-first_tp+1,3) = signalOutputing(regiontype(3),signaltype(3),CH1im,CH2im,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
+            mysignal(cellNo,tp-first_tp+1,4) = signalOutputing(regiontype(4),signaltype(4),CH1im,CH2im,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
+            clear nuc_X nuc_Y cyto_X cyto_Y cell_X cell_Y
+            
         end
     end
     
     timestamp(tp-first_tp+1) = timestep;
-    
-    clear  ratioIm CH1im CH2im CH3im
+    clear  CH1im CH2im nuc_im cell_im
 end
 
-fileattrib(H5filename,'+w');
-% 
-fid = H5F.open(H5filename,'H5F_ACC_RDWR','H5P_DEFAULT');
 
+
+fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 if ~H5L.exists(fid,signal_name,'H5P_DEFAULT')
     H5F.close(fid);
     display(['Initializing ' H5filename ':' signal_name]);
@@ -209,10 +154,29 @@ else
     H5F.close(fid);
 end
 
-h5create(H5filename, signal_name, [size(mysignal,1), size(mysignal,2), 4], 'Datatype', 'double', 'ChunkSize', [size(mysignal,1), size(mysignal,2), 1], 'Deflate', 9);
-h5write(H5filename, signal_name, mysignal, [1 1 1], [size(mysignal,1) size(mysignal,2) 4]);
+h5create(fullfile(ndpathname,H5filename), signal_name, [size(mysignal,1), size(mysignal,2), 4], 'Datatype', 'double', 'ChunkSize', [size(mysignal,1), size(mysignal,2), 1], 'Deflate', 9);
+h5write(fullfile(ndpathname,H5filename), signal_name, mysignal, [1 1 1], [size(mysignal,1) size(mysignal,2) 4]);
+h5writeatt(fullfile(ndpathname,H5filename),signal_name,'outputsignal_name',output_name);
 
-fid = H5F.open(H5filename,'H5F_ACC_RDWR','H5P_DEFAULT');
+% mysignal1 labeling
+region1 = regions{regiontype(1)};
+signal1 = signals{signaltype(1)};
+h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal1',[region1 '-' signal1]);
+% mysignal2 labeling
+region2 = regions{regiontype(2)};
+signal2 = signals{signaltype(2)};
+h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal2',[region2 '-' signal2]);
+% mysignal3 labeling
+region3 = regions{regiontype(3)};
+signal3 = signals{signaltype(3)};
+h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal3',[region3 '-' signal3]);
+% mysignal4 labeling
+region4 = regions{regiontype(4)};
+signal4 = signals{signaltype(4)};
+h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal4',[region4 '-' signal4]);
+
+
+fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 if ~H5L.exists(fid,timestamp_name,'H5P_DEFAULT')
     H5F.close(fid);
     display(['Initializing ' H5filename ':' timestamp_name]);
@@ -222,20 +186,28 @@ else
     H5F.close(fid);
 end
 
-h5create(H5filename, timestamp_name, last_tp-first_tp+1, 'Datatype', 'double');
-h5write(H5filename, timestamp_name, timestamp);
-cd(currentF);
+h5create(fullfile(ndpathname,H5filename), timestamp_name, last_tp-first_tp+1, 'Datatype', 'double');
+h5write(fullfile(ndpathname,H5filename), timestamp_name, timestamp);
+
+fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if ~H5L.exists(fid,selectedcells_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    display(['Initializing ' H5filename ':' selectedcells_name]);
+else
+    H5L.delete(fid,selectedcells_name,'H5P_DEFAULT');
+    display(['Overwriting ' H5filename ':' selectedcells_name]);
+    H5F.close(fid);
+end
+
+h5create(fullfile(ndpathname,H5filename), selectedcells_name, length(selected_cells), 'Datatype', 'uint32');
+h5write(fullfile(ndpathname,H5filename), selectedcells_name, uint32(selected_cells(:)));
 
 display(['Successfully collected signals from frame' num2str(tps(1)) ':' num2str(tps(end)) ' and saved in ' H5filename]);
 
-
-function outputsignal = signalOutputing(regiontype,signaltype,mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y)
+function outputsignal = signalOutputing(regiontype,signaltype,cell_ch1,cell_ch2,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y)
 switch regiontype
     case 1
         switch signaltype
-            case 4
-                Average_Nuc = mean(mean(mini_ratioIm(nuc_Y,nuc_X)));
-                Average_Cyto = mean(mean(mini_ratioIm(cyto_Y,cyto_X)));
 
             case 1
                 Average_Nuc = mean(mean(cell_ch1(nuc_Y,nuc_X)));
@@ -244,43 +216,29 @@ switch regiontype
             case 2
                 Average_Nuc = mean(mean(cell_ch2(nuc_Y,nuc_X)));
                 Average_Cyto = mean(mean(cell_ch2(cyto_Y,cyto_X)));
-            case 3
-                Average_Nuc = mean(mean(cell_ch3(nuc_Y,nuc_X)));
-                Average_Cyto = mean(mean(cell_ch3(cyto_Y,cyto_X)));
+
         end
         outputsignal = Average_Nuc/Average_Cyto;
     case 2
         switch signaltype
-            case 4
-                outputsignal = mean(mean(mini_ratioIm(nuc_Y,nuc_X)));
             case 1
                 outputsignal = mean(mean(cell_ch1(nuc_Y,nuc_X)));
             case 2
                 outputsignal = mean(mean(cell_ch2(nuc_Y,nuc_X)));
-            case 3
-                outputsignal = mean(mean(cell_ch3(nuc_Y,nuc_X)));
         end        
     case 3
         switch signaltype
-            case 4
-                outputsignal = mean(mean(mini_ratioIm(cyto_Y,cyto_X)));
             case 1
                 outputsignal = mean(mean(cell_ch1(cyto_Y,cyto_X)));
             case 2
                 outputsignal = mean(mean(cell_ch2(cyto_Y,cyto_X)));
-            case 3
-                outputsignal = mean(mean(cell_ch3(cyto_Y,cyto_X)));
         end        
     case 4
         switch signaltype
-            case 4
-                outputsignal = mean(mean(mini_ratioIm(cell_Y,cell_X)));
             case 1
                 outputsignal = mean(mean(cell_ch1(cell_Y,cell_X)));
             case 2
                 outputsignal = mean(mean(cell_ch2(cell_Y,cell_X)));
-            case 3
-                outputsignal = mean(mean(cell_ch3(cell_Y,cell_X)));
         end        
 end
 
@@ -288,89 +246,8 @@ if isnan(outputsignal)
     outputsignal=0;
 end
 
-function ratioIm = calculateFRET(filetype,signalformat,blankformat,channelnames,totalCHs,tp,nominCH,denominCH,bg,filterParam1,filterParam2,bgsize,signalShiftN,signalShiftD)
-
-nominIM = loadsignal(filetype,signalformat,blankformat,channelnames,totalCHs,nominCH,tp,h_gaussian,smooth_opt);
-if denominCH == -1
-    denomIM = im2double(ones(size(nominIM)));
-else
-    denomIM = loadsignal(filetype,signalformat,blankformat,channelnames,totalCHs,denominCH,tp,h_gaussian,smooth_opt);
-end
-
-% Load blank images if user chose to use BG points from BLANK images
-if bgnomin_LOG==2
-    nominBLK = loadblank(filetype,blankformat,channelnames,totalCHs,nominCH,tp);
-    
-end
-if bgdenomin_LOG==2
-    if denominCH == -1
-        denomBLK = im2double(ones(size(nominIM)));
-    else
-        denomBLK = loadblank(filetype,blankformat,channelnames,totalCHs,denominCH,tp);
-    end
-end
-
-
-if illumlogic
-    normN = ifft2(ifftshift(fftshift(fft2(nominIM)).*hbutter(nominIM,filterParam1,filterParam2)));
-    normD = ifft2(ifftshift(fftshift(fft2(denomIM)).*hbutter(denomIM,filterParam1,filterParam2)));
-else
-    normN = nominIM;
-    normD = denomIM;
-end
-
-
-
-switch bgnomin_LOG
-    case 1
-        if ~isempty(bg)
-            for b=1:size(bg{tp},1)
-                xL=max(bg{tp}(b,1)-bgsize,1);
-                xR=min(bg{tp}(b,1)+bgsize,size(nominIM,2));
-                yL=max(bg{tp}(b,2)-bgsize,1);
-                yR=min(bg{tp}(b,2)+bgsize,size(nominIM,1));
-                selectedN = normN(yL:yR,xL:xR);
-                BG_N(b) = median(selectedN(:));
-            end
-        end
-    case 2
-        BG_N = median(nominBLK(:));
-    otherwise
-        BG_N = 0;
-end
-
-switch bgdenomin_LOG
-    case 1
-        if ~isempty(bg)
-            for b=1:size(bg{tp},1)
-                xL=max(bg{tp}(b,1)-bgsize,1);
-                xR=min(bg{tp}(b,1)+bgsize,size(nominIM,2));
-                yL=max(bg{tp}(b,2)-bgsize,1);
-                yR=min(bg{tp}(b,2)+bgsize,size(nominIM,1));
-                selectedD = normD(yL:yR,xL:xR);
-                BG_D(b) = median(selectedD(:));
-            end
-        end
-    case 2
-        BG_D = median(denomBLK(:));
-    otherwise
-        BG_D = 0;
-end
-
-
-normN = normN-mean(BG_N);
-normD = normD-mean(BG_D);
-
-normN = normN+signalShiftN;
-normD = normD+signalShiftD;
-
-ratioIm =  normN./normD;
-
-
-function outputim = loadsignal(filetype,signalformat,blankformat,channelnames,totalCHs,channel,tp,h_gaussian,smooth_opt)
+function outputim = loadsignal(filetype,ndpathname,signalformat,blankformat,channelnames,totalCHs,channel,tp,h_gaussian,smooth_opt,useblank_LOG)
 outputim = [];
-
-
 
 if useblank_LOG
     
@@ -380,8 +257,8 @@ if useblank_LOG
             signal_filename = sprintf(signalformat,channel,tp);
             blank_filename = sprintf(blankformat,channel,tp);
             
-            if exist(signal_filename,'file') 
-                signalim = im2double(imread(signal_filename));
+            if exist(fullfile(ndpathname,signal_filename),'file') 
+                signalim = im2double(imread(fullfile(ndpathname,signal_filename)));
                 if exist(blank_filename,'file')
                     blankim = im2double(imread(blank_filename));
                     
@@ -399,24 +276,23 @@ if useblank_LOG
             
             
         case 2
-            if exist(signalformat,'file')
-                outputim = im2double(imread(signalformat,'Index',totalCHs*(tp-1)+channel));
+            if exist(fullfile(ndpathname,signalformat),'file')
+                outputim = im2double(imread(fullfile(ndpathname,signalformat),'Index',totalCHs*(tp-1)+channel));
             else
                 outputim = [];
             end
         case 3
             signal_filename = sprintf(signalformat,channelnames{channel},tp);
             blank_filename = sprintf(blankformat,channelnames{channel},tp);
-            if exist(signal_filename,'file') 
-                signalim = im2double(imread(signal_filename));
-                if exist(blank_filename,'file')
-                    blankim = im2double(imread(blank_filename));
+            if exist(fullfile(ndpathname,signal_filename),'file') 
+                signalim = im2double(imread(fullfile(ndpathname,signal_filename)));
+                if exist(fullfile(ndpathname,blank_filename),'file')
+                    blankim = im2double(imread(fullfile(ndpathname,blank_filename)));
                     smoothed = fftolamopt2(blankim,h_gaussian,smooth_opt,'same');
                     normim =(smoothed./mean(smoothed(:)));
                     clear blankim smoothed;
                     outputim = signalim./normim;
                 else 
-
                     outputim = signalim;
                 end
             else
@@ -429,51 +305,129 @@ else
         case 1
             
             filename = sprintf(signalformat,channel,tp);
-            if exist(filename,'file')
-                outputim = im2double(imread(filename));
+            if exist(fullfile(ndpathname,filename),'file')
+                outputim = im2double(imread(fullfile(ndpathname,filename)));
             else
                 outputim = [];
             end
         case 2
-            if exist(signalformat,'file')
-                outputim = im2double(imread(signalformat,'Index',totalCHs*(tp-1)+channel));
+            if exist(fullfile(ndpathname,signalformat),'file')
+                outputim = im2double(imread(fullfile(ndpathname,signalformat),'Index',totalCHs*(tp-1)+channel));
             else
                 outputim = [];
             end
         case 3
             filename = sprintf(signalformat,channelnames{channel},tp);
-            if exist(filename,'file');
-                outputim = im2double(imread(filename));
+            if exist(fullfile(ndpathname,filename),'file');
+                outputim = im2double(imread(fullfile(ndpathname,filename)));
             else
                 outputim = [];
             end
     end
 end
 
-function outputim = loadblank(filetype,blankformat,channelnames,totalCHs,channel,tp)
-
-outputim = [];
-
-switch filetype
-    case 1
-        
-        filename = sprintf(blankformat,channel,tp);
-        if exist(filename,'file')
-            outputim = im2double(imread(filename));
-        else
-            outputim = [];
-        end
-    case 2
-        if exist(signalformat,'file')
-            outputim = im2double(imread(blankformat,'Index',totalCHs*(tp-1)+channel));
-        else
-            outputim = [];
-        end
-    case 3
-        filename = sprintf(blankformat,channelnames{channel},tp);
-        if exist(filename,'file');
-            outputim = im2double(imread(filename));
-        else
-            outputim = [];
-        end
-end
+% function outputim = loadblank(filetype,blankformat,channelnames,totalCHs,channel,tp)
+% 
+% outputim = [];
+% 
+% switch filetype
+%     case 1
+%         
+%         filename = sprintf(blankformat,channel,tp);
+%         if exist(filename,'file')
+%             outputim = im2double(imread(filename));
+%         else
+%             outputim = [];
+%         end
+%     case 2
+%         if exist(signalformat,'file')
+%             outputim = im2double(imread(blankformat,'Index',totalCHs*(tp-1)+channel));
+%         else
+%             outputim = [];
+%         end
+%     case 3
+%         filename = sprintf(blankformat,channelnames{channel},tp);
+%         if exist(filename,'file');
+%             outputim = im2double(imread(filename));
+%         else
+%             outputim = [];
+%         end
+% end
+% 
+% function ratioIm = calculateFRET(filetype,signalformat,blankformat,channelnames,totalCHs,tp,nominCH,denominCH,bg,filterParam1,filterParam2,bgsize,signalShiftN,signalShiftD)
+% 
+% nominIM = loadsignal(filetype,ndpathname,signalformat,blankformat,channelnames,totalCHs,nominCH,tp,h_gaussian,smooth_opt);
+% if denominCH == -1
+%     denomIM = im2double(ones(size(nominIM)));
+% else
+%     denomIM = loadsignal(filetype,ndpathname,signalformat,blankformat,channelnames,totalCHs,denominCH,tp,h_gaussian,smooth_opt);
+% end
+% 
+% % Load blank images if user chose to use BG points from BLANK images
+% if bgnomin_LOG==2
+%     nominBLK = loadblank(filetype,blankformat,channelnames,totalCHs,nominCH,tp);
+%     
+% end
+% if bgdenomin_LOG==2
+%     if denominCH == -1
+%         denomBLK = im2double(ones(size(nominIM)));
+%     else
+%         denomBLK = loadblank(filetype,blankformat,channelnames,totalCHs,denominCH,tp);
+%     end
+% end
+% 
+% 
+% if illumlogic
+%     normN = ifft2(ifftshift(fftshift(fft2(nominIM)).*hbutter(nominIM,filterParam1,filterParam2)));
+%     normD = ifft2(ifftshift(fftshift(fft2(denomIM)).*hbutter(denomIM,filterParam1,filterParam2)));
+% else
+%     normN = nominIM;
+%     normD = denomIM;
+% end
+% 
+% 
+% 
+% switch bgnomin_LOG
+%     case 1
+%         if ~isempty(bg)
+%             for b=1:size(bg{tp},1)
+%                 xL=max(bg{tp}(b,1)-bgsize,1);
+%                 xR=min(bg{tp}(b,1)+bgsize,size(nominIM,2));
+%                 yL=max(bg{tp}(b,2)-bgsize,1);
+%                 yR=min(bg{tp}(b,2)+bgsize,size(nominIM,1));
+%                 selectedN = normN(yL:yR,xL:xR);
+%                 BG_N(b) = median(selectedN(:));
+%             end
+%         end
+%     case 2
+%         BG_N = median(nominBLK(:));
+%     otherwise
+%         BG_N = 0;
+% end
+% 
+% switch bgdenomin_LOG
+%     case 1
+%         if ~isempty(bg)
+%             for b=1:size(bg{tp},1)
+%                 xL=max(bg{tp}(b,1)-bgsize,1);
+%                 xR=min(bg{tp}(b,1)+bgsize,size(nominIM,2));
+%                 yL=max(bg{tp}(b,2)-bgsize,1);
+%                 yR=min(bg{tp}(b,2)+bgsize,size(nominIM,1));
+%                 selectedD = normD(yL:yR,xL:xR);
+%                 BG_D(b) = median(selectedD(:));
+%             end
+%         end
+%     case 2
+%         BG_D = median(denomBLK(:));
+%     otherwise
+%         BG_D = 0;
+% end
+% 
+% 
+% normN = normN-mean(BG_N);
+% normD = normD-mean(BG_D);
+% 
+% normN = normN+signalShiftN;
+% normD = normD+signalShiftD;
+% 
+% ratioIm =  normN./normD;

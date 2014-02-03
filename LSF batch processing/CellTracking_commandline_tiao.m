@@ -1,47 +1,23 @@
-function CellTracking_commandline(filetype,SourceF,row,col,field,plane,channel,tps,increment,fileformat,channelnames,cellsize,outersize,similarityThres)
+function CellTracking_commandline_tiao(filetype,SourceF,row,col,field,plane,nucCH,cellCH,tps,increment,fileformat,channelnames)
 % Example usage: CellTracking_commandline(pwd,2,6,1,1,3,[1 16]);
 % celltrackOUT    =  MAT file that contains initial track points
 % tps             = [<first frame>   <last frame>]
 
-H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
-cellpath_name = ['/field' num2str(field) '/cellpath'];
-sisterList_name = ['/field' num2str(field) '/sisterList'];
-bg_name = ['/field' num2str(field) '/bg'];
+load celltrackingparameters;
 
-if ~exist(fullfile(SourceF,H5filename),'file') 
-    display([H5filename '.mat does not exist.']);
-    return
-end
+currentPath = pwd;
+eval('cd ..');
+addpath(genpath([pwd filesep 'ThirdParty']),'-end');
+cd(currentPath);
 
-fileattrib(fullfile(SourceF,H5filename),'+w');
+%Calculate derived parameters
+minNucArea = round(0.25*avgNucDiameter^2);
+minNewNucArea = round(0.5*avgNucDiameter^2);
+maxMAL = 5*avgNucDiameter;
 
-load('~/fftexecutiontimes.mat');
-% calculate optimal conditions for fft analysis
-fftw('planner', 'hybrid');
-opt = detbestlength2(FFTrv,FFTiv,IFFTiv,2*[outersize outersize],2*[cellsize cellsize],1,1);
-
-cellpathinfo = h5info(fullfile(SourceF,H5filename), cellpath_name);
-sisterListinfo = h5info(fullfile(SourceF,H5filename), sisterList_name);
-bginfo = h5info(fullfile(SourceF,H5filename), bg_name);
-cellpath_mat = h5read(fullfile(SourceF,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
-sisterList_mat = h5read(fullfile(SourceF,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
-bg_mat = h5read(fullfile(SourceF,H5filename),bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
-
-%cellpath = cell(size(cellpath_mat,3),1);
-%sisterList = cell(size(cellpath_mat,3),1);
-%bg = cell(size(cellpath_mat,3),1);
-
-for tp=1:size(cellpath_mat,3)
-    cellpath{tp} = cellpath_mat(:,:,tp);
-    sisterList{tp} = sisterList_mat(:,:,tp);
-    bg{tp} = bg_mat(:,:,tp);
-end
-
-if isempty(cellpath) || isempty(bg) || isempty(sisterList) %#ok<*NODEF>
-    display([H5filename ' does not contain necessary variables.']);
-    return
-end
-
+%Define derection of tracking
+firsttp = tps(1);
+lasttp = tps(end);
 switch increment
     case 1
         firstFrame = tps(1);
@@ -51,151 +27,641 @@ switch increment
         endFrame   = tps(1)+1; 
 end
 
-for t=firstFrame:increment:endFrame
-    
-    clc;display([H5filename ' - Currently processing frame: ' num2str(t) ' of ' num2str(tps(end)-tps(1)+1)]);
-    tp=t; % load previous file
-    previousframe = loadimage(filetype,fileformat,[row col field plane channel],tp,channelnames,SourceF);
 
-    tp=t+increment; % load current file
-    currentframe =  loadimage(filetype,fileformat,[row col field plane channel],tp,channelnames,SourceF);
-    
-    if length(sisterList) >= tp && ~isempty(sisterList{tp}) && ~isempty(sisterList{1})
-        sisExistInd = find(sisterList{tp}(:,1) ~= -1 & sisterList{tp}(:,1) ~= 0);
-    else
-        sisExistInd = [];
-    end
-    
-    PosInd = find(cellpath{tp-increment}(:,1)>0 & cellpath{tp-increment}(:,2)>0)';
-    
-    for c=PosInd
-        
-        if isempty(find(c==sisExistInd,1))
-            sisterList{tp}(c,:) = sisterList{tp-increment}(c,:); %#ok<*AGROW>
-        end
-        
-        xL=max(cellpath{tp-increment}(c,1)-cellsize,1);
-        xR=min(cellpath{tp-increment}(c,1)+cellsize-1,size(previousframe,2));
-        yL=max(cellpath{tp-increment}(c,2)-cellsize,1);
-        yR=min(cellpath{tp-increment}(c,2)+cellsize-1,size(previousframe,1));
-                
-        template = previousframe(yL:yR,xL:xR);     
-        
-        xL=max(cellpath{tp-increment}(c,1)-outersize,1);
-        xR=min(cellpath{tp-increment}(c,1)+outersize-1,size(currentframe,2));
-        yL=max(cellpath{tp-increment}(c,2)-outersize,1);
-        yR=min(cellpath{tp-increment}(c,2)+outersize-1,size(currentframe,1));
-        
-        testframe = currentframe(yL:yR,xL:xR);   
-        
-        [x1 y1 maxVal] = corrMatching2(testframe, template, opt);
-        if isempty(x1) || maxVal<similarityThres
-            x1 = cellpath{tp-increment}(c,1)-xL;
-            y1 = cellpath{tp-increment}(c,2)-yL;
-        end
-        
-        [x1 y1 ~] = templateToCentroid(testframe,x1,y1);
+%Define H5File
+H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
+cellpath_name = ['/field' num2str(field) '/cellpath'];
+sisterList_name = ['/field' num2str(field) '/sisterList'];
+bg_name = ['/field' num2str(field) '/bg'];
 
-        cellpath{tp}(c,:) = [xL+x1 yL+y1];
-    end
-    
-    DeathInd = find(cellpath{tp-increment}(:,1)==-2)';
-    
-    for c=DeathInd
-        sisterList{tp}(c,:) = sisterList{tp-increment}(c,:);
-        cellpath{tp}(c,:) = cellpath{tp-increment}(c,:);
-    end
-    
-    
-    if ~isempty(bg)
-        %updating bg points
-        xshift = mean(cellpath{tp}(PosInd,1))-mean(cellpath{tp-increment}(PosInd,1));
-        yshift = mean(cellpath{tp}(PosInd,2))-mean(cellpath{tp-increment}(PosInd,2));
-        
-        bg{tp}(:,1) = bg{tp-increment}(:,1)+round(xshift);
-        bg{tp}(:,2) = bg{tp-increment}(:,2)+round(yshift);
-    end
-    
-    cellpath_mat = -1*(ones(size(cellpath{tp},1),2,length(cellpath)));
-    sisterList_mat = -1*(ones(size(sisterList{tp},1),size(sisterList{tp},2),length(sisterList)));
-    bg_mat = -1*(ones(size(bg{tp},1),2,length(bg)));
-    
-    
-    for s_tp=1:length(cellpath)
-        if ~isempty(cellpath{s_tp})
-            cellpath_mat(:,:,s_tp) = cellpath{s_tp};
-            sisterList_mat(:,:,s_tp) = sisterList{s_tp};
-            bg_mat(:,:,s_tp) = bg{s_tp};
-        end
-    end
-    
-    fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-    if ~H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
-        H5F.close(fid);
-    else
-        H5L.delete(fid,cellpath_name,'H5P_DEFAULT');
-        H5F.close(fid);
-    end
-    
-    h5create(fullfile(SourceF,H5filename), cellpath_name, [size(cellpath_mat,1), size(cellpath_mat,2), size(cellpath_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(cellpath_mat,2), size(cellpath_mat,3)], 'Deflate', 9);
-    h5write(fullfile(SourceF,H5filename), cellpath_name, cellpath_mat, [1 1 1], [size(cellpath_mat,1) size(cellpath_mat,2) size(cellpath_mat,3)]);
-    
-    fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-    if ~H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
-        H5F.close(fid);
-    else
-        H5L.delete(fid,sisterList_name,'H5P_DEFAULT');
-        H5F.close(fid);
-    end
-    
-    h5create(fullfile(SourceF,H5filename), sisterList_name, [size(sisterList_mat,1), size(sisterList_mat,2), size(sisterList_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(sisterList_mat,2), size(sisterList_mat,3)], 'Deflate', 9);
-    h5write(fullfile(SourceF,H5filename), sisterList_name, sisterList_mat, [1 1 1], [size(sisterList_mat,1) size(sisterList_mat,2) size(sisterList_mat,3)]);
-    
-    fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-    if ~H5L.exists(fid,bg_name,'H5P_DEFAULT')
-        H5F.close(fid);
-    else
-        H5L.delete(fid,bg_name,'H5P_DEFAULT');
-        H5F.close(fid);
-    end
-    
-    h5create(fullfile(SourceF,H5filename), bg_name, [size(bg_mat,1), size(bg_mat,2), size(bg_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(bg_mat,2), size(bg_mat,3)], 'Deflate', 9);
-    h5write(fullfile(SourceF,H5filename), bg_name, bg_mat, [1 1 1], [size(bg_mat,1) size(bg_mat,2) size(bg_mat,3)]);
+if ~exist(fullfile(SourceF,H5filename),'file') 
+    display([H5filename '.mat does not exist.']);
+    return
+else
+    fileattrib(fullfile(SourceF,H5filename),'+w');
 end
 
-display(['Successfully tracked frame' num2str(tps(1)) ':' num2str(tps(end)) ' and saved in ' H5filename]);
+% Load Original seed points
+
+fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    cellpathinfo = h5info(fullfile(SourceF,H5filename), cellpath_name);
+    
+    cellpath_mat = h5read(fullfile(SourceF,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
+    
+    for tp=firsttp:cellpathinfo.Dataspace.Size(3)
+        cellpath{tp} = cellpath_mat(:,:,tp);
+    end
+else
+    cellpath = [];
+end
+
+fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    sisterListinfo = h5info(fullfile(SourceF,H5filename), sisterList_name);
+    sisterList_mat = h5read(fullfile(SourceF,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
+    
+    for tp=firsttp:sisterListinfo.Dataspace.Size(3)
+        sisterList{tp} = sisterList_mat(:,:,tp);
+    end
+else
+    sisterList = [];
+end
+
+
+if isempty(cellpath) || isempty(sisterList)  
+    display([H5filename ' does not contain necessary variables.']);
+    return
+end
+
+currCoords = cellpath{firstFrame};
+currSisterList = sisterList{firstFrame};
+
+
+% initiate lineage
+if exist('lineageList','var')
+    currLineage = lineageList{firstFrame};
+else
+    nCells = size(currCoords,1);
+    currLineage = - ones(nCells,3);
+    lineageList{firstFrame} = currLineage;
+end
+
+
+%% segment 1st frame and find nuclear centroids
+% load in 1st frame
+nucframe  = loadimage(filetype,fileformat,[row col field plane nucCH],firstFrame,channelnames,SourceF);
+cellframe = loadimage(filetype,fileformat,[row col field plane cellCH],firstFrame,channelnames,SourceF);
+
+% determine which ones are live tracks
+nTracks=size(currCoords,1);
+liveTrack=true(nTracks,1);
+for c=1:nTracks
+    % check whether it's a terminated track
+    tmp=currLineage(c,:);
+    tmp=sum(tmp==-2);
+    if tmp == 3
+        liveTrack(c)=false;
+    end
+end
+
+% call function to segment nuclei
+[bwNuc, ~] = detectSeededNuclei(nucframe, currCoords(liveTrack,:), avgNucDiameter);
+% find seed point with no segmented nuclei and place a sphere there
+nucCent = zeros(size(nucframe));
+for i = 1 : size(currCoords,1)
+    if liveTrack(i)
+        nucCent(currCoords(i,2),currCoords(i,1)) = 1;
+    end
+end
+nucCent = nucCent & ~bwNuc;
+if max(nucCent(:)) > 0
+    bwNucTmp = imdilate(nucCent, strel('disk',round(avgNucDiameter/2)));
+    tmp = bwdist(bwNuc);
+    tmp = tmp < 2;
+    bwNucTmp = ~tmp & bwNucTmp;
+    bwNuc = bwNuc | bwNucTmp;
+end
+% update the nuclear centroids to intensity weighted centroids
+lNuc = bwlabel(bwNuc);
+for c=1:size(currCoords,1)
+    idx=lNuc(currCoords(c,2),currCoords(c,1));
+    im=im2double(nucframe).*double(lNuc==idx);
+    th=median(im(im>0));
+    bw=im>=th;
+    props=regionprops(bw,'Area');
+    maxArea=max(cat(1,props.Area));
+    bw=bwareaopen(bw,maxArea);
+    props=regionprops(bw,nucframe,'WeightedCentroid');
+    currCoords(c,:)=round(props(1).WeightedCentroid);
+end
+% write nuclear mask to file
+bwCell=cellSegmentation(cellframe,bwNuc,thresParam,minAreaRatio,minCytosolWidth);
+
+% output folder to store overlay image
+overlayF = [SourceF filesep 'overlay'];
+if exist(overlayF,'dir') == 0
+    mkdir(overlayF);
+end
+% output folder to store nuclear masks
+nucMaskF = [SourceF filesep 'nuclearMask'];
+if exist(nucMaskF,'dir') == 0
+    mkdir(nucMaskF);
+end
+% output folder to store nuclear masks
+cellMaskF = [SourceF filesep 'cellMask'];
+if exist(cellMaskF,'dir') == 0
+    mkdir(cellMaskF);
+end
+
+
+
+% generate output image
+nucCent = zeros(size(nucframe));
+for i = 1 : size(currCoords,1)
+    if liveTrack(i)
+        nucCent(currCoords(i,2),currCoords(i,1)) = 1;
+    end
+end
+p=imdilate(nucCent,strel('disk',2));
+p3=bwperim(bwNuc);
+p3=p3|bwperim(bwNuc&~p3);
+p4=bwperim(bwCell);
+p4=p4|bwperim(bwCell&~p4);
+im=imadjust(im2double(nucframe));
+im2=imadjust(im2double(cellframe));
+imOut=im2uint8(cat(3,max(max(p3,p),p4),max(max(im2-p,p3),p4),max(im-p-p3,p4)));
+
+% save output files
+writeimage(imOut,filetype,fileformat,[row col field plane 1],firstFrame,channelnames,overlayF);
+writeimage(bwNuc,filetype,fileformat,[row col field plane nucCH],firstFrame,channelnames,nucMaskF);
+writeimage(bwCell,filetype,fileformat,[row col field plane cellCH],firstFrame,channelnames,cellMaskF);
+
+%% loop over the remaining frames to segment and track nuclei
+% compute parameter for the template matching function
+load fftexecutiontimes
+% calculate optimal conditions for fft analysis
+fftw('planner', 'hybrid');
+opt = detbestlength2(FFTrv,FFTiv,IFFTiv,2*[outersize outersize],2*[cellsize cellsize],1,1);
+[ySize, xSize] = size(nucframe);
+optWholeIm = detbestlength2(FFTrv,FFTiv,IFFTiv,2*[ySize ySize],2*[ySize-2*maxWholeImShift ySize-2*maxWholeImShift],1,1);
+
+bwNuc_overlaps = zeros(size(nucframe));
+bgOffset = zeros(max(firstFrame,endFrame+increment),2);
+for t=firstFrame:increment:endFrame
+    display([H5filename ':' 'T' num2str(t)]);
+    % update previous frame
+    prevCoords = currCoords;
+    prevCoords2 = prevCoords;
+    prevSisterList = currSisterList;
+    prevLineage = currLineage;
+    previousframe = nucframe;
+    
+    % load in current nuclear frame and cell frame
+    tp=t+increment;
+    nucframe =  loadimage(filetype,fileformat,[row col field plane nucCH],tp,channelnames,SourceF);
+    cellframe = loadimage(filetype,fileformat,[row col field plane cellCH],tp,channelnames,SourceF);
+    
+    % calculate the whole image offset
+    template=previousframe(maxWholeImShift+1:ySize-maxWholeImShift,maxWholeImShift+1:ySize-maxWholeImShift);
+    testframe=nucframe(1:ySize,1:ySize);
+    [x1,y1,maxVal] = corrMatching2(testframe, template, optWholeIm);
+    xOffsetWholeIm = x1 - ySize/2;
+    yOffsetWholeIm = y1 - ySize/2;
+    prevCoords2(:,1) = prevCoords2(:,1) + xOffsetWholeIm;
+    prevCoords2(:,2) = prevCoords2(:,2) + yOffsetWholeIm;
+    
+    bgOffset(tp,:) = [xOffsetWholeIm yOffsetWholeIm];
+    
+    
+    % pad images with random background comparible to image background
+    [ySize, xSize] = size(previousframe);
+    [iMax,iWidth]=contrastValues(previousframe);
+    previousPad=iMax+(rand(ySize+2*outersize+2*maxWholeImShift,xSize+2*outersize+2*maxWholeImShift)-0.5)*2*iWidth;
+    previousPad(outersize+maxWholeImShift+1:ySize+outersize+maxWholeImShift,outersize+maxWholeImShift+1:xSize+outersize+maxWholeImShift)=double(previousframe);
+    [iMax,iWidth]=contrastValues(nucframe);
+    currentPad=iMax+(rand(ySize+2*outersize+2*maxWholeImShift,xSize+2*outersize+2*maxWholeImShift)-0.5)*2*iWidth;
+    currentPad(outersize+maxWholeImShift+1:ySize+outersize+maxWholeImShift,outersize+maxWholeImShift+1:xSize+outersize+maxWholeImShift)=double(nucframe);
+    prevCoordsPad = round(prevCoords) + outersize + maxWholeImShift;
+    prevCoordsPad2 = round(prevCoords2) + outersize + maxWholeImShift;
+    
+    % call template matching function to update centroid locations
+
+    nTracks=size(prevCoords,1);
+    currCoords=zeros(size(prevCoords));
+    liveTrack=true(nTracks,1);
+    currSisterList = prevSisterList;
+    
+    for c=1:nTracks
+        
+        % check whether it's a terminated track
+        tmp=prevLineage(c,:);
+        tmp=sum(tmp==-2);
+        if tmp == 3
+            currCoords(c,:) = [-2 -2]; %prevCoords(c,:);
+            liveTrack(c)=false;
+        else
+            xL=prevCoordsPad(c,1)-cellsize;
+            xR=prevCoordsPad(c,1)+cellsize-1;
+            yL=prevCoordsPad(c,2)-cellsize;
+            yR=prevCoordsPad(c,2)+cellsize-1;
+            template = previousPad(yL:yR,xL:xR);
+            xL=prevCoordsPad2(c,1)-outersize;
+            xR=prevCoordsPad2(c,1)+outersize-1;
+            yL=prevCoordsPad2(c,2)-outersize;
+            yR=prevCoordsPad2(c,2)+outersize-1;
+            testframe = currentPad(yL:yR,xL:xR);
+            [x1,y1,maxVal] = corrMatching2(testframe, template, opt);
+            if isempty(x1) || maxVal<similarityThres
+                x1 = prevCoordsPad2(c,1)-xL;
+                y1 = prevCoordsPad2(c,2)-yL;
+            end
+            currCoords(c,:)=round([xL+x1 yL+y1]);
+            currCoords(c,:) = currCoords(c,:) - outersize - maxWholeImShift;
+            
+            tmp=currCoords(c,1);
+            if tmp > xSize || tmp < 1
+                currCoords(c,:) = [-1 -1]; %prevCoords(c,:);
+                liveTrack(c)=false;
+            end
+            
+            tmp=currCoords(c,2);
+            if tmp > ySize || tmp < 1
+                currCoords(c,:) = [-1 -1]; %prevCoords(c,:);
+                liveTrack(c)=false;
+            end
+            
+        end
+    end
+
+
+    
+    % call nuclear segmentation function
+    [bwNuc, bwOther] = detectSeededNuclei(nucframe, currCoords(liveTrack,:), avgNucDiameter);
+    % find seed point with no segmented nuclei
+    lNucCent = zeros(size(nucframe));
+    for i = 1 : size(currCoords,1)
+        if liveTrack(i)
+            lNucCent(currCoords(i,2),currCoords(i,1)) = i;
+        end
+    end
+    nucCent = lNucCent > 0;
+    % make sure the remaining nuclear centroids don't touch the existing
+    % nuclei detected
+    nucCent = nucCent & ~bwNuc;
+    tmp=bwdist(nucCent);
+    tmp=tmp<2;
+    bwNuc = ~tmp & bwNuc;
+    % for seed point with no segmented nuclei and search for unclaimed
+    % object nearby
+    if max(nucCent(:)) > 0 && max(bwOther(:)) > 0
+        distMat = bwdist(bwOther);
+        idx = find(nucCent);
+        lList = lNucCent(idx);
+        distVal = distMat(idx);
+        [minDistVal, minDistIdx] = min(distVal);
+        while minDistVal <= maxNucMaskShift && max(nucCent(:)) > 0
+            idx = idx(minDistIdx);
+            lList = lList(minDistIdx);
+            lOther = bwlabel(bwOther);
+            nucCentTmp = zeros(size(nucframe));
+            nucCentTmp(idx) = 1;
+            tmp = bwdist(nucCentTmp);
+            tmp = tmp <= minDistVal;
+            tmp = unique(lOther(tmp));
+            tmp(tmp == 0) = [];
+            tmp = tmp(1);
+            props = regionprops(lOther == tmp, nucframe, 'WeightedCentroid');
+            currCoords(lList,:)=round(props(1).WeightedCentroid);
+            bwNuc = bwNuc | lOther == tmp;
+            bwOther = bwOther & ~bwNuc;
+            nucCent(idx) = false;
+            distMat = bwdist(bwOther);
+            idx = find(nucCent);
+            lList = lNucCent(idx);
+            distVal = distMat(idx);
+            [minDistVal, minDistIdx] = min(distVal);
+            if isempty(minDistVal)
+                minDistVal = maxNucMaskShift + 1;
+            end
+        end
+    end
+    % place a sphere at the centroids with no matching segmented nuclei
+    bwNucMissing = false(size(bwNuc));
+    if max(nucCent(:)) > 0
+        tmp=bwdist(nucCent);
+        tmp=imimposemin(tmp,nucCent);
+        l=watershed(tmp);
+        bwNucMissing = imdilate(nucCent, strel('disk',round(avgNucDiameter/2)));
+        tmp = bwdist(bwNuc);
+        tmp = tmp < 2;
+        bwNucMissing = (~tmp & bwNucMissing) & l > 0;
+        l = bwlabel(bwNucMissing);
+        idx = unique(l(nucCent));
+        idx(idx == 0) = [];
+        bwNucMissing = ismember(l,idx);
+        bwNuc = bwNuc | bwNucMissing;
+        bwOther = bwOther & ~bwNuc;
+    end
+    % update nuclear centroids to intensity weighted centroids
+    lNuc = bwlabel(bwNuc);
+    nCent = size(currCoords,1);
+    currLineage = zeros(nCent,3);
+    currLineage(:,2:3) = prevLineage(:,1:2);
+    for c = 1 : nCent
+        % update current lineage list
+        if ~liveTrack(c)
+            currLineage(c,1) = -2;  % terminated tracks
+        else
+            if bwNucMissing(currCoords(c,2),currCoords(c,1))
+                currLineage(c,1) = -2;  % missing nuclei is label as -2
+            else
+                currLineage(c,1) = c;
+            end
+            idx=lNuc(currCoords(c,2),currCoords(c,1));
+            im=im2double(nucframe).*double(lNuc==idx);
+            th=median(im(im>0));
+            bw=im>=th;
+            props=regionprops(bw,'Area');
+            maxArea=max(cat(1,props.Area));
+            bw=bwareaopen(bw,maxArea);
+            props=regionprops(bw,nucframe,'WeightedCentroid');
+            currCoords(c,:)=round(props(1).WeightedCentroid);
+        end
+    end
+
+% --  identify new nuclei
+%     bwOtherTmp = blobSegmentThresholdGeneral(nucframe, 'rosin', 1, 1, minNucArea);
+%     lOther = bwlabel(bwOther);
+%     idx = unique(lOther(bwOtherTmp));
+%     idx(idx == 0) = [];
+%     bwNucTmp = ismember(lOther,idx);
+    bwNucTmp = bwOther;
+    if max(bwNucTmp(:)) > 0
+        [lNucTmp, nNucTmp] = bwlabel(bwNucTmp);
+        S = regionprops(lNucTmp,'Perimeter','Area','MajorAxisLength');
+        for n = 1: nNucTmp
+            if S(n).MajorAxisLength > maxMAL || S(n).Area < minNewNucArea || 4*pi*S(n).Area/S(n).Perimeter^2 < ffactorCutoff
+                bwNucTmp(lNucTmp == n) = false;
+            end
+        end
+    end
+    if max(bwNucTmp(:)) > 0
+        [lNucTmp, nNucTmp] = bwlabel(bwNucTmp);
+        for c = nCent+1 : nCent + nNucTmp
+            im=im2double(nucframe).*double(lNucTmp == c-nCent);
+            th=median(im(im>0));
+            bw=im>=th;
+            props=regionprops(bw,'Area');
+            maxArea=max(cat(1,props.Area));
+            bw=bwareaopen(bw,maxArea);
+            props=regionprops(bw,nucframe,'WeightedCentroid');
+            currCoords(c,:)=round(props(1).WeightedCentroid);
+            % determine whether it's a cell moving into the field of view
+            % or newly divided one
+            if currCoords(c,1) < 1.5*avgNucDiameter || currCoords(c,1) > (xSize - 1.5*avgNucDiameter) || ...
+                    currCoords(c,2) < 1.5*avgNucDiameter || currCoords(c,2) > (ySize - 1.5*avgNucDiameter)
+                currLineage(c,1:3)=-1;  % most likely moved into the field of view
+                currSisterList(c,1:end) = -1;
+            else
+                % most likely a divided one, so find the closest nucleus as
+                % its sister
+                tmp = (currCoords(1:nCent,1) - currCoords(c,1)).^2 + (currCoords(1:nCent,2) - currCoords(c,2)).^2;
+                tmp(~liveTrack)=max(tmp);
+                [~,idx] = min(tmp);
+                currLineage(c,1:3) = currLineage(idx,1:3);
+                % Update siterList of parent cells
+                nextSisInd = find(currSisterList(idx,:)==-1,1,'first');
+                currSisterList(idx,nextSisInd) = c;
+                
+                % Update sisterList of newly created cells
+                currSisterList(c,1) = idx;
+                currSisterList(c,2:end) = -1;
+                
+            end
+        end
+        bwNuc = bwNuc | bwNucTmp;
+    end
+    
+    % update cellSegment
+    bwCell=cellSegmentation(cellframe,bwNuc,thresParam,minAreaRatio,minCytosolWidth);
+    
+    cellpath{tp} = currCoords;
+    sisterList{tp} = currSisterList;
+    lineageList{tp} = currLineage;
+    
+    if increment > 0 && length(cellpath{tp-increment}) < length(cellpath{tp})
+        for t2=firstFrame:increment:tp-increment
+            for c = length(cellpath{tp-increment})+1 : length(cellpath{tp})
+                cellpath{t2}(c,:) = [-1 -1];
+                sisterList{t2}(c,:) = -1 * ones(1,size(sisterList{tp},2));
+            end
+        end
+    end
+
+    %create output image
+    nucCent=zeros(size(nucframe));
+    for i=1:nCent
+        if liveTrack(i)
+            nucCent(currCoords(i,2),currCoords(i,1))=1;
+        end
+    end
+    p=imdilate(nucCent,strel('disk',2));
+    nucCent=zeros(size(nucframe));
+    for i=nCent+1:size(currCoords,1)
+        nucCent(currCoords(i,2),currCoords(i,1))=1;
+    end
+    
+    bwNuc_overlaps = bwNuc_overlaps | bwNuc;
+    
+    %For showing result
+    p2=imdilate(nucCent,strel('disk',2));
+    p3=bwperim(bwNuc);
+    p3=p3|bwperim(bwNuc&~p3);
+    p4=bwperim(bwCell);
+    p4=p4|bwperim(bwCell&~p4);
+    im=imadjust(im2double(nucframe));
+    im2=imadjust(im2double(cellframe));
+    imOut=im2uint8(cat(3,max(max(p3-p2,p),p4),max(max(im2-p-p2,p3),p4),max(max(im-p-p3,p2),p4)));
+    % write output images
+    writeimage(imOut,filetype,fileformat,[row col field plane 1],tp,channelnames,overlayF);
+    writeimage(bwNuc,filetype,fileformat,[row col field plane nucCH],tp,channelnames,nucMaskF);
+    writeimage(bwCell,filetype,fileformat,[row col field plane cellCH],tp,channelnames,cellMaskF);
+    clear imOut bwNuc bwCell p2 p3 p4 im im2
+end
+
+bg_im = ~imfill(imdilate(bwNuc_overlaps,strel('disk',60)),'holes');
+bg_im(1:end,[1:30 size(bg_im,2)-30:size(bg_im,2)]) = 0;
+bg_im([1:30 size(bg_im,1)-30:size(bg_im,1)],1:end) = 0;
+bg_im = imopen(bg_im,strel('disk',40));
+bg_im_p = bwmorph(bg_im,'shrink',Inf);
+
+[bg_Y,bg_X] = find(bg_im_p);
+
+% Saving results
+cellpath_mat = -1*(ones(size(cellpath{tp},1),2,length(cellpath)));
+sisterList_mat = -1*(ones(size(sisterList{tp},1),size(sisterList{tp},2),length(sisterList)));
+bg_mat = [];
+for s_tp=firstFrame:increment:(endFrame+increment)
+    if ~isempty(cellpath{s_tp})
+        cellpath_mat(:,:,s_tp) = cellpath{s_tp};
+        sisterList_mat(:,:,s_tp) = sisterList{s_tp};
+        offset = bgOffset(s_tp,:);
+        if ~isempty(bg_X) || ~isempty(bg_Y)
+            
+            bg_mat(:,:,s_tp) = round([bg_X bg_Y] +[offset(1)*ones(size(bg_X)) offset(2)*ones(size(bg_Y))]);
+        else
+            
+            bg_mat(:,:,s_tp) = round([offset(1) offset(2)]);
+        end
+    end
+end
+
+fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if ~H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    display(['Initializing ' H5filename ':' cellpath_name]);
+else
+    H5L.delete(fid,cellpath_name,'H5P_DEFAULT');
+    display(['Overwriting ' H5filename ':' cellpath_name]);
+    H5F.close(fid);
+end
+h5create(fullfile(SourceF,H5filename), cellpath_name, [size(cellpath_mat,1), size(cellpath_mat,2), size(cellpath_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(cellpath_mat,2), size(cellpath_mat,3)], 'Deflate', 9);
+h5write(fullfile(SourceF,H5filename), cellpath_name, cellpath_mat, [1 1 1], [size(cellpath_mat,1) size(cellpath_mat,2) size(cellpath_mat,3)]);
+
+fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if ~H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    display(['Initializing ' H5filename ':' sisterList_name]);
+else
+    H5L.delete(fid,sisterList_name,'H5P_DEFAULT');
+    display(['Overwriting ' H5filename ':' sisterList_name]);
+    H5F.close(fid);
+end
+h5create(fullfile(SourceF,H5filename), sisterList_name, [size(sisterList_mat,1), size(sisterList_mat,2), size(sisterList_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(sisterList_mat,2), size(sisterList_mat,3)], 'Deflate', 9);
+h5write(fullfile(SourceF,H5filename), sisterList_name, sisterList_mat, [1 1 1], [size(sisterList_mat,1) size(sisterList_mat,2) size(sisterList_mat,3)]);
+
+fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if ~H5L.exists(fid,bg_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    display(['Initializing ' H5filename ':' bg_name]);
+else
+    H5L.delete(fid,bg_name,'H5P_DEFAULT');
+    display(['Overwriting ' H5filename ':' bg_name]);
+    H5F.close(fid);
+end
+h5create(fullfile(SourceF,H5filename), bg_name, [size(bg_mat,1), size(bg_mat,2), size(bg_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(bg_mat,2), size(bg_mat,3)], 'Deflate', 9);
+h5write(fullfile(SourceF,H5filename), bg_name, bg_mat, [1 1 1], [size(bg_mat,1) size(bg_mat,2) size(bg_mat,3)]);
+
+
+% Finished all processes
+display(['Successfully tracked frame ' num2str(tps(1)) ':' num2str(tps(end)) ' of ' H5filename]);
+
+
+function bwCell=cellSegmentation(cellIm,bwNuc,thresParam,minAreaRatio,minCytosolWidth)
+
+    
+%% cell segmentation
+% bwNuc=bwNuc|bwOther;
+% cellIm=imread(['02032013-r1_w1Camera-YFP_s1_t' num2str(n) '.TIF']);
+cellIm=im2double(cellIm);
+cellImFilled=cellIm;
+cellImFilled(bwNuc)=1;
+cellImS=filterGauss2D(cellIm,1);
+
+% dilate nuclei by the minCytosolWidth pixels
+l=-bwdist(~bwNuc);
+l=imimposemin(l,bwNuc);
+l=watershed(l);
+nucDiv=l==0;
+dilateNuc=bwdist(bwNuc);
+dilateNuc=dilateNuc<=minCytosolWidth;
+dilateNuc=dilateNuc&~nucDiv;
+% used dilated nuclei to plug to holes in the whole cells channle, then
+% perform watershed segmentation
+tmp=-filterGauss2D(cellImFilled,1);
+%     tmp(dilateNuc)=-1;
+l=tmp;
+l=imimposemin(l,bwNuc);
+l=watershed(l);
+% threshold whole cell nucCH
+[iMax,iWidth]=contrastValues(im2uint16(cellImS));
+thCell=(iMax+thresParam*iWidth)/65535;
+bwCell=cellImS>thCell;
+bwCell=bwCell|dilateNuc;
+bwCell=bwCell&l>0;
+% remove pathes w/ no corresponding nuclei
+lCell=bwlabel(bwCell);
+idx=unique(lCell(bwNuc));
+idx(idx==0)=[];
+bwCell=ismember(lCell,idx);
+
+    % refine threshold for mitotic cells
+    [lCell,nCell]=bwlabel(bwCell);
+    lCell=double(lCell);
+    lNuc=lCell.*double(bwNuc);
+    th=ones(size(cellIm));
+    for i=1:nCell
+        tmp=cellImS(lNuc==i);
+        medInt=median(tmp);
+        stdInt=std(double(tmp));
+        th(lCell==i)=medInt-stdInt;
+    end
+    bw=cellImS>th;
+    bw=bw|bwNuc;
+    l=lCell.*double(bw);
+    props=regionprops(lNuc,'Area');
+    nucArea=cat(1,props.Area);
+    props=regionprops(l,'Area');
+    bwArea=cat(1,props.Area);
+    areaRatio=bwArea./nucArea;
+    idx=find(areaRatio < minAreaRatio);
+
+    bwMitoCell=false(size(cellIm));
+    for i=1:numel(idx)
+        tmp=lNuc==idx(i);
+        tmp=bwdist(tmp);
+        tmp=tmp<=minCytosolWidth;
+        tmp=tmp&(lCell==idx(i));
+        bwMitoCell=bwMitoCell|tmp;
+        bwCell(lCell == idx(i)) = false;
+    end
+    bwCell = bwCell | bwMitoCell;
+
 
 function outputim = loadimage(filetype,fileformat,imlocation,tp,channelnames,SourceF)
 row = imlocation(1);
 col = imlocation(2);
 field = imlocation(3);
 plane = imlocation(4);
-channel = imlocation(5);
+CH = imlocation(5);
 totalCH = length(channelnames);
 outputim = [];
 
 switch filetype
     case 1
         
-        filename = sprintf(fileformat,row,col,field,plane,channel,tp);
+        filename = sprintf(fileformat,row,col,field,plane,CH,tp);
         if exist(fullfile(SourceF,filename),'file')
             outputim = imread(fullfile(SourceF,filename));
         end
     case 2
         if exist(fileformat,'file')
-            outputim = imread(fileformat,'Index',totalCH*(tp-1)+channel);
+            outputim = imread(fileformat,'Index',totalCH*(tp-1)+CH);
         end
     case 3
-        filename = sprintf(fileformat,channelnames{channel},tp);
+        filename = sprintf(fileformat,channelnames{CH},tp);
         if exist(fullfile(SourceF,filename),'file');
             outputim = imread(fullfile(SourceF,filename));
         end
         
 end
 
+function writeimage(im,filetype,fileformat,imlocation,tp,channelnames,destF)
+row = imlocation(1);
+col = imlocation(2);
+field = imlocation(3);
+plane = imlocation(4);
+CH = imlocation(5);
+
+switch filetype
+    case 1
+        
+        filename = sprintf(fileformat,row,col,field,plane,CH,tp);
+        imwrite(im,fullfile(destF,filename),'tif','compression','none');
+    case 2
+        
+    case 3
+        filename = sprintf(fileformat,channelnames{CH},tp);
+        imwrite(im,fullfile(destF,filename),'tif','compression','none');
+        
+end
+
 function [x y BW] = templateToCentroid(M,xg,yg)
 BWc = zeros(size(M));
-for i=1.2:0.6:5
+for i=1.2:0.6:3
     edgedIm = edge(M,'canny',0,i);
     BW = imfill(edgedIm,'holes');
     
@@ -1292,7 +1758,7 @@ corrPartII = frameMean.*sum(templateGray(:)-templateMean);
 stdFrame = sqrt(fftolamopt2(frameGray.^2,ones(size(templateGray))./numel(templateGray),opt)-frameMean.^2);
 stdTemplate = std(templateGray(:));
 corrScore = (corrPartI-corrPartII)./(stdFrame.*stdTemplate);
-%figure(3);imshow(corrScore); drawnow; 
+% figure(3);imshow(corrScore);
 % 3. finding most likely region
 
 [maxVal,maxIdx] = max(corrScore(:));

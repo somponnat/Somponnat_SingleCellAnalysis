@@ -98,7 +98,6 @@ selectedcells_name = ['/field' num2str(field) '/selectedcells'];
 fileattrib(fullfile(targetfolder,H5filename),'+w');
 
 fid = H5F.open(fullfile(targetfolder,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-
 if ~H5L.exists(fid,datasetname,'H5P_DEFAULT')
     H5F.close(fid);
     display(['Initializing ' H5filename ':' datasetname]);

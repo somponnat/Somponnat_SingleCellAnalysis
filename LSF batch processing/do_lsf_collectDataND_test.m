@@ -38,18 +38,18 @@ sourcefolder = '/hms/scratch1/ss240/01-26-2014';
 prefix = ndfilename(1:(end-3));
 [notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
 tps = [1 notp];
-sites = 1:length(stagePos);
+sites = 5;
 
-jobmgr = findResource('scheduler', 'type', 'lsf');
-jobmgr.ClusterMatlabRoot = '/opt/matlab';
-jobmgr.SubmitArguments = '-q sysbio_7d -M 8388608 -n 1 -R "rusage[matlab_dc_lic=1]" ';
-job = jobmgr.createJob();
+if matlabpool('size') == 0
+  matlabpool open;
+end
 
-for site = sites
-    
+
+parfor s = 1:length(sites);
+    site = sites(s);
     signalformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
     blankformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
-    
+    %tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)f(?<field>\d+)','tokens');
     L = regexp(stageName{site}, 'r(?<row>\d+)','names');
     if ~isempty(L)
         row = L.row;
@@ -70,14 +70,13 @@ for site = sites
     else
         field = 1;
     end
+    
+    CollectData_commandline(3,sourcefolder,row,col,field,tps,signalformat,blankformat,channelnames,2);
 
-    job.createTask(@CollectData_commandline, 0, ...
-        {3,sourcefolder,row,col,field,tps,signalformat,blankformat,channelnames,2});
 end
 
-job.submit();
 
-function [notp,stagePos,stageName,waveName] = readndfile(sourcefolder,filename)
+function [notp stagePos stageName waveName] = readndfile(filename)
 % Search for number of string matches per line.
 notp=-1;
 stagePos = [];
@@ -85,8 +84,8 @@ stageName = [];
 waveName = [];
 
 
-if exist(fullfile(sourcefolder,filename),'file')
-    fid = fopen(fullfile(sourcefolder,filename));
+if exist(filename,'file')
+    fid = fopen(filename);
     y = 0;
     tline = fgetl(fid);
     sind = 1;
@@ -129,6 +128,5 @@ if exist(fullfile(sourcefolder,filename),'file')
     end
     fclose(fid);
 end
-
 
 

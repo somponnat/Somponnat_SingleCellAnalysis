@@ -1,55 +1,40 @@
-function do_lsf_collectDataND_test()
+function do_lsf_moviemakingNDtest()
 
 % Define parameters related to the process---------
-nucCH = 1;
-cellCH = 2;
-CH1 = 1;
-CH2 = 2;
-outputname = 'signals';
-cytosize = 4;
-cellsize = 40;
-filterParam1 = 2;
-filterParam2 = 2;
-bgsize = 30;
-signalShiftN = 0.001;
-signalShiftD = 0.001;
-regiontype = [1 2 3 4]; %1=nuc/cyto,2=nuc,3=cyto,4=cell
-signaltype = [2 2 2 2];%4=math,1=ch1,2=ch2
-regions = {'Nuc/Cyto';'Nuclei';'Cytosol';'Cell'};
-signals = {'CH1';'CH2';'CH3';'Math'};
-output_name = 'FOXO3a_ratio';
-nucFolder = 'nuclearMask';
-cellFolder = 'cellMask';
-minstamp = 5;
-secstamp = 0;
-useblank_LOG = 0; % 1 = use BLANK for illumination correction, 0 = not using
-bgnomin_LOG = 0 ; % 1 = median of BG points in SIGNAL, 2=median of BLANK
-bgdenomin_LOG = 0; % 1 = median of BG points in SIGNAL, 2=median of BLANK
-illumlogic = 0; % 1 = use high-pass filtering, 0 = no filtering
-image_width = 1344;
-image_height = 1024;
+clear all;
+signalshift = 0.001;
+bgsubstractlogic = 0; % 
+illumcorlogic = 0; % Algorithmic illumination correction by high-pass filter
+framshift_logic = 0;
+ImageIndex = 2; % 1=nomin/denomin, 2=templateCH, 3=nomin,4=denomin
+intensityrange = [0.00312 0.0039063]; % For other images
+displaygate = [0 2]; % For FRET Only
+filterParam = [2 2]; 
+cellsize = 15;
+timestamplogic = 2; % 1 = frame no, 2 = actual time
+celllocationlogic = 0; % 1 = show location of tracked cells, 0 = only image
+save videoparameters;
 
-save trackingparameters;
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename ='01262014-r1.nd';
-sourcefolder = '/hms/scratch1/ss240/01-26-2014';
+ndfilename = '02012014-r1.nd';
+templateCH = 2;
+nominCH = 1;
+denominCH = 2;
+sourcefolder = 'Q:\sorger\data\NIC\Pat\02-01-2014';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
 [notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
 tps = [1 notp];
 sites = 1:length(stagePos);
 
-jobmgr = findResource('scheduler', 'type', 'lsf');
-jobmgr.ClusterMatlabRoot = '/opt/matlab';
-jobmgr.SubmitArguments = '-q sysbio_7d -M 8388608 -n 1 -R "rusage[matlab_dc_lic=1]" ';
-job = jobmgr.createJob();
+if matlabpool('size') == 0
+  matlabpool open;
+end
 
-for site = sites
-    
-    signalformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
-    blankformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
-    
+parfor site = sites
+
+    fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
     L = regexp(stageName{site}, 'r(?<row>\d+)','names');
     if ~isempty(L)
         row = L.row;
@@ -68,14 +53,13 @@ for site = sites
     if ~isempty(L)
         field = L.field;
     else
-        field = 1;
+        field = 1
     end
-
-    job.createTask(@CollectData_commandline, 0, ...
-        {3,sourcefolder,row,col,field,tps,signalformat,blankformat,channelnames,2});
+    
+    plane = 1;
+    
+    GenMov_commandline(3,sourcefolder,row,col,field,plane,templateCH,nominCH,denominCH,tps,fileformat,channelnames);
 end
-
-job.submit();
 
 function [notp,stagePos,stageName,waveName] = readndfile(sourcefolder,filename)
 % Search for number of string matches per line.
@@ -129,6 +113,5 @@ if exist(fullfile(sourcefolder,filename),'file')
     end
     fclose(fid);
 end
-
 
 

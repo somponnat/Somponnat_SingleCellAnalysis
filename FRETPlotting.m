@@ -4337,7 +4337,7 @@ if ~strcmp(allOutputs,'<not present>')
                 assignin('base','timestamp4',timestamp(PosTime));
             end
             
-            title(h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'outputsignal_name'));
+            title(h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'outputsignal_name'),'interpreter','none');
 
             legend(legendList);
             xlabel('Time(hour)');

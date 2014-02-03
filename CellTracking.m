@@ -2462,6 +2462,8 @@ if exist(fullfile(handles.SourceF,H5filename),'file')
         display(['Overwriting ' H5filename ':' cellpath_name]);
         H5F.close(fid);
     end
+else
+    display(['Initializing ' H5filename ':' cellpath_name]);
 end
 
 h5create(fullfile(handles.SourceF,H5filename), cellpath_name, [size(cellpath_mat,1), size(cellpath_mat,2), size(cellpath_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(cellpath_mat,2), size(cellpath_mat,3)], 'Deflate', 9);

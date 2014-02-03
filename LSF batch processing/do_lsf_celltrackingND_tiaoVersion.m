@@ -1,35 +1,19 @@
-function do_lsf_collectDataND_test()
-
-% Define parameters related to the process---------
-nucCH = 1;
-cellCH = 2;
-CH1 = 1;
-CH2 = 2;
-outputname = 'signals';
-cytosize = 4;
+function do_lsf_celltrackingND_tiaoVersion()
+% clc;
+% clear all;
+% Define information about input images and necessary parameters-----------
 cellsize = 40;
-filterParam1 = 2;
-filterParam2 = 2;
-bgsize = 30;
-signalShiftN = 0.001;
-signalShiftD = 0.001;
-regiontype = [1 2 3 4]; %1=nuc/cyto,2=nuc,3=cyto,4=cell
-signaltype = [2 2 2 2];%4=math,1=ch1,2=ch2
-regions = {'Nuc/Cyto';'Nuclei';'Cytosol';'Cell'};
-signals = {'CH1';'CH2';'CH3';'Math'};
-output_name = 'FOXO3a_ratio';
-nucFolder = 'nuclearMask';
-cellFolder = 'cellMask';
-minstamp = 5;
-secstamp = 0;
-useblank_LOG = 0; % 1 = use BLANK for illumination correction, 0 = not using
-bgnomin_LOG = 0 ; % 1 = median of BG points in SIGNAL, 2=median of BLANK
-bgdenomin_LOG = 0; % 1 = median of BG points in SIGNAL, 2=median of BLANK
-illumlogic = 0; % 1 = use high-pass filtering, 0 = no filtering
-image_width = 1344;
-image_height = 1024;
+outersize = 80;
+avgNucDiameter = 20;
+maxWholeImShift = 450;
+maxNucMaskShift = 20;
+similarityThres = 0.9;
+ffactorCutoff = 0.85; %roundness
+thresParam = 3; % The higher the more stringent the threshold
+minAreaRatio=1.25;
+minCytosolWidth=5;
+save celltrackingparameters;
 
-save trackingparameters;
 %-------------------------------------------------
 % Define information about input images-----------
 ndfilename ='01262014-r1.nd';
@@ -42,14 +26,14 @@ sites = 1:length(stagePos);
 
 jobmgr = findResource('scheduler', 'type', 'lsf');
 jobmgr.ClusterMatlabRoot = '/opt/matlab';
-jobmgr.SubmitArguments = '-q sysbio_7d -M 8388608 -n 1 -R "rusage[matlab_dc_lic=1]" ';
+jobmgr.SubmitArguments = '-q sysbio_7d -M 16777216 -n 1 -R "rusage[matlab_dc_lic=1]" ';
 job = jobmgr.createJob();
 
 for site = sites
-    
-    signalformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
-    blankformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
-    
+    NucCH = 1;
+    CellCH = 2;
+    increment = 1;
+    fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
     L = regexp(stageName{site}, 'r(?<row>\d+)','names');
     if ~isempty(L)
         row = L.row;
@@ -70,12 +54,17 @@ for site = sites
     else
         field = 1;
     end
+    
+    plane = 1;
 
-    job.createTask(@CollectData_commandline, 0, ...
-        {3,sourcefolder,row,col,field,tps,signalformat,blankformat,channelnames,2});
+    job.createTask(@CellTracking_commandline_tiao, 0, ...
+        {3,sourcefolder,row,col,field,plane,NucCH,CellCH,tps,increment,fileformat,channelnames});
+    
 end
 
 job.submit();
+
+
 
 function [notp,stagePos,stageName,waveName] = readndfile(sourcefolder,filename)
 % Search for number of string matches per line.

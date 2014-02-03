@@ -4,7 +4,7 @@ clc;
 % Define location of HDF5 files and the original ND file
 ndfilename = '02032013-r1.nd';
 %sourcefolder = 'C:\computation\02-03-2013';
-sourcefolder = '~/files/ImStor/sorger/data/NIC/Pat/02-03-2013/';
+sourcefolder = 'Q:\sorger\data\computation\Bernhard_Steiert\EKAREV dynamics\02-03-2013-dataanalysis';
 
 prefix = ndfilename(1:(end-3));
 [notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename); % read in information about the experiment
@@ -16,7 +16,7 @@ outputsignalNo = 1;
 sequenceNo = 2;
 
 % specific the site(s) to be processed
-sites = 1;
+sites = 7;
 
 % check with matlabpool is already initiated
 % if matlabpool('size') == 0
@@ -44,7 +44,7 @@ end
 function cal_clusterparam(row,col,field,ndpathname,outputsignalNo,sequenceNo)
 minimumSignalSize = 100;
 MiddleToTop = 1; % 1 = assugb the middle cluster to top group, 0 = assign the middle cluster to bottom group
-showPlots = 0; % change to 1 if needing to visualize the peak detection
+showPlots = 1; % change to 1 if needing to visualize the peak detection
 midHgating = 0.08; % x the median of lowest peak cluster
 delayGate = 0.5; % fraction of height that must decay to consider as peak tail
 
@@ -111,6 +111,16 @@ if exist(fullfile(ndpathname,H5filename),'file')
         % cellNo, peak type, peak params, peak#
         h5create(fullfile(ndpathname,H5filename), peak_name, [size(cellpath_mat,1),2, 4, 200], 'Datatype', 'double');
         % cellNo, division time (1-3 rounds)
+ 
+        fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+        if ~H5L.exists(fid,division_name,'H5P_DEFAULT')
+            H5F.close(fid);
+            display(['Initializing ' H5filename ':' division_name]);
+        else
+            H5L.delete(fid,division_name,'H5P_DEFAULT');
+            display(['Overwriting ' H5filename ':' division_name]);
+            H5F.close(fid);
+        end
         h5create(fullfile(ndpathname,H5filename), division_name, [size(cellpath_mat,1),3], 'Datatype', 'double');
 
         param_mat = [];
@@ -614,7 +624,7 @@ if plotLog
     %param_mat = [param_mat;double(scell) pvec1];
     clear all_data;
     
-    
+    pause(1);
     drawnow;
 end
 

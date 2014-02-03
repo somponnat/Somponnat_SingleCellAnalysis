@@ -7,9 +7,9 @@ signalshift = 0.001;
 bgsubstractlogic = 0; % 
 illumcorlogic = 1; % Algorithmic illumination correction by high-pass filter
 framshift_logic = 0;
-ImageIndex = 1; % 1=nomin/denomin, 2=templateCH, 3=nomin,4=denomin
-intensityrange = [0.0030213 0.009]; % For other images
-displaygate = [0.21967 2.188]; % For FRET Only
+ImageIndex = 2; % 1=nomin/denomin, 2=templateCH, 3=nomin,4=denomin
+intensityrange = [0.0031281 0.0042]; % For other images
+displaygate = [0.27 2.316]; % For FRET Only
 filterParam = [2 2]; 
 cellsize = 15;
 timestamplogic = 2; % 1 = frame no, 2 = actual time
@@ -18,11 +18,11 @@ save videoparameters;
 clear all;
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename = '07232013-r1.nd';
-templateCH = 4;
+ndfilename = '01182014-r2.nd';
+templateCH = 1;
 nominCH = 2;
 denominCH = 3;
-sourcefolder = 'L:\NIC\07-23-2013\';
+sourcefolder = 'Q:\sorger\data\NIC\Pat\01-18-2014';
 %------------------------------------------------
 
 prefix = ndfilename(1:(end-3));
@@ -53,6 +53,7 @@ stagePos = [];
 stageName = [];
 waveName = [];
 
+fullfile(sourcefolder,filename)
 
 if exist(fullfile(sourcefolder,filename),'file')
     fid = fopen(fullfile(sourcefolder,filename));
@@ -88,8 +89,8 @@ if exist(fullfile(sourcefolder,filename),'file')
         testInd = regexp(tline,'WaveName\d+');
         num = length(testInd);
         if num > 0
-            wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match');
-            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_)\w+(?=")', 'match');
+            wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match')
+            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_).+(?=")', 'match')
             waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
             wind=wind+1;
         end

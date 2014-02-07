@@ -32,8 +32,8 @@ image_height = 1024;
 save trackingparameters;
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename ='01262014-r1.nd';
-sourcefolder = '/hms/scratch1/ss240/01-26-2014';
+ndfilename ='02022014-r2.nd';
+sourcefolder = '/hms/scratch1/ss240/02-02-2014';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
 [notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
@@ -42,7 +42,7 @@ sites = 1:length(stagePos);
 
 jobmgr = findResource('scheduler', 'type', 'lsf');
 jobmgr.ClusterMatlabRoot = '/opt/matlab';
-jobmgr.SubmitArguments = '-q sysbio_7d -M 8388608 -n 1 -R "rusage[matlab_dc_lic=1]" ';
+jobmgr.SubmitArguments = '-q short -W 10:00 -M 8388608 -n 1 -R "rusage[matlab_dc_lic=1]" ';
 job = jobmgr.createJob();
 
 for site = sites

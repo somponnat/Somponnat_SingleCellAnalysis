@@ -84,8 +84,13 @@ function CellTracking_OpeningFcn(hObject, eventdata, handles, varargin) %#ok<*IN
 
 % Choose default command line output for CellTracking
 
-handles.output = hObject;
 
+
+handles.output = hObject;
+currentPath = pwd;
+eval('cd ..');
+addpath(genpath([pwd filesep 'ThirdParty']),'-end');
+cd(currentPath);
 filetype = [];
 trackinginfo = [];
 imagelocation = [];
@@ -433,6 +438,7 @@ function pushbutton_reset_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_reset (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
 row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
@@ -611,13 +617,13 @@ end
 
 minNucDiameter=sizeThres(1);
 maxNucDiameter=sizeThres(2);
-minFormfactor=0.5;
+minFormfactor=0.7;
 im=im2double(M);
 
 maxNucArea=round(pi*maxNucDiameter^2/4);
 
 combined_bw = zeros(size(M));
-testSet = linspace(1.4,4.5,10);
+testSet = linspace(1.4,6,8);
 
 for s = 1:length(testSet)
     
@@ -643,11 +649,20 @@ end
 
 
 %imshow(BW);
-S = regionprops(combined_bw,'Centroid');
-coords = zeros(length(S),2);
+S = regionprops(combined_bw,'Centroid','Perimeter','Area');
+coords = [];
+cInd = 1;
+imageP70  = prctile(M(:),70);
+
 for i=1:length(S)
-    coords(i,:) = S(i).Centroid;
+    temCoord = S(i).Centroid;
+    if M(round(temCoord(2)),round(temCoord(1))) >= imageP70 && 4*pi*S(i).Area/S(i).Perimeter^2 > minFormfactor
+        coords(cInd,:) = round(temCoord);
+        cInd= cInd+1;
+    end
 end
+
+
 
 
 function [x y BW] = templateToCentroid(M,xg,yg,maxI,invertLog)

@@ -5,19 +5,19 @@ function do_lsf_celltrackingND_tiaoVersion()
 cellsize = 40;
 outersize = 80;
 avgNucDiameter = 20;
-maxWholeImShift = 450;
-maxNucMaskShift = 20;
+maxWholeImShift = 300;
+maxNucMaskShift = 10;
 similarityThres = 0.9;
 ffactorCutoff = 0.85; %roundness
 thresParam = 3; % The higher the more stringent the threshold
 minAreaRatio=1.25;
-minCytosolWidth=5;
+minCytosolWidth=4;
 save celltrackingparameters;
 
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename ='01262014-r1.nd';
-sourcefolder = '/hms/scratch1/ss240/01-26-2014';
+ndfilename ='02022014-r2.nd';
+sourcefolder = '/hms/scratch1/ss240/02-02-2014';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
 [notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);

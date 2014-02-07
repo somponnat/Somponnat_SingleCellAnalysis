@@ -570,7 +570,7 @@ l=watershed(l);
 [iMax,iWidth]=contrastValues(im2uint16(cellImS));
 thCell=(iMax+thresParam*iWidth)/65535;
 bwCell=cellImS>thCell;
-bwCell=bwCell|dilateNuc;
+bwCell=dilateNuc ;%| bwCell;
 bwCell=bwCell&l>0;
 % remove pathes w/ no corresponding nuclei
 lCell=bwlabel(bwCell);

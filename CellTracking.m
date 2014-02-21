@@ -452,6 +452,7 @@ set(handles.slider_frames,'Max',maxF);
 set(handles.slider_frames,'Min',minF);
 set(handles.slider_frames,'Value',minF);
 set(handles.edit_currentFrame,'String',num2str(minF));
+set(handles.edit_maxcells,'String','800');
 set(handles.slider_frames,'SliderStep',[1/(maxF-minF) 1/(maxF-minF)]);
 if handles.filetype==4
     handles.channelnames = [];
@@ -2363,7 +2364,7 @@ bg_name = ['/field' num2str(field) '/bg'];
 SourceF = handles.SourceF;
 
 if ~exist(fullfile(SourceF,H5filename),'file') 
-    display([H5filename '.mat does not exist.']);
+    set(handles.edit_commu,'String',[H5filename '.mat does not exist.']);
     return
 else
     fileattrib(fullfile(SourceF,H5filename),'+w');
@@ -4132,8 +4133,13 @@ if exist(filename,'file')
         num = length(testInd);
         if num > 0
             wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match');
-            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_).+(?=")', 'match');
-            waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
+            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_)\w+(?=")', 'match');
+            wavename3  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=")', 'match');
+            if ~isempty(wavename1) && ~isempty(wavename2)
+                waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
+            else
+                waveName{wind} = ['w' num2str(wind) wavename3{1}];
+            end
             wind=wind+1;
         end
         

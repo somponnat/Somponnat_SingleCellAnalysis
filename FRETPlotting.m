@@ -659,7 +659,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= handles.templateCH;
+templateCH= str2num(get(handles.edit_template,'String'));
 CH1= handles.CH1;
 CH2= handles.CH2;
 CH3 = handles.CH3;
@@ -758,7 +758,12 @@ if exist(fullfile(handles.ndpathname,H5filename),'file')
     
     cellpathinfo = h5info(fullfile(handles.ndpathname,H5filename), cellpath_name);
     sisterListinfo = h5info(fullfile(handles.ndpathname,H5filename), sisterList_name);
-    bginfo = h5info(fullfile(handles.ndpathname,H5filename), bg_name);
+    fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    
+    if H5L.exists(fid,bg_name,'H5P_DEFAULT')
+        H5F.close(fid);
+        bginfo = h5info(fullfile(handles.ndpathname,H5filename), bg_name);
+    end
 
     fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
     if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
@@ -1169,11 +1174,16 @@ if handles.filetype==0
 end
 
 selected_cell = get(hObject,'Value');
+set(handles.edit_cellNo,'String',num2str(selected_cell));
 row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= handles.templateCH;
+templateCH= str2num(get(handles.edit_template,'String'));
+cellpath = handles.cellpath;
+sisterList = handles.sisterList;
+cellsize = str2num(get(handles.edit_cellsize,'String'));
+tp = str2num(get(handles.edit_currentFrame,'String'));
 
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
 maskdatasetname = ['/field' num2str(field) '/segmentsCH' num2str(templateCH)];
@@ -1189,11 +1199,9 @@ if H5L.exists(fid,maskdatasetname,'H5P_DEFAULT')
     set(handles.edit_collectedcells,'String',num2str(selected_cells'));
     set(handles.edit_commu,'String',[num2str(length(selected_cells)) ' cells selected']);
     
-    cellpath = handles.cellpath;
-    sisterList = handles.sisterList;
-    cellsize = str2num(get(handles.edit_cellsize,'String'));
+
     
-    tp = str2num(get(handles.edit_currentFrame,'String'));
+    
     firsttp = str2num(get(handles.edit_firstframe,'String'));
     lasttp = str2num(get(handles.edit_lastframe,'String'));
     currentframe = loadsignal(handles,templateCH,tp);
@@ -1292,7 +1300,7 @@ if H5L.exists(fid,maskdatasetname,'H5P_DEFAULT')
         imshow(imOut,[],'Parent',handles.axes2);
         
         set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',ind_cellpath(tp,1),ind_cellpath(tp,2))));
-        set(handles.edit_cellNo,'String',num2str(selected_cell));
+        
         set(handles.edit_sister,'String',num2str(sisterList{tp}(selected_cell,:)));
         
     end
@@ -1304,6 +1312,13 @@ if H5L.exists(fid,maskdatasetname,'H5P_DEFAULT')
     guidata(hObject, handles);
 else
     H5F.close(fid);
+    if ~isempty(cellpath) %#ok<*USENS>
+        updatecurrentImage(handles,tp);
+        axes(handles.axes1);hold on;
+        plot(cellpath{tp}(selected_cell,1),cellpath{tp}(selected_cell,2),'ro');
+        set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',cellpath{tp}(selected_cell,1),cellpath{tp}(selected_cell,2))));
+        hold off;
+    end
     set(handles.edit_commu,'String',['Ensure templateCH is correct']);
 end
 
@@ -1872,7 +1887,7 @@ function edit_template_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of edit_template as text
 %        str2double(get(hObject,'String')) returns contents of edit_template as a double
-handles.templateCH= str2num(get(hObject,'String'));
+handles.templateCH = str2num(get(hObject,'String'));
 guidata(hObject, handles);  
 
 % --- Executes during object creation, after setting all properties.
@@ -2343,7 +2358,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= handles.templateCH;
+templateCH= str2num(get(handles.edit_template,'String'));
 CH1= handles.CH1;
 CH2= handles.CH2;
 CH3 = handles.CH3;
@@ -2477,7 +2492,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= handles.templateCH;
+templateCH= str2num(get(handles.edit_template,'String'));
 CH1= handles.CH1;
 CH2= handles.CH2;
 CH3 = handles.CH3;
@@ -3175,7 +3190,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= handles.templateCH;
+templateCH= str2num(get(handles.edit_template,'String'));
 CH1= handles.CH1;
 CH2= handles.CH2;
 CH3 = handles.CH3;
@@ -4275,7 +4290,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-
+scell = str2num(get(handles.edit_cellNo,'String'));
 allOutputs = get(handles.popupmenu_output,'String');
 if ~strcmp(allOutputs,'<not present>')
     
@@ -4301,46 +4316,75 @@ if ~strcmp(allOutputs,'<not present>')
             signal = permute(h5read(fullfile(handles.ndpathname,H5filename),signal_name,startind, countind),[2 1 3]);
             timestamp = double(h5read(fullfile(handles.ndpathname,H5filename),timestamp_name));
             
-            scell = str2num(get(handles.edit_cellNo,'String'));
-            
-            figure;
             
             
+            figure(1);
+            
+            legendListCount = 1;
+
             if get(handles.checkbox_variable1,'Value')
                 PosTime = find(signal(:,scell,1));
-                plot(timestamp(PosTime)/60,signal(PosTime,scell,1)/median(signal(PosTime,scell,1)),'b');
-                legendList{1} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal1');
-                assignin('base','signal1',signal(PosTime,scell,1));
-                assignin('base','timestamp1',timestamp(PosTime));
-                
-                
+                if ~isempty(PosTime)
+                    myy = signal(PosTime,scell,1)/median(signal(PosTime,scell,1));
+                    plot(timestamp(PosTime)/60,(myy-min(myy(round(length(myy)/2):end)))/(max(myy(round(length(myy)/2):end))-min(myy(round(length(myy)/2):end))),'b');
+                    legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal1');
+                    assignin('base','signal1',signal(PosTime,scell,1));
+                    assignin('base','timestamp1',timestamp(PosTime));
+                    legendListCount=legendListCount+1;
+                else
+                    display('Parameter 1 not available');
+                end
             end
+            
             if get(handles.checkbox_variable2,'Value')
                 PosTime = find(signal(:,scell,2));
-                hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,2)/median(signal(PosTime,scell,2)),'r');hold off;
-                legendList{2} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal2');
-                assignin('base','signal2',signal(PosTime,scell,2));
-                assignin('base','timestamp2',timestamp(PosTime));
+                if ~isempty(PosTime)
+                    myy = signal(PosTime,scell,2)/median(signal(PosTime,scell,2));
+                    hold on;plot(timestamp(PosTime)/60,(myy-min(myy(round(length(myy)/2):end)))/(max(myy(round(length(myy)/2):end))-min(myy(round(length(myy)/2):end))),'r');hold off;
+                    legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal2');
+                    assignin('base','signal2',signal(PosTime,scell,2));
+                    assignin('base','timestamp2',timestamp(PosTime));
+                    legendListCount=legendListCount+1;
+                else
+                    display('Parameter 2 not available');
+                end
+                
             end
             if get(handles.checkbox_variable3,'Value')
                 PosTime = find(signal(:,scell,3));
-                hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,3)/median(signal(PosTime,scell,3)),'g');hold off
-                legendList{3} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal3');
-                assignin('base','signal3',signal(PosTime,scell,3));
-                assignin('base','timestamp3',timestamp(PosTime));
+                if ~isempty(PosTime)
+                    
+                    myy = signal(PosTime,scell,3)/median(signal(PosTime,scell,3));
+                    hold on;plot(timestamp(PosTime)/60,(myy-min(myy(round(length(myy)/2):end)))/(max(myy(round(length(myy)/2):end))-min(myy(round(length(myy)/2):end))),'g');hold off;
+                    legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal3');
+                    assignin('base','signal3',signal(PosTime,scell,3));
+                    assignin('base','timestamp3',timestamp(PosTime));
+                    legendListCount=legendListCount+1;
+                else
+                    display('Parameter 3 not available');
+                end
             end
             if get(handles.checkbox_variable4,'Value')
                 PosTime = find(signal(:,scell,4));
-                hold on;plot(timestamp(PosTime)/60,signal(PosTime,scell,4)/median(signal(PosTime,scell,4)),'k');hold off
-                legendList{4} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal4');
-                assignin('base','signal4',signal(PosTime,scell,4));
-                assignin('base','timestamp4',timestamp(PosTime));
+                if ~isempty(PosTime)
+                    myy = signal(PosTime,scell,4)/median(signal(PosTime,scell,4));
+                    hold on;plot(timestamp(PosTime)/60,(myy-min(myy(round(length(myy)/2):end)))/(max(myy(round(length(myy)/2):end))-min(myy(round(length(myy)/2):end))),'k');hold off;
+                    legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal4');
+                    assignin('base','signal4',signal(PosTime,scell,4));
+                    assignin('base','timestamp4',timestamp(PosTime));
+                    legendListCount=legendListCount+1;
+                else
+                    display('Parameter 4 not available');
+                end
             end
             
             title(h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'outputsignal_name'),'interpreter','none');
-
-            legend(legendList);
+            if legendListCount>1
+                figure(1);
+                legend(legendList);
+            end
             xlabel('Time(hour)');
+            
         else
             set(handles.edit_commu,'String',[signal_name 'or' timestamp_name ' does not exist']);
         end
@@ -4488,7 +4532,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= handles.templateCH;
+templateCH= str2num(get(handles.edit_template,'String'));
 fileformat = get(handles.edit_signalformat,'String');
 selected_cell = get(handles.listbox_cells,'Value');
 CH1= handles.CH1;
@@ -4613,8 +4657,13 @@ if exist(fullfile(pathname,filename),'file')
         num = length(testInd);
         if num > 0
             wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match');
-            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_).+(?=")', 'match');
-            waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
+            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_)\w+(?=")', 'match');
+            wavename3  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=")', 'match');
+            if ~isempty(wavename1) && ~isempty(wavename2)
+                waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
+            else
+                waveName{wind} = ['w' num2str(wind) wavename3{1}];
+            end
             wind=wind+1;
         end
         
@@ -4915,9 +4964,10 @@ if get(hObject,'Value')
     field = str2num(get(handles.edit_field,'String'));
     plane = str2num(get(handles.edit_plane,'String'));
     channelnames = handles.channelnames;
+    templateCH= str2num(get(handles.edit_template,'String'));
     totalCHs = str2num(get(handles.edit_totalCHs,'String'));
     tp = str2num(get(handles.edit_currentFrame,'String'));
-    blackIm = loadblank(handles,handles.templateCH,tp);
+    blackIm = loadblank(handles,templateCH,tp);
     
     if ~isempty(blackIm)
         handles.useblank = 1;
@@ -5076,7 +5126,7 @@ function pushbutton_autothres_template_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 tp = str2num(get(handles.edit_currentFrame,'String'));
-channel = handles.templateCH;
+channel = str2num(get(handles.edit_template,'String'));
 displayIM = loadsignal(handles,channel,tp);
 set(handles.edit_templateL,'String',num2str(min(displayIM(:))));
 set(handles.edit_templateH,'String',num2str(max(displayIM(:))));
@@ -5482,7 +5532,7 @@ function pushbutton_storeall_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_storeall (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-templateCH= handles.templateCH;
+templateCH= str2num(get(handles.edit_template,'String'));
 CH1= handles.CH1;
 CH2= handles.CH2;
 CH3 = handles.CH3;
@@ -5564,18 +5614,29 @@ sites = str2num(get(handles.edit_selectedSites,'String'));
 if matlabpool('size') == 0
     matlabpool open;
 end
-parfor site=sites
+parfor s=1:length(sites)
+    site = sites(s);
     signalformat = [handles.prefix '_%s_s' num2str(site) '_t%g.TIF'];
     blankformat = [handles.prefix '_%s_s' num2str(BLANKsite) '_t%g.TIF'];
-    tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
-    if ~isempty(tokens)
-        row = str2num(tokens{1}{1});
-        col = str2num(tokens{1}{2});
+    L = regexp(stageName{site}, 'r(?<row>\d+)','names');
+    if ~isempty(L)
+        row = str2num(L.row);
     else
         row = site;
+    end
+    L = regexp(stageName{site}, 'c(?<col>\d+)','names');
+    if ~isempty(L)
+        col = str2num(L.col);
+    else
         col = 1;
     end
-    field = 1;
+    L = regexp(stageName{site}, 'f(?<field>\d+)','names');
+    if ~isempty(L)
+        field = str2num(L.field);
+    else
+        field = 1;
+    end
+
     collectdata_individual(handles,row,col,field,signalformat,blankformat);
 end
 set(handles.edit_commu,'String','finished collecting all data');
@@ -5621,34 +5682,25 @@ selectedcells_name = ['/field' num2str(field) '/selectedcells'];
 if exist(fullfile(ndpathname,H5filename),'file')
     fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
     if  H5L.exists(fid,cellpath_name,'H5P_DEFAULT') && ...
-        H5L.exists(fid,sisterList_name,'H5P_DEFAULT') && ...
-        H5L.exists(fid,bg_name,'H5P_DEFAULT') && ...
-        H5L.exists(fid,maskdatasetname,'H5P_DEFAULT') && ...
-        H5L.exists(fid,selectedcells_name,'H5P_DEFAULT')
-    
+            H5L.exists(fid,sisterList_name,'H5P_DEFAULT') && ...
+            H5L.exists(fid,maskdatasetname,'H5P_DEFAULT') && ...
+            H5L.exists(fid,selectedcells_name,'H5P_DEFAULT')
         H5F.close(fid);
-
         cellpathinfo = h5info(fullfile(ndpathname,H5filename), cellpath_name);
-        sisterListinfo = h5info(fullfile(ndpathname,H5filename), sisterList_name);
-        bginfo = h5info(fullfile(ndpathname,H5filename), bg_name);
-
         cellpath_mat = h5read(fullfile(ndpathname,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
+        
+        clc;display(['r' num2str(row) 'c' num2str(col) 'f' num2str(field) '-Start Processing']);
         
         for tp=first_tp:last_tp
             cellpath{tp} = cellpath_mat(:,:,tp);
         end
-
-        sisterList_mat = h5read(fullfile(ndpathname,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
         
-        for tp=first_tp:last_tp
-            sisterList{tp} = sisterList_mat(:,:,tp);
-        end
-
-        bg_mat = h5read(fullfile(ndpathname,H5filename),bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
+        %sisterListinfo = h5info(fullfile(ndpathname,H5filename), sisterList_name);
+        %sisterList_mat = h5read(fullfile(ndpathname,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
         
-        for tp=first_tp:last_tp
-            bg{tp} = bg_mat(:,:,tp);
-        end
+        %for tp=first_tp:last_tp
+        %    sisterList{tp} = sisterList_mat(:,:,tp);
+        %end
         
         % Initializing storage variables
         mysignal = zeros(size(cellpath{last_tp},1),last_tp-first_tp+1,4);
@@ -5656,7 +5708,7 @@ if exist(fullfile(ndpathname,H5filename),'file')
         timestamp = 1:(last_tp-first_tp+1);
         maskinfo = h5info(fullfile(ndpathname,H5filename), maskdatasetname);
         
-        [new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,first_tp,last_tp,1:length(cellpath{last_tp}));
+        %[new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,first_tp,last_tp,1:length(cellpath{last_tp}));
         
         for tp=first_tp:last_tp
             % Determine image capture time based on the template channel
@@ -5685,13 +5737,11 @@ if exist(fullfile(ndpathname,H5filename),'file')
                     timestep = hour*60+ minute + second/60;
             end
             
-            clc;display(['r' num2str(row) 'c' num2str(col) 'f' num2str(field) '-Processing time point:' num2str(tp) ' of ' num2str(last_tp)]);
-            
             % Determine signals
             CH1im = loadsignalV2(handles,CH1,tp,signalformat,blankformat);
             CH2im = loadsignalV2(handles,CH2,tp,signalformat,blankformat);
             CH3im = loadsignalV2(handles,CH3,tp,signalformat,blankformat);
-            ratioIm = calculateFRETV2(handles,bg,tp,nominCH,denominCH,signalformat,blankformat);
+            ratioIm = calculateFRETV2(handles,[],tp,nominCH,denominCH,signalformat,blankformat);
             
             imwidth = size(CH1im,2);
             imheight = size(CH1im,1);
@@ -5704,10 +5754,9 @@ if exist(fullfile(ndpathname,H5filename),'file')
             cytomask  = double(allmasks(:,:,:,3));
             
             for cellNo=selected_cells'
-                
-                ind_cellpath = pos_path(new_cellpath,new_sisterList,cellNo,first_tp,last_tp,imheight,imwidth);
-                
-                if tp <= size(ind_cellpath,1)
+                ind_cellpath = cellpath{tp}(cellNo,:);
+                %ind_cellpath = pos_path(new_cellpath,new_sisterList,cellNo,first_tp,last_tp,imheight,imwidth);
+                if ind_cellpath(1)>0 && ind_cellpath(2)>0 %tp <= size(ind_cellpath,1)
                     
                     if ~isempty(find(nucmask(:,:,cellNo),1))
                         
@@ -5715,10 +5764,10 @@ if exist(fullfile(ndpathname,H5filename),'file')
                             cellsize = (size(nucmask(:,:,cellNo),1)-1)/2;
                         end
                         
-                        xL=max(ind_cellpath(tp,1)-cellsize,1);
-                        xR=min(ind_cellpath(tp,1)+cellsize,imwidth);
-                        yL=max(ind_cellpath(tp,2)-cellsize,1);
-                        yR=min(ind_cellpath(tp,2)+cellsize,imheight);
+                        xL=max(ind_cellpath(1)-cellsize,1);
+                        xR=min(ind_cellpath(1)+cellsize,imwidth);
+                        yL=max(ind_cellpath(2)-cellsize,1);
+                        yR=min(ind_cellpath(2)+cellsize,imheight);
                         
                         if xR-xL == cellsize*2
                             borderX = 1:(cellsize*2+1);
@@ -5805,34 +5854,20 @@ if exist(fullfile(ndpathname,H5filename),'file')
         cindex = 1;
         outputcounts=[];
         if length(info.Datasets)>0 %#ok<*ISMT>
-            for i=1:length(info.Datasets)
-                tmp = regexp(info.Datasets(i).Name, ['(?<=' basename ')\d+'], 'match');
+            for i=length(info.Datasets):-1:1
+                outputsignalname = info.Datasets(i).Name;
+                tmp = regexp(outputsignalname, ['(?<=' basename ')\d+'], 'match');
                 if ~isempty(tmp)
-                    outputcounts(cindex) = str2num(tmp{1});
-                    cindex=cindex+1;
+                    fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+                    H5L.delete(fid,['/field' num2str(field) '/outputsignal' tmp{1}],'H5P_DEFAULT');
+                    H5F.close(fid);
+                    clc;display(['Deleting r' num2str(row) 'c' num2str(col) 'f' num2str(field) '-' outputsignalname]);
                 end
-            end
+            end 
         end
         
-        if isempty(outputcounts)
-            signal_name = ['/field' num2str(field) '/outputsignal1'];
-            timestamp_name = ['/field' num2str(field) '/timestamp1'];
-        else
-            signal_name = ['/field' num2str(field) '/outputsignal' num2str(max(outputcounts)+1)];
-            timestamp_name = ['/field' num2str(field) '/timestamp' num2str(max(outputcounts)+1)];
-        end
-        
-        fileattrib(fullfile(ndpathname,H5filename),'+w');
-        fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-        
-        if ~H5L.exists(fid,signal_name,'H5P_DEFAULT')
-            H5F.close(fid);
-            display(['Initializing ' H5filename ':' signal_name]);
-        else
-            H5L.delete(fid,signal_name,'H5P_DEFAULT');
-            display(['Overwriting ' H5filename ':' signal_name]);
-            H5F.close(fid);
-        end
+        signal_name = ['/field' num2str(field) '/outputsignal1'];
+        timestamp_name = ['/field' num2str(field) '/timestamp1'];
         
         h5create(fullfile(ndpathname,H5filename), signal_name, [size(mysignal,1), size(mysignal,2), 4], 'Datatype', 'double', 'ChunkSize', [size(mysignal,1), size(mysignal,2), 1], 'Deflate', 9);
         h5write(fullfile(ndpathname,H5filename), signal_name, mysignal, [1 1 1], [size(mysignal,1) size(mysignal,2) 4]);
@@ -5871,14 +5906,11 @@ if exist(fullfile(ndpathname,H5filename),'file')
         
         h5create(fullfile(ndpathname,H5filename), timestamp_name, last_tp-first_tp+1, 'Datatype', 'double');
         h5write(fullfile(ndpathname,H5filename), timestamp_name, timestamp);
+        clc;display(['r' num2str(row) 'c' num2str(col) 'f' num2str(field) '-Finished']);
     else
         H5F.close(fid);
     end
 end
-
-
-
-
 
 function edit_selectedSites_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_selectedSites (see GCBO)

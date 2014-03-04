@@ -11,7 +11,7 @@ addpath(genpath([pwd filesep 'ThirdParty']),'-end');
 cd(currentPath);
 
 %Calculate derived parameters
-minNucArea = round(0.25*avgNucDiameter^2);
+minNucArea = round(1/4*avgNucDiameter^2);
 minNewNucArea = round(0.5*avgNucDiameter^2);
 maxMAL = 5*avgNucDiameter;
 

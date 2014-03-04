@@ -1,51 +1,56 @@
 function do_lsf_celltrackingND_test()
-clc;
-clear all;
 % Define information about input images and necessary parameters-----------
-ndfilename = '130825.nd';
 templateCH = 2;
-increment = 1;
-cellsize = 30;
-outersize = 60;
+increment = -1;
+cellsize = 20;
+outersize = 40;
 similarityThres = 0.9;
-sourcefolder = '/hms/scratch1/ss240/130825/130825';
+maxWholeImShift = 300;
+maxNucMaskShift = 10;
+nucleiOptimizeLog = 1;
+save celltrackingparameters2;
+%---------------------------------------
+ndfilename ='02152014-r3.nd';
+sourcefolder = 'Q:\sorger\data\NIC\Pat\02-15-2014';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
-[notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename)
-tps = [1 2];
-sites = 1;
+[notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
+tps = [1 notp];
+sites = 9;
 
 for site = sites
     
     fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
-    %tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)f(?<field>\d+)','tokens');
-    tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
-    
-    if ~isempty(tokens)
-        row = str2num(tokens{1}{1});
-        col = str2num(tokens{1}{2});
+    L = regexp(stageName{site}, 'r(?<row>\d+)','names');
+    if ~isempty(L)
+        row = str2num(L.row);
     else
         row = site;
+    end
+    L = regexp(stageName{site}, 'c(?<col>\d+)','names');
+    if ~isempty(L)
+        col = str2num(L.col);
+    else
         col = 1;
     end
-    
-    %field = tokens{1}{3};
-    field = 1;
+    L = regexp(stageName{site}, 'f(?<field>\d+)','names');
+    if ~isempty(L)
+        field = str2num(L.field);
+    else
+        field = 1;
+    end
     plane = 1;
+    
     CellTracking_commandline(3,sourcefolder,row,col,field,plane,templateCH,tps,increment,fileformat,channelnames,cellsize,outersize,similarityThres);
 end
 
-
-
-
-function [notp stagePos stageName waveName] = readndfile(sourcefolder,filename)
+function [notp,stagePos,stageName,waveName] = readndfile(sourcefolder,filename)
 % Search for number of string matches per line.
 notp=-1;
 stagePos = [];
 stageName = [];
 waveName = [];
 
-fullfile(sourcefolder,filename)
 
 if exist(fullfile(sourcefolder,filename),'file')
     fid = fopen(fullfile(sourcefolder,filename));
@@ -83,7 +88,12 @@ if exist(fullfile(sourcefolder,filename),'file')
         if num > 0
             wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match');
             wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_)\w+(?=")', 'match');
-            waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
+            wavename3  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=")', 'match');
+            if ~isempty(wavename1) && ~isempty(wavename2)
+                waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
+            else
+                waveName{wind} = ['w' num2str(wind) wavename3{1}];
+            end
             wind=wind+1;
         end
         
@@ -91,3 +101,4 @@ if exist(fullfile(sourcefolder,filename),'file')
     end
     fclose(fid);
 end
+

@@ -1,8 +1,6 @@
 function do_lsf_celltrackingND_tiaoVersion_test()
-% clc;
-% clear all;
-% Define information about input images and necessary parameters-----------
 
+% Define information about input images and necessary parameters-----------
 
 cellsize = 40;
 outersize = 80;
@@ -18,24 +16,24 @@ save celltrackingparameters;
 % clear all;
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename ='01222014-r1.nd';
+ndfilename ='02022014-r2.nd';
 NucCH = 1;
 CellCH = 2;
 increment = 1;
-sourcefolder = 'Q:\sorger\data\NIC\Pat\01-22-2014\';
+sourcefolder = 'Q:\sorger\data\NIC\Pat\02-02-2014';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
 [notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename);
 
 tps = [1 notp];
-sites = 1:length(stagePos);
+sites = 1;%:length(stagePos);
 
-if matlabpool('size') == 0
-  matlabpool open;
-end
+% if matlabpool('size') == 0
+%   matlabpool open;
+% end
 
 
-parfor site = sites
+for site = sites
     
     fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
     L = regexp(stageName{site}, 'r(?<row>\d+)','names');

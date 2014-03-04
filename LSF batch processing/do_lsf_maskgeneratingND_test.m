@@ -1,94 +1,85 @@
 function do_lsf_maskgeneratingND_test()
 clear all;
 % Define information about input images and necessary parameters-----------
-ndfilename = '02032013-r1.nd';
-templateCH = 4;
+templateCH = 2;
 cellsize = 40;
 celldilatesize = 4;
-sourcefolder = 'c:\computation\02-03-2013';
-%sourcefolder = 'Q:\sorger\data\NIC\Pat\02-03-2013\';
-%sourcefolder = '/files/ImStor/sorger/data/NIC/Pat/02-03-2013';
-%------------------------------------------------
-prefix = ndfilename(1:(end-3));
-[notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename);
 
+%---------------------------------------
+ndfilename ='02152014-r3.nd';
+sourcefolder = 'Q:\sorger\data\NIC\Pat\02-15-2014';
+%------------------------------------------------
+
+prefix = ndfilename(1:(end-3));
+[notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
 tps = [1 notp];
-sites = 27;%1:length(stagePos);
+sites = [7];
+
 
 for i=1:length(sites)
     site = sites(i);
-    fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
-    %tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)f(?<field>\d+)','tokens');
-    tokens   = regexp(stageName{site}, 'r(?<row>\d+)c(?<col>\d+)|r(?<row>\d+)_c(?<col>\d+)|R(?<row>\d+)C(?<col>\d+)|R(?<row>\d+)_C(?<col>\d+)','tokens');
     
-    if ~isempty(tokens)
-        row = str2num(tokens{1}{1});
-        col = str2num(tokens{1}{2});
+    fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
+    L = regexp(stageName{site}, 'r(?<row>\d+)','names');
+    if ~isempty(L)
+        row = str2num(L.row);
     else
         row = site;
+    end
+    L = regexp(stageName{site}, 'c(?<col>\d+)','names');
+    if ~isempty(L)
+        col = str2num(L.col);
+    else
         col = 1;
     end
-    
-    %field = tokens{1}{3};
-    field = 1;
+    L = regexp(stageName{site}, 'f(?<field>\d+)','names');
+    if ~isempty(L)
+        field = str2num(L.field);
+    else
+        field = 1;
+    end
     plane = 1;
+    
     maskgen_commandline(3,sourcefolder,row,col,field,plane,templateCH,tps,fileformat,channelnames,cellsize,celldilatesize);
 end
 
 
-function maskgen_commandline(filetype,targetfolder,row,col,field,plane,templateCH,tps,fileformat,channelnames,cellsize,celldilatesize)
 
+function maskgen_commandline(filetype,SourceF,row,col,field,plane,templateCH,tps,fileformat,channelnames,cellsize,celldilatesize)
 firsttp = tps(1);
 lasttp = tps(end);
 
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
-fileattrib(fullfile(targetfolder,H5filename),'+w');
-
 cellpath_name = ['/field' num2str(field) '/cellpath'];
-sisterList_name = ['/field' num2str(field) '/sisterList'];
-bg_name = ['/field' num2str(field) '/bg'];
 
-cellpathinfo = h5info(fullfile(targetfolder,H5filename), cellpath_name);
-sisterListinfo = h5info(fullfile(targetfolder,H5filename), sisterList_name);
-bginfo = h5info(fullfile(targetfolder,H5filename), bg_name);
+if ~exist(fullfile(SourceF,H5filename),'file') 
+    display([H5filename '.mat does not exist.']);
+    return
+else
+    fileattrib(fullfile(SourceF,H5filename),'+w');
+end
 
-
-fid = H5F.open(fullfile(targetfolder,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
     H5F.close(fid);
-    cellpath_mat = h5read(fullfile(targetfolder,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
-
+    cellpathinfo = h5info(fullfile(SourceF,H5filename), cellpath_name);
+    
+    cellpath_mat = h5read(fullfile(SourceF,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
+    
     for tp=firsttp:lasttp
-        cellpath{tp} = cellpath_mat(:,:,tp);
+        if ~isempty(find(cellpath_mat(:,:,tp) > 0 ,1))
+            cellpath{tp} = cellpath_mat(:,:,tp);
+        end
     end
-end
-
-fid = H5F.open(fullfile(targetfolder,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-if H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
-    H5F.close(fid);
-    sisterList_mat = h5read(fullfile(targetfolder,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
-
-    for tp=firsttp:lasttp
-        sisterList{tp} = sisterList_mat(:,:,tp);
-    end
-end
-
-fid = H5F.open(fullfile(targetfolder,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-if H5L.exists(fid,bg_name,'H5P_DEFAULT')
-    H5F.close(fid);
-    bg_mat = h5read(fullfile(targetfolder,H5filename),bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
-
-    for tp=firsttp:lasttp
-        bg{tp} = bg_mat(:,:,tp);
-    end
+else
+    cellpath = [];
 end
 
 datasetname = ['/field' num2str(field) '/segmentsCH' num2str(templateCH)];
 selectedcells_name = ['/field' num2str(field) '/selectedcells'];
-fileattrib(fullfile(targetfolder,H5filename),'+w');
+fileattrib(fullfile(SourceF,H5filename),'+w');
 
-fid = H5F.open(fullfile(targetfolder,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-
+fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 if ~H5L.exists(fid,datasetname,'H5P_DEFAULT')
     H5F.close(fid);
     display(['Initializing ' H5filename ':' datasetname]);
@@ -97,86 +88,73 @@ else
     display(['Overwriting ' H5filename ':' datasetname]);
     H5F.close(fid);
 end
-h5create(fullfile(targetfolder,H5filename), datasetname, [size(cellpath{lasttp},1), lasttp, 3, 2*cellsize+1, 2*cellsize+1], 'Datatype', 'uint8', 'ChunkSize', [1, 1, 3, 2*cellsize+1, 2*cellsize+1], 'Deflate', 9);
+h5create(fullfile(SourceF,H5filename), datasetname, [size(cellpath{lasttp},1), lasttp, 3, 2*cellsize+1, 2*cellsize+1], 'Datatype', 'uint8', 'ChunkSize', [1, 1, 3, 2*cellsize+1, 2*cellsize+1], 'Deflate', 9);
 
 selected_cells = [];
-templateinfo = loadimageinfo(filetype,fileformat,[row col field plane templateCH],firsttp,channelnames,targetfolder);
+templateinfo = loadimageinfo(filetype,fileformat,[row col field plane templateCH],firsttp,channelnames,SourceF);
 imwidth = templateinfo.Width;
 imheight = templateinfo.Height;
 
 CellInd = find(cellpath{lasttp}(:,1)~=-1 & cellpath{lasttp}(:,2)~=-1)';
-nucmask = cell(size(cellpath{lasttp},1),1);
-cytomask = cell(size(cellpath{lasttp},1),1);
-cellmask = cell(size(cellpath{lasttp},1),1);
 
 for cellNo = CellInd
     
-    [pathLogic c_cellpath] = check_path(cellpath,sisterList,cellNo,firsttp,lasttp,imheight,imwidth);
+    for t = firsttp:lasttp
+        c_cellpath(t,:) = cellpath{t}(cellNo,:);
+    end
     
-    if pathLogic
+    %clc;display(['r' num2str(row) 'c' num2str(col) 'f' num2str(field) ',Processing cell:' num2str(cellNo)]);
+    selected_cells = [selected_cells;cellNo];
 
-        %clc;display(['r' num2str(row) 'c' num2str(col) 'f' num2str(field) ',Processing cell:' num2str(cellNo)]);
-        selected_cells = [selected_cells;cellNo];
-        
-        
-        template = zeros(2*cellsize+1,2*cellsize+1,lasttp);
-        
-        newsegments = zeros(firsttp,lasttp,3,size(template,1),size(template,2), 'uint8');
-        
-        for tp = firsttp:lasttp
-            if c_cellpath(tp,1)>0 && c_cellpath(tp,2)>0
-                xL=max(c_cellpath(tp,1)-cellsize,1);
-                xR=min(c_cellpath(tp,1)+cellsize,imwidth);
-                yL=max(c_cellpath(tp,2)-cellsize,1);
-                yR=min(c_cellpath(tp,2)+cellsize,imheight);
-                imlocation = [row col field plane templateCH -1];
-                
-                if xR-xL == cellsize*2
-                    borderX = 1:(cellsize*2+1);
-                elseif xR == imwidth
-                    shiftX = imwidth-xL;
-                    borderX = 1:(shiftX+1);
-                elseif xL == 1
-                    shiftX = cellsize*2+1-xR;
-                    borderX = (xL+shiftX):(cellsize*2+1);
-                end
-                
-                if yR-yL == cellsize*2
-                    borderY = 1:(cellsize*2+1);
-                elseif yR == imheight
-                    shiftY = imheight-yL;
-                    borderY = 1:(shiftY+1);
-                elseif yL == 1
-                    shiftY = cellsize*2+1-yR;
-                    borderY = (yL+shiftY):(cellsize*2+1);
-                end
-                
-                template(borderY,borderX,tp) = loadimage(filetype,fileformat,imlocation,tp,channelnames,{[yL yR], [xL xR]},[],targetfolder);
-                
-                [x1,y1,BW] = templateToCentroid(template(:,:,tp));
-                
-                if ~isempty(find(BW==1,1))
-                    if c_cellpath(tp,1) > 0 && c_cellpath(tp,2) > 0
+    template = zeros(2*cellsize+1,2*cellsize+1,lasttp);
+    
+    newsegments = zeros(firsttp,lasttp,3,size(template,1),size(template,2), 'uint8');
+    
+    for tp = firsttp:lasttp
+        if c_cellpath(tp,1)>0 && c_cellpath(tp,2)>0
+            xL=max(c_cellpath(tp,1)-cellsize,1);
+            xR=min(c_cellpath(tp,1)+cellsize,imwidth);
+            yL=max(c_cellpath(tp,2)-cellsize,1);
+            yR=min(c_cellpath(tp,2)+cellsize,imheight);
+            imlocation = [row col field plane templateCH -1];
+            
+            if xR-xL == cellsize*2
+                borderX = 1:(cellsize*2+1);
+            elseif xR == imwidth
+                shiftX = imwidth-xL;
+                borderX = 1:(shiftX+1);
+            elseif xL == 1
+                shiftX = cellsize*2+1-xR;
+                borderX = (xL+shiftX):(cellsize*2+1);
+            end
+            
+            if yR-yL == cellsize*2
+                borderY = 1:(cellsize*2+1);
+            elseif yR == imheight
+                shiftY = imheight-yL;
+                borderY = 1:(shiftY+1);
+            elseif yL == 1
+                shiftY = cellsize*2+1-yR;
+                borderY = (yL+shiftY):(cellsize*2+1);
+            end
+            
+            template(borderY,borderX,tp) = loadimage(filetype,fileformat,imlocation,tp,channelnames,{[yL yR], [xL xR]},[],SourceF);
+            
+            [~,~,BW] = templateToCentroid(template(:,:,tp));
+            
+            if ~isempty(find(BW==1,1))
 
-                        newsegments(1,tp,1,:,:) = BW; %nuclei
-                        newsegments(1,tp,2,:,:) = bwmorph(BW,'dilate',celldilatesize); %cell
-                        newsegments(1,tp,3,:,:) = bwmorph(squeeze(newsegments(1,tp,2,:,:)),'erode',1) & ~squeeze(newsegments(1,tp,1,:,:)); % cytosol
-                    end
-                end
+                newsegments(1,tp,1,:,:) = BW; %nuclei
+                newsegments(1,tp,2,:,:) = bwmorph(BW,'dilate',celldilatesize); %cell
+                newsegments(1,tp,3,:,:) = bwmorph(squeeze(newsegments(1,tp,2,:,:)),'erode',1) & ~squeeze(newsegments(1,tp,1,:,:)); % cytosol
+                
             end
         end
-
-        % cell,time,segments,x,y
-        h5write(fullfile(targetfolder,H5filename), datasetname, newsegments, [cellNo firsttp 1 1 1], [1 lasttp-firsttp+1 3 size(template,1) size(template,2)]);
-
-        %[uv sv] = memory;
-        %fprintf('%f GB\n', uv.MemUsedMATLAB/1e9);
     end
+    h5write(fullfile(SourceF,H5filename), datasetname, newsegments, [cellNo firsttp 1 1 1], [1 lasttp-firsttp+1 3 size(template,1) size(template,2)]);
 end
 
-
-fid = H5F.open(fullfile(targetfolder,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-
+fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 if ~H5L.exists(fid,selectedcells_name,'H5P_DEFAULT')
     H5F.close(fid);
     display(['Initializing ' H5filename ':' selectedcells_name]);
@@ -186,10 +164,10 @@ else
     H5F.close(fid);
 end
 
-h5create(fullfile(targetfolder,H5filename), selectedcells_name, length(selected_cells), 'Datatype', 'uint32');
-h5write(fullfile(targetfolder,H5filename), selectedcells_name, uint32(selected_cells));
+h5create(fullfile(SourceF,H5filename), selectedcells_name, length(selected_cells), 'Datatype', 'uint32');
+h5write(fullfile(SourceF,H5filename), selectedcells_name, uint32(selected_cells));
 
-function [x y BW] = templateToCentroid(M)
+function [x,y,BW] = templateToCentroid(M)
 BWc = zeros(size(M));
 for i=1.2:0.6:3
     edgedIm = edge(M,'canny',0,i);
@@ -219,15 +197,13 @@ else
     end
 end
 
-
-function [notp stagePos stageName waveName] = readndfile(sourcefolder,filename)
+function [notp,stagePos,stageName,waveName] = readndfile(sourcefolder,filename)
 % Search for number of string matches per line.
 notp=-1;
 stagePos = [];
 stageName = [];
 waveName = [];
 
-fullfile(sourcefolder,filename)
 
 if exist(fullfile(sourcefolder,filename),'file')
     fid = fopen(fullfile(sourcefolder,filename));
@@ -265,7 +241,12 @@ if exist(fullfile(sourcefolder,filename),'file')
         if num > 0
             wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match');
             wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_)\w+(?=")', 'match');
-            waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
+            wavename3  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=")', 'match');
+            if ~isempty(wavename1) && ~isempty(wavename2)
+                waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
+            else
+                waveName{wind} = ['w' num2str(wind) wavename3{1}];
+            end
             wind=wind+1;
         end
         
@@ -274,7 +255,8 @@ if exist(fullfile(sourcefolder,filename),'file')
     fclose(fid);
 end
 
-function [pathLogic new_cellpath] = check_path(cellpath,sisterList,cellNo,firsttp,lasttp,imheight,imwidth)
+
+function [pathLogic,new_cellpath] = check_path(cellpath,sisterList,cellNo,firsttp,lasttp,imheight,imwidth)
 % check if this path is good
 %#1 if acquiring and being inferior sister, combine trace of self with
 %prior-sister
@@ -340,9 +322,7 @@ else
     pathLogic = 0;
 end
 
-
-
-function outputim = loadimage(filetype,fileformat,imlocation,tp,channelnames,pixelsreg,displayGate,targetfolder)
+function outputim = loadimage(filetype,fileformat,imlocation,tp,channelnames,pixelsreg,displayGate,SourceF)
 row = imlocation(1);
 col = imlocation(2);
 field = imlocation(3);
@@ -355,12 +335,12 @@ if channel2 == -1
     switch filetype
         case 1
             filename = sprintf(fileformat,row,col,field,plane,channel1,tp);
-            outputim = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg); 
+            outputim = imread(fullfile(SourceF,filename),'PixelRegion',pixelsreg); 
         case 2
-            outputim = imread(fullfile(targetfolder,fileformat),'Index',totalCH*(tp-1)+channel1,'PixelRegion',pixelsreg);
+            outputim = imread(fullfile(SourceF,fileformat),'Index',totalCH*(tp-1)+channel1,'PixelRegion',pixelsreg);
         case 3
             filename = sprintf(fileformat,channelnames{channel1},tp);
-            outputim = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
+            outputim = imread(fullfile(SourceF,filename),'PixelRegion',pixelsreg);
     end
     if isempty(displayGate)
         outputim = mat2gray(im2double(outputim));
@@ -373,17 +353,17 @@ else
     switch filetype
         case 1
             filename = sprintf(fileformat,row,col,field,plane,channel1,tp);
-            nominim = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
+            nominim = imread(fullfile(SourceF,filename),'PixelRegion',pixelsreg);
             filename = sprintf(fileformat,row,col,field,plane,channel2,tp);
-            denomin = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
+            denomin = imread(fullfile(SourceF,filename),'PixelRegion',pixelsreg);
         case 2
-            nominim = imread(fullfile(targetfolder,fileformat),'Index',totalCH*(tp-1)+channel1,'PixelRegion',pixelsreg);
-            denomin = imread(fullfile(targetfolder,fileformat),'Index',totalCH*(tp-1)+channel2,'PixelRegion',pixelsreg);
+            nominim = imread(fullfile(SourceF,fileformat),'Index',totalCH*(tp-1)+channel1,'PixelRegion',pixelsreg);
+            denomin = imread(fullfile(SourceF,fileformat),'Index',totalCH*(tp-1)+channel2,'PixelRegion',pixelsreg);
         case 3
             filename = sprintf(fileformat,channelnames{channel1},tp);
-            nominim = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
+            nominim = imread(fullfile(SourceF,filename),'PixelRegion',pixelsreg);
             filename = sprintf(fileformat,channelnames{channel2},tp);
-            denomin = imread(fullfile(targetfolder,filename),'PixelRegion',pixelsreg);
+            denomin = imread(fullfile(SourceF,filename),'PixelRegion',pixelsreg);
     end
     if isempty(displayGate)
         outputim = mat2gray(im2double(nominim+2^9)./im2double(denomin+2^9));
@@ -394,7 +374,7 @@ else
     end
 end
 
-function iminfo = loadimageinfo(filetype,fileformat,imlocation,tp,channelnames,targetfolder)
+function iminfo = loadimageinfo(filetype,fileformat,imlocation,tp,channelnames,SourceF)
 row = imlocation(1);
 col = imlocation(2);
 field = imlocation(3);
@@ -405,12 +385,12 @@ totalCH = length(channelnames);
 switch filetype
     case 1
         filename = sprintf(fileformat,row,col,field,plane,channel,tp);
-        iminfo = imfinfo(fullfile(targetfolder,filename));
+        iminfo = imfinfo(fullfile(SourceF,filename));
     case 2
-        iminfo = imfinfo(fullfile(targetfolder,fileformat),'Index',totalCH*(tp-1)+channel);
+        iminfo = imfinfo(fullfile(SourceF,fileformat),'Index',totalCH*(tp-1)+channel);
     case 3
         filename = sprintf(fileformat,channelnames{channel},tp);
-        iminfo = imfinfo(fullfile(targetfolder,filename));
+        iminfo = imfinfo(fullfile(SourceF,filename));
 end
 
 

@@ -5,10 +5,10 @@ function do_lsf_moviemakingND_test()
 clear all;
 signalshift = 0.001;
 bgsubstractlogic = 0; % 
-illumcorlogic = 1; % Algorithmic illumination correction by high-pass filter
+illumcorlogic = 0; % Algorithmic illumination correction by high-pass filter
 framshift_logic = 0;
 ImageIndex = 2; % 1=nomin/denomin, 2=templateCH, 3=nomin,4=denomin
-intensityrange = [0.0031281 0.0042]; % For other images
+intensityrange = [0.0031128 0.0040742]; % For other images
 displaygate = [0.27 2.316]; % For FRET Only
 filterParam = [2 2]; 
 cellsize = 15;
@@ -18,11 +18,11 @@ save videoparameters;
 clear all;
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename = '01182014-r2.nd';
-templateCH = 1;
-nominCH = 2;
-denominCH = 3;
-sourcefolder = 'Q:\sorger\data\NIC\Pat\01-18-2014';
+ndfilename = '02262014-r1.nd';
+templateCH = 2;
+nominCH = 1;
+denominCH = 2;
+sourcefolder = 'Q:\sorger\data\NIC\Pat\02-26-2014';
 %------------------------------------------------
 
 prefix = ndfilename(1:(end-3));

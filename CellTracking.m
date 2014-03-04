@@ -624,7 +624,7 @@ im=im2double(M);
 maxNucArea=round(pi*maxNucDiameter^2/4);
 
 combined_bw = zeros(size(M));
-testSet = linspace(1.4,6,8);
+testSet = linspace(1.4,8,12);
 
 for s = 1:length(testSet)
     
@@ -653,11 +653,11 @@ end
 S = regionprops(combined_bw,'Centroid','Perimeter','Area');
 coords = [];
 cInd = 1;
-imageP70  = prctile(M(:),70);
+imageP20  = prctile(M(:),20);
 
 for i=1:length(S)
     temCoord = S(i).Centroid;
-    if M(round(temCoord(2)),round(temCoord(1))) >= imageP70 && 4*pi*S(i).Area/S(i).Perimeter^2 > minFormfactor
+    if M(round(temCoord(2)),round(temCoord(1))) >= imageP20 %&& 4*pi*S(i).Area/S(i).Perimeter^2 > minFormfactor
         coords(cInd,:) = round(temCoord);
         cInd= cInd+1;
     end

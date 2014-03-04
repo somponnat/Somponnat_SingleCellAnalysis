@@ -3,45 +3,15 @@ function CellTracking_commandline(filetype,SourceF,row,col,field,plane,channel,t
 % celltrackOUT    =  MAT file that contains initial track points
 % tps             = [<first frame>   <last frame>]
 
-H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
-cellpath_name = ['/field' num2str(field) '/cellpath'];
-sisterList_name = ['/field' num2str(field) '/sisterList'];
-bg_name = ['/field' num2str(field) '/bg'];
 
-if ~exist(fullfile(SourceF,H5filename),'file') 
-    display([H5filename '.mat does not exist.']);
-    return
-end
+load celltrackingparameters2;
 
-fileattrib(fullfile(SourceF,H5filename),'+w');
-
-load('~/fftexecutiontimes.mat');
-% calculate optimal conditions for fft analysis
-fftw('planner', 'hybrid');
-opt = detbestlength2(FFTrv,FFTiv,IFFTiv,2*[outersize outersize],2*[cellsize cellsize],1,1);
-
-cellpathinfo = h5info(fullfile(SourceF,H5filename), cellpath_name);
-sisterListinfo = h5info(fullfile(SourceF,H5filename), sisterList_name);
-bginfo = h5info(fullfile(SourceF,H5filename), bg_name);
-cellpath_mat = h5read(fullfile(SourceF,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
-sisterList_mat = h5read(fullfile(SourceF,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
-bg_mat = h5read(fullfile(SourceF,H5filename),bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
-
-%cellpath = cell(size(cellpath_mat,3),1);
-%sisterList = cell(size(cellpath_mat,3),1);
-%bg = cell(size(cellpath_mat,3),1);
-
-for tp=1:size(cellpath_mat,3)
-    cellpath{tp} = cellpath_mat(:,:,tp);
-    sisterList{tp} = sisterList_mat(:,:,tp);
-    bg{tp} = bg_mat(:,:,tp);
-end
-
-if isempty(cellpath) || isempty(bg) || isempty(sisterList) %#ok<*NODEF>
-    display([H5filename ' does not contain necessary variables.']);
-    return
-end
-
+currentPath = pwd;
+eval('cd ..');
+addpath(genpath([pwd filesep 'ThirdParty']),'-end');
+cd(currentPath);
+firsttp = tps(1);
+lasttp = tps(end);
 switch increment
     case 1
         firstFrame = tps(1);
@@ -51,83 +21,160 @@ switch increment
         endFrame   = tps(1)+1; 
 end
 
+H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
+cellpath_name = ['/field' num2str(field) '/cellpath'];
+sisterList_name = ['/field' num2str(field) '/sisterList'];
+
+if ~exist(fullfile(SourceF,H5filename),'file') 
+    display([H5filename '.mat does not exist.']);
+    return
+else
+    fileattrib(fullfile(SourceF,H5filename),'+w');
+end
+
+% compute parameter for the template matching function
+load fftexecutiontimes
+% calculate optimal conditions for fft analysis
+fftw('planner', 'hybrid');
+
+previousframe = loadimage(filetype,fileformat,[row col field plane channel],firstFrame,channelnames,SourceF);
+[ySize,~] = size(previousframe);
+
+opt = detbestlength2(FFTrv,FFTiv,IFFTiv,2*[outersize outersize],2*[cellsize cellsize],1,1);
+optWholeIm = detbestlength2(FFTrv,FFTiv,IFFTiv,2*[ySize ySize],2*[ySize-2*maxWholeImShift ySize-2*maxWholeImShift],1,1);
+
+fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    cellpathinfo = h5info(fullfile(SourceF,H5filename), cellpath_name);
+    
+    cellpath_mat = h5read(fullfile(SourceF,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
+    
+    for tp=firsttp:lasttp
+        if ~isempty(find(cellpath_mat(:,:,tp) > 0 ,1))
+            cellpath{tp} = cellpath_mat(:,:,tp);
+        end
+    end
+else
+    cellpath = [];
+end
+
+fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    sisterListinfo = h5info(fullfile(SourceF,H5filename), sisterList_name);
+    sisterList_mat = h5read(fullfile(SourceF,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
+    
+    for tp=firsttp:lasttp
+        if ~isempty(cellpath{tp})
+            sisterList{tp} = sisterList_mat(:,:,tp);
+        end
+    end
+else
+    sisterList = [];
+end
+
+
+if isempty(cellpath)  || isempty(sisterList) 
+    display([H5filename ' does not contain necessary variables.']);
+    return
+end
+currCoords = cellpath{firstFrame};
 for t=firstFrame:increment:endFrame
     
     clc;display([H5filename ' - Currently processing frame: ' num2str(t) ' of ' num2str(tps(end)-tps(1)+1)]);
+    prevCoords = currCoords;
+    prevCoords2 = prevCoords;
+    
     tp=t; % load previous file
     previousframe = loadimage(filetype,fileformat,[row col field plane channel],tp,channelnames,SourceF);
-
+    [ySize,xSize] = size(previousframe);
     tp=t+increment; % load current file
     currentframe =  loadimage(filetype,fileformat,[row col field plane channel],tp,channelnames,SourceF);
+    
+    
+    template=previousframe(maxWholeImShift+1:ySize-maxWholeImShift,maxWholeImShift+1:ySize-maxWholeImShift);
+    testframe=currentframe(1:ySize,1:ySize);
+    [x1,y1,~] = corrMatching2(testframe, template, optWholeIm);
+    xOffsetWholeIm = x1 - ySize/2;
+    yOffsetWholeIm = y1 - ySize/2;
+    prevCoords2(:,1) = prevCoords2(:,1) + xOffsetWholeIm;
+    prevCoords2(:,2) = prevCoords2(:,2) + yOffsetWholeIm;
+    
+    [iMax,iWidth]=contrastValues(previousframe);
+    previousPad=iMax+(rand(ySize+2*outersize+2*maxWholeImShift,xSize+2*outersize+2*maxWholeImShift)-0.5)*2*iWidth;
+    previousPad(outersize+maxWholeImShift+1:ySize+outersize+maxWholeImShift,outersize+maxWholeImShift+1:xSize+outersize+maxWholeImShift)=double(previousframe);
+    [iMax,iWidth]=contrastValues(currentframe);
+    currentPad=iMax+(rand(ySize+2*outersize+2*maxWholeImShift,xSize+2*outersize+2*maxWholeImShift)-0.5)*2*iWidth;
+    currentPad(outersize+maxWholeImShift+1:ySize+outersize+maxWholeImShift,outersize+maxWholeImShift+1:xSize+outersize+maxWholeImShift)=double(currentframe);
+    prevCoordsPad = round(prevCoords) + outersize + maxWholeImShift;
+    prevCoordsPad2 = round(prevCoords2) + outersize + maxWholeImShift;
     
     if length(sisterList) >= tp && ~isempty(sisterList{tp}) && ~isempty(sisterList{1})
         sisExistInd = find(sisterList{tp}(:,1) ~= -1 & sisterList{tp}(:,1) ~= 0);
     else
         sisExistInd = [];
     end
-    
     PosInd = find(cellpath{tp-increment}(:,1)>0 & cellpath{tp-increment}(:,2)>0)';
-    
     for c=PosInd
-        
-        if isempty(find(c==sisExistInd,1))
-            sisterList{tp}(c,:) = sisterList{tp-increment}(c,:); %#ok<*AGROW>
-        end
-        
-        xL=max(cellpath{tp-increment}(c,1)-cellsize,1);
-        xR=min(cellpath{tp-increment}(c,1)+cellsize-1,size(previousframe,2));
-        yL=max(cellpath{tp-increment}(c,2)-cellsize,1);
-        yR=min(cellpath{tp-increment}(c,2)+cellsize-1,size(previousframe,1));
-                
-        template = previousframe(yL:yR,xL:xR);     
-        
-        xL=max(cellpath{tp-increment}(c,1)-outersize,1);
-        xR=min(cellpath{tp-increment}(c,1)+outersize-1,size(currentframe,2));
-        yL=max(cellpath{tp-increment}(c,2)-outersize,1);
-        yR=min(cellpath{tp-increment}(c,2)+outersize-1,size(currentframe,1));
-        
-        testframe = currentframe(yL:yR,xL:xR);   
-        
-        [x1 y1 maxVal] = corrMatching2(testframe, template, opt);
-        if isempty(x1) || maxVal<similarityThres
-            x1 = cellpath{tp-increment}(c,1)-xL;
-            y1 = cellpath{tp-increment}(c,2)-yL;
-        end
-        
-        [x1 y1 ~] = templateToCentroid(testframe,x1,y1);
 
-        cellpath{tp}(c,:) = [xL+x1 yL+y1];
-    end
-    
-    DeathInd = find(cellpath{tp-increment}(:,1)==-2)';
-    
-    for c=DeathInd
-        sisterList{tp}(c,:) = sisterList{tp-increment}(c,:);
-        cellpath{tp}(c,:) = cellpath{tp-increment}(c,:);
-    end
-    
-    
-    if ~isempty(bg)
-        %updating bg points
-        xshift = mean(cellpath{tp}(PosInd,1))-mean(cellpath{tp-increment}(PosInd,1));
-        yshift = mean(cellpath{tp}(PosInd,2))-mean(cellpath{tp-increment}(PosInd,2));
+        xL=prevCoordsPad(c,1)-cellsize;
+        xR=prevCoordsPad(c,1)+cellsize-1;
+        yL=prevCoordsPad(c,2)-cellsize;
+        yR=prevCoordsPad(c,2)+cellsize-1;
+        template = previousPad(yL:yR,xL:xR);
+        xL=prevCoordsPad2(c,1)-outersize;
+        xR=prevCoordsPad2(c,1)+outersize-1;
+        yL=prevCoordsPad2(c,2)-outersize;
+        yR=prevCoordsPad2(c,2)+outersize-1;
+        testframe = currentPad(yL:yR,xL:xR);
+        [x1,y1,maxVal] = corrMatching2(testframe, template, opt);
+        if isempty(x1) || maxVal<similarityThres
+            x1 = prevCoordsPad2(c,1)-xL;
+            y1 = prevCoordsPad2(c,2)-yL;
+        end
+        if nucleiOptimizeLog==1
+            [x1,y1,~] = templateToCentroid(testframe,x1,y1);
+        end
         
-        bg{tp}(:,1) = bg{tp-increment}(:,1)+round(xshift);
-        bg{tp}(:,2) = bg{tp-increment}(:,2)+round(yshift);
+        currCoords(c,:)=round([xL+x1 yL+y1]);
+        currCoords(c,:) = currCoords(c,:) - outersize - maxWholeImShift;
+
+        tmp=currCoords(c,1);
+        if tmp > xSize || tmp < 1
+            currCoords(c,:) = [-1 -1]; 
+        end
+        tmp=currCoords(c,2);
+        if tmp > ySize || tmp < 1
+            currCoords(c,:) = [-1 -1]; 
+        end
+        
+        cellpath{tp}(c,:) = currCoords(c,:);
+  %     figure(1);imshow(testframe,[]);hold on;plot(x1,y1,'xr');pause(0.1);
     end
+    
+    if increment > 0
+        DeathInd = find(cellpath{tp-increment}(:,1)==-2)';
+        for c=DeathInd
+            cellpath{tp}(c,:) = cellpath{tp-increment}(c,:);
+        end
+    end
+    if isempty(find(c==sisExistInd,1))
+        sisterList{tp}(c,:) = sisterList{tp-increment}(c,:);
+    end
+    % show data
+    %imshow(currentframe,[]); hold on; plot(cellpath{tp}(:,1),cellpath{tp}(:,2),'xr'); drawnow;
     
     cellpath_mat = -1*(ones(size(cellpath{tp},1),2,length(cellpath)));
     sisterList_mat = -1*(ones(size(sisterList{tp},1),size(sisterList{tp},2),length(sisterList)));
-    bg_mat = -1*(ones(size(bg{tp},1),2,length(bg)));
-    
-    
+
     for s_tp=1:length(cellpath)
         if ~isempty(cellpath{s_tp})
             cellpath_mat(:,:,s_tp) = cellpath{s_tp};
             sisterList_mat(:,:,s_tp) = sisterList{s_tp};
-            bg_mat(:,:,s_tp) = bg{s_tp};
         end
     end
+    
     
     fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
     if ~H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
@@ -151,16 +198,6 @@ for t=firstFrame:increment:endFrame
     h5create(fullfile(SourceF,H5filename), sisterList_name, [size(sisterList_mat,1), size(sisterList_mat,2), size(sisterList_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(sisterList_mat,2), size(sisterList_mat,3)], 'Deflate', 9);
     h5write(fullfile(SourceF,H5filename), sisterList_name, sisterList_mat, [1 1 1], [size(sisterList_mat,1) size(sisterList_mat,2) size(sisterList_mat,3)]);
     
-    fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-    if ~H5L.exists(fid,bg_name,'H5P_DEFAULT')
-        H5F.close(fid);
-    else
-        H5L.delete(fid,bg_name,'H5P_DEFAULT');
-        H5F.close(fid);
-    end
-    
-    h5create(fullfile(SourceF,H5filename), bg_name, [size(bg_mat,1), size(bg_mat,2), size(bg_mat,3)], 'Datatype', 'double', 'ChunkSize', [1, size(bg_mat,2), size(bg_mat,3)], 'Deflate', 9);
-    h5write(fullfile(SourceF,H5filename), bg_name, bg_mat, [1 1 1], [size(bg_mat,1) size(bg_mat,2) size(bg_mat,3)]);
 end
 
 display(['Successfully tracked frame' num2str(tps(1)) ':' num2str(tps(end)) ' and saved in ' H5filename]);

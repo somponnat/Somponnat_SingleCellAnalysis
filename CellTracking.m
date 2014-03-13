@@ -3510,7 +3510,7 @@ function uibuttongroup_filetype_SelectionChangeFcn(hObject, eventdata, handles)
 switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
     case 'radiobutton_harmony'
         set(handles.edit_commu,'String','Harmony tiffs chosen for inputs');
-        set(handles.edit_fileformat,'String','r%02.0fc%02.0ff%02.0fp%02.0frc%1.0f-ch1sk%ufk1fl1.tiff');
+        set(handles.edit_fileformat,'String','r%02.0fc%02.0ff%02.0fp%02.0f-ch%1.0fsk%ufk1fl1.tiff');
         handles.filetype = 1;
     case 'radiobutton_tiffstack'
         set(handles.edit_commu,'String','DV stacked tiff chosen for input. Please locate your file.');

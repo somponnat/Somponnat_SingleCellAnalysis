@@ -38,7 +38,7 @@ col = imlocation(2);
 field = imlocation(3);
 plane = imlocation(4);
 channel = imlocation(5);
-totalCH = length(channelnames);
+
 outputim = [];
 
 switch filetype
@@ -49,6 +49,7 @@ switch filetype
             outputim = imread(fullfile(SourceF,filename));
         end
     case 2
+        totalCH = length(channelnames);
         if exist(fullfile(SourceF,fileformat),'file')
             outputim = imread(fullfile(SourceF,fileformat),'Index',totalCH*(tp-1)+channel);
         end
@@ -454,7 +455,7 @@ set(handles.slider_frames,'Value',minF);
 set(handles.edit_currentFrame,'String',num2str(minF));
 set(handles.edit_maxcells,'String','800');
 set(handles.slider_frames,'SliderStep',[1/(maxF-minF) 1/(maxF-minF)]);
-if handles.filetype==4
+if handles.filetype==4 || handles.filetype==1 
     handles.channelnames = [];
     guidata(hObject, handles);
     handles = guidata(hObject);
@@ -723,7 +724,7 @@ M(1,:) = 0;
 M(end,:) = 0;
 M(:,1) = 0;
 M(:,end) = 0;
-outBW = modchenvese(M,50,0.1,outerbox);
+outBW = modchenvese(M,80,0.05,outerbox);
 se = strel('disk',3);
 outBW = imclose(outBW,se);
 outBW(1,:) = 0;
@@ -752,7 +753,7 @@ s = outerbox./min(size(I,1),size(I,2)); % resize scale
 n = zeros(size(I));
 midY = round(size(n,1)/2);
 midX = round(size(n,2)/2);
-boxsize = round(size(I,1)*0.2);%round(outerbox/2*.9);
+boxsize = round(size(I,1)*0.1);%round(outerbox/2*.9);
 n(midY-boxsize:midY+boxsize,midX-boxsize:midX+boxsize) = 1;
 I = imresize(I,s);
 mask = imresize(n,s);
@@ -4358,7 +4359,7 @@ IFFTiv=handles.IFFTiv;
 
 
 previousframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],currentFrame,handles.channelnames,handles.SourceF);
-previousframe = previousframe(60:end-60,60:end-60);
+previousframe = previousframe(100:end-100,100:end-100);
 currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],nextframe,handles.channelnames,handles.SourceF);
 
 opt = detbestlength2(FFTrv,FFTiv,IFFTiv,size(imresize(currentframe,1)),size(imresize(previousframe,1)),isreal(imresize(currentframe,1)),isreal(imresize(previousframe,1)));

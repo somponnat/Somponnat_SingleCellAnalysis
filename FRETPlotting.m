@@ -363,7 +363,7 @@ switch length(varargin)
         if ischar(varargin{2}) && filetype == 3
             fileformat = varargin{2};
         else
-            trackinginfo = varargin{2};  % [templateCH tp_1 tp_end]
+            trackinginfo = varargin{2};  % [nucCH tp_1 tp_end]
         end
     case 3
         filetype = varargin{1};
@@ -413,8 +413,8 @@ switch filetype
             set(handles.edit_totalCHs,'String',num2str(totalCHs));
         end
         
-        templateCH = trackinginfo(1);
-        set(handles.edit_nucCH,'String',num2str(templateCH));
+        nucCH = trackinginfo(1);
+        set(handles.edit_nucCH,'String',num2str(nucCH));
         set(handles.edit_firstframe,'String',num2str(trackinginfo(2)));
         set(handles.edit_lastframe,'String',num2str(trackinginfo(3)));
         set(handles.edit_currentFrame,'String',num2str(trackinginfo(2)));
@@ -463,8 +463,8 @@ switch filetype
         end
         
         
-        templateCH = trackinginfo(1);
-        set(handles.edit_nucCH,'String',num2str(templateCH));
+        nucCH = trackinginfo(1);
+        set(handles.edit_nucCH,'String',num2str(nucCH));
         set(handles.edit_firstframe,'String',num2str(trackinginfo(2)));
         set(handles.edit_lastframe,'String',num2str(trackinginfo(3)));
         set(handles.edit_currentFrame,'String',num2str(trackinginfo(2)));
@@ -512,7 +512,7 @@ switch filetype
             set(handles.edit_firstframe,'String',num2str(1));
             set(handles.edit_lastframe,'String',num2str(notp));
             set(handles.edit_currentFrame,'String',num2str(1));
-            templateCH = 1;
+            nucCH = 1;
             set(handles.popupmenu_stagePosData,'String',stagePos);
             set(handles.popupmenu_stagePosData,'Value',1);
             set(handles.popupmenu_stagePosBG,'String',stagePos);
@@ -542,8 +542,8 @@ switch filetype
             end
         else
             set(handles.edit_signalformat,'String',fileformat);
-            templateCH = trackinginfo(1);
-            set(handles.edit_nucCH,'String',num2str(templateCH));
+            nucCH = trackinginfo(1);
+            set(handles.edit_nucCH,'String',num2str(nucCH));
             set(handles.edit_firstframe,'String',num2str(trackinginfo(2)));
             set(handles.edit_lastframe,'String',num2str(trackinginfo(3)));
             set(handles.edit_currentFrame,'String',num2str(trackinginfo(2)));
@@ -623,7 +623,7 @@ handles.ImageIndex = startImageIndex;
 handles.overlayIndex = startImageIndex;
 if filetype~=0
     
-    template = loadsignal(handles,templateCH,tp);
+    template = loadsignal(handles,nucCH,tp);
     load fftexecutiontimes;
     handles.smooth_opt = detbestlength2(FFTrv,FFTiv,IFFTiv,size(template),size(handles.gaussian),isreal(template),isreal(handles.gaussian));
     switch startImageIndex
@@ -659,7 +659,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= str2num(get(handles.edit_nucCH,'String'));
+nucCH= str2num(get(handles.edit_nucCH,'String'));
 CH1= handles.CH1;
 CH2= handles.CH2;
 CH3 = handles.CH3;
@@ -696,7 +696,7 @@ end
 handles.gaussian = 1/273*[1 4 7 4 1;4 16 26 26 4;7 26 41 26 7;4 16 26 16 4;1 4 7 4 1];
 guidata(hObject, handles);
 handles = guidata(hObject);
-template = loadsignal(handles,templateCH,c_tp);
+template = loadsignal(handles,nucCH,c_tp);
 load fftexecutiontimes;
 handles.smooth_opt = detbestlength2(FFTrv,FFTiv,IFFTiv,size(template),size(handles.gaussian),isreal(template),isreal(handles.gaussian));
 clear FFTrv FFTiv IFFTiv;
@@ -1182,7 +1182,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= str2num(get(handles.edit_nucCH,'String'));
+nucCH= str2num(get(handles.edit_nucCH,'String'));
 cellpath = handles.cellpath;
 sisterList = handles.sisterList;
 cellsize = str2num(get(handles.edit_cellsize,'String'));
@@ -1190,7 +1190,7 @@ tp = str2num(get(handles.edit_currentFrame,'String'));
 
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
 
-maskdatasetname = ['/field' num2str(field) '/segmentsCH' num2str(templateCH)];
+maskdatasetname = ['/field' num2str(field) '/segmentsCH' num2str(nucCH)];
 fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 if H5L.exists(fid,maskdatasetname,'H5P_DEFAULT')
     H5F.close(fid);
@@ -1204,7 +1204,7 @@ if H5L.exists(fid,maskdatasetname,'H5P_DEFAULT')
     
     firsttp = str2num(get(handles.edit_firstframe,'String'));
     lasttp = str2num(get(handles.edit_lastframe,'String'));
-    currentframe = loadsignal(handles,templateCH,tp);
+    currentframe = loadsignal(handles,nucCH,tp);
     imwidth = size(currentframe,2);
     imheight = size(currentframe,1);
     [new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,firsttp,lasttp,1:length(cellpath{lasttp}));
@@ -1503,7 +1503,7 @@ else
     col = str2num(get(handles.edit_col,'String'));
     field = str2num(get(handles.edit_field,'String'));
     plane = str2num(get(handles.edit_plane,'String'));
-    templateCH= handles.templateCH;
+    nucCH= handles.nucCH;
     CH1= handles.CH1;
     CH2= handles.CH2;
     CH3 = handles.CH3;
@@ -1534,9 +1534,9 @@ else
     end
     
     if handles.filetype == 3
-        filename = sprintf(fileformat,channelnames{templateCH},str2num(get(handles.edit_firstframe,'String')));
+        filename = sprintf(fileformat,channelnames{nucCH},str2num(get(handles.edit_firstframe,'String')));
         first_info = imfinfo(fullfile(handles.ndpathname,filename));
-        filename = sprintf(fileformat,channelnames{templateCH},tp);
+        filename = sprintf(fileformat,channelnames{nucCH},tp);
         current_info = imfinfo(fullfile(handles.ndpathname,filename));
         [~, ~, D, H, MN, S]  = datevec(datenum(current_info.DateTime,'yyyymmdd HH:MM:SS.FFF')-datenum(first_info.DateTime,'yyyymmdd HH:MM:SS.FFF'));
         hour = 24*D+round(H);
@@ -1547,7 +1547,7 @@ else
     
     filetype = handles.filetype;
     channelnames = handles.channelnames;
-    template = loadsignal(handles,templateCH,tp);
+    template = loadsignal(handles,nucCH,tp);
     axes(handles.axes1);
     set(handles.edit_currentFrame,'String',num2str(tp));
     
@@ -1932,7 +1932,7 @@ function edit_nucCH_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of edit_nucCH as text
 %        str2double(get(hObject,'String')) returns contents of edit_nucCH as a double
-handles.templateCH = str2num(get(hObject,'String'));
+handles.nucCH = str2num(get(hObject,'String'));
 guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
@@ -1946,7 +1946,7 @@ function edit_nucCH_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-handles.templateCH= str2num(get(hObject,'String'));
+handles.nucCH= str2num(get(hObject,'String'));
 guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
@@ -2403,7 +2403,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= str2num(get(handles.edit_nucCH,'String'));
+nucCH= str2num(get(handles.edit_nucCH,'String'));
 CH1= handles.CH1;
 CH2= handles.CH2;
 CH3 = handles.CH3;
@@ -2418,7 +2418,7 @@ tp=str2num(get(handles.edit_currentFrame,'String'));
 
 first_tp = str2num(get(handles.edit_firstframe,'String'));
 if handles.filetype == 3
-    filename = sprintf(fileformat,handles.channelnames{templateCH},first_tp);
+    filename = sprintf(fileformat,handles.channelnames{nucCH},first_tp);
     first_info = imfinfo(fullfile(handles.ndpathname,filename));
 end
 
@@ -2448,9 +2448,9 @@ outer1 = gca;
 
 filetype = handles.filetype;
 channelnames = handles.channelnames;
-template = loadsignal(handles,templateCH,tp);
+template = loadsignal(handles,nucCH,tp);
 if handles.filetype == 3
-    filename = sprintf(fileformat,handles.channelnames{templateCH},tp);
+    filename = sprintf(fileformat,handles.channelnames{nucCH},tp);
     current_info = imfinfo(fullfile(handles.ndpathname,filename));
 end
 switch handles.ImageIndex
@@ -2537,7 +2537,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= str2num(get(handles.edit_nucCH,'String'));
+nucCH= str2num(get(handles.edit_nucCH,'String'));
 CH1= handles.CH1;
 CH2= handles.CH2;
 CH3 = handles.CH3;
@@ -2590,7 +2590,7 @@ set(gca,'nextplot','replacechildren');
 set(gcf,'Renderer','zbuffer');
 
 if handles.filetype == 3
-    filename = sprintf(fileformat,handles.channelnames{templateCH},first_tp);
+    filename = sprintf(fileformat,handles.channelnames{nucCH},first_tp);
     first_info = imfinfo(fullfile(handles.ndpathname,filename));
 end
 
@@ -2600,9 +2600,9 @@ for tp=first_tp:last_tp
     
     if handles.ImageIndex == handles.overlayIndex
         
-        template = loadsignal(handles,templateCH,tp);
+        template = loadsignal(handles,nucCH,tp);
         if handles.filetype == 3
-            filename = sprintf(fileformat,handles.channelnames{templateCH},tp);
+            filename = sprintf(fileformat,handles.channelnames{nucCH},tp);
             current_info = imfinfo(fullfile(handles.ndpathname,filename));
         end
         
@@ -2679,9 +2679,9 @@ for tp=first_tp:last_tp
         
     else
         
-        template = loadsignal(handles,templateCH,tp);
+        template = loadsignal(handles,nucCH,tp);
         if handles.filetype == 3
-            filename = sprintf(fileformat,handles.channelnames{templateCH},tp);
+            filename = sprintf(fileformat,handles.channelnames{nucCH},tp);
             current_info = imfinfo(fullfile(handles.ndpathname,filename));
         end
         switch handles.ImageIndex
@@ -4529,7 +4529,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= str2num(get(handles.edit_nucCH,'String'));
+nucCH= str2num(get(handles.edit_nucCH,'String'));
 fileformat = get(handles.edit_signalformat,'String');
 selected_cell = get(handles.listbox_cells,'Value');
 CH1= handles.CH1;
@@ -4562,7 +4562,7 @@ switch get(handles.popupmenu_denomin,'Value')
         denominCH=-1;
 end
 
-maskOUTfilename = ['maskOUT_r' num2str(row) '_c' num2str(col) '_f' num2str(field) '_p' num2str(plane) '_ch' num2str(templateCH)];
+maskOUTfilename = ['maskOUT_r' num2str(row) '_c' num2str(col) '_f' num2str(field) '_p' num2str(plane) '_ch' num2str(nucCH)];
 load(maskOUTfilename,'selected_cells');
 
 for tp=1:size(ind_cellpath,1)
@@ -4587,7 +4587,7 @@ end
 
 switch handles.filetype
     case 3
-        MaskGenerating(3,[templateCH nominCH denominCH 1 last_tp],...
+        MaskGenerating(3,[nucCH nominCH denominCH 1 last_tp],...
             [row col field plane],handles.channelnames, ...
             handles.ndfilename,selected_cell,stageLoc,...
             ind_cellpath,nucmask,cytomask,cellmask,handles.selected_cells);
@@ -4961,10 +4961,10 @@ if get(hObject,'Value')
     field = str2num(get(handles.edit_field,'String'));
     plane = str2num(get(handles.edit_plane,'String'));
     channelnames = handles.channelnames;
-    templateCH= str2num(get(handles.edit_nucCH,'String'));
+    nucCH= str2num(get(handles.edit_nucCH,'String'));
     totalCHs = str2num(get(handles.edit_totalCHs,'String'));
     tp = str2num(get(handles.edit_currentFrame,'String'));
-    blackIm = loadblank(handles,templateCH,tp);
+    blackIm = loadblank(handles,nucCH,tp);
     
     if ~isempty(blackIm)
         handles.useblank = 1;
@@ -5641,7 +5641,7 @@ matlabpool close;
 updateOutputList(handles);
 
 function collectdata_individual(handles,row,col,field,signalformat,blankformat)
-templateCH = handles.templateCH;
+nucCH = handles.nucCH;
 CH1= handles.CH1;
 CH2= handles.CH3;
 CH3= handles.CH3;
@@ -5673,7 +5673,7 @@ H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
 cellpath_name = ['/field' num2str(field) '/cellpath'];
 sisterList_name = ['/field' num2str(field) '/sisterList'];
 bg_name = ['/field' num2str(field) '/bg'];
-maskdatasetname = ['/field' num2str(field) '/segmentsCH' num2str(templateCH)];
+maskdatasetname = ['/field' num2str(field) '/segmentsCH' num2str(nucCH)];
 selectedcells_name = ['/field' num2str(field) '/selectedcells'];
 
 if exist(fullfile(handles.ndpathname,H5filename),'file')
@@ -5814,9 +5814,9 @@ h5create(fullfile(ndpathname,H5filename), timestamp_name, last_tp-first_tp+1, 'D
 for tp=first_tp:last_tp
     % Determine image capture time based on the template channel
     if filetype == 3
-        filename = sprintf(signalformat,channelnames{templateCH},first_tp);
+        filename = sprintf(signalformat,channelnames{nucCH},first_tp);
         first_info = imfinfo(fullfile(ndpathname,filename));
-        filename = sprintf(signalformat,channelnames{templateCH},tp);
+        filename = sprintf(signalformat,channelnames{nucCH},tp);
         current_info = imfinfo(fullfile(ndpathname,filename));
     end
     
@@ -5886,7 +5886,7 @@ for tp=first_tp:last_tp
                         nucmask  = double(allmasks(:,:,1));
                         cellmask  = double(allmasks(:,:,2));
                         cytomask  = double(allmasks(:,:,3));
-                        if ~isempty(find(nucmask,1))
+                        if isempty(find(nucmask,1))
                             skipcell = 1;
                         end
                         

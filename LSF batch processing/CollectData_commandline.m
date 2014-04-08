@@ -15,8 +15,8 @@ H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
 fileattrib(fullfile(ndpathname,H5filename),'+w');
 cellpath_name = ['/field' num2str(field) '/cellpath'];
 selectedcells_name = ['/field' num2str(field) '/selectedcells'];
-signal_name = ['/field' num2str(field) '/outputsignal1'];
-timestamp_name = ['/field' num2str(field) '/timestamp1'];
+signal_name = ['/field' num2str(field) '/outputsignal' num2str(outputsignalNo)];
+timestamp_name = ['/field' num2str(field) '/timestamp' num2str(outputsignalNo)];
 
 cellpathinfo = h5info(fullfile(ndpathname,H5filename), cellpath_name);
 
@@ -30,9 +30,58 @@ else
     return
 end
 
+basename='outputsignal';
+info = h5info(fullfile(ndpathname,H5filename),['/field' num2str(field)]);
+if length(info.Datasets)>0 %#ok<*ISMT>
+    for i=length(info.Datasets):-1:1
+        outputsignalname = info.Datasets(i).Name;
+        tmp = regexp(outputsignalname, ['(?<=' basename ')\d+'], 'match');
+        if ~isempty(tmp)
+            fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+            H5L.delete(fid,['/field' num2str(field) '/outputsignal' tmp{1}],'H5P_DEFAULT');
+            H5F.close(fid);
+            display(['Deleting r' num2str(row) 'c' num2str(col) 'f' num2str(field) '-' outputsignalname]);
+        end
+    end
+end
+
 % Initializing storage variables
 mysignal = zeros(size(cellpath_mat,3),last_tp-first_tp+1,4);
+h5create(fullfile(ndpathname,H5filename), signal_name, [size(mysignal,1), size(mysignal,2), 4], 'Datatype', 'double', 'ChunkSize', [size(mysignal,1), size(mysignal,2), 1], 'Deflate', 9);
+h5write(fullfile(ndpathname,H5filename), signal_name, mysignal, [1 1 1], [size(mysignal,1) size(mysignal,2) 4]);
+h5writeatt(fullfile(ndpathname,H5filename),signal_name,'outputsignal_name',output_name);
+
+% mysignal1 labeling
+region1 = regions{regiontype(1)};
+signal1 = signals{signaltype(1)};
+h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal1',[region1 '-' signal1]);
+% mysignal2 labeling
+region2 = regions{regiontype(2)};
+signal2 = signals{signaltype(2)};
+h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal2',[region2 '-' signal2]);
+% mysignal3 labeling
+region3 = regions{regiontype(3)};
+signal3 = signals{signaltype(3)};
+h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal3',[region3 '-' signal3]);
+% mysignal4 labeling
+region4 = regions{regiontype(4)};
+signal4 = signals{signaltype(4)};
+h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal4',[region4 '-' signal4]);
+
+
 timestamp = first_tp:(last_tp-first_tp+1);
+fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if ~H5L.exists(fid,timestamp_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    display(['Initializing ' H5filename ':' timestamp_name]);
+else
+    H5L.delete(fid,timestamp_name,'H5P_DEFAULT');
+    display(['Overwriting ' H5filename ':' timestamp_name]);
+    H5F.close(fid);
+end
+
+h5create(fullfile(ndpathname,H5filename), timestamp_name, last_tp-first_tp+1, 'Datatype', 'double');
+h5write(fullfile(ndpathname,H5filename), timestamp_name, timestamp);
 
 i=1;
 serpen = [];
@@ -57,8 +106,21 @@ for c=1:size(cellpath_mat,1)
     clear myX myY pos_time;
 end
 serpen = sortrows(serpen,[-1 2 3 4]);
-sSerpen_idx = find(serpen(:,1)> size(cellpath_mat,3)*0.6);
+sSerpen_idx = find(serpen(:,1)> size(cellpath_mat,3)*0.5);
 selected_cells = sort(serpen(sSerpen_idx,2));
+fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if ~H5L.exists(fid,selectedcells_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    display(['Initializing ' H5filename ':' selectedcells_name]);
+else
+    H5L.delete(fid,selectedcells_name,'H5P_DEFAULT');
+    display(['Overwriting ' H5filename ':' selectedcells_name]);
+    H5F.close(fid);
+end
+
+h5create(fullfile(ndpathname,H5filename), selectedcells_name, length(selected_cells), 'Datatype', 'uint32');
+h5write(fullfile(ndpathname,H5filename), selectedcells_name, uint32(selected_cells(:)));
+
 
 for tp=first_tp:last_tp
     % Determine image capture time based on the template channel
@@ -82,8 +144,9 @@ for tp=first_tp:last_tp
     end
     
     timestep = hour*60+ minute + second/60;
-
-    clc;display(['Processing time point:' num2str(tp) ' of ' num2str(last_tp) ',' H5filename]);
+    h5write(fullfile(ndpathname,H5filename), timestamp_name, timestep,tp-first_tp+1,1);
+    
+    display(['Processing time point:' num2str(tp) ' of ' num2str(last_tp) ',' H5filename]);
 
     
     % Determine signals
@@ -121,125 +184,176 @@ for tp=first_tp:last_tp
             mysignal(cellNo,tp-first_tp+1,3) = signalOutputing(regiontype(3),signaltype(3),CH1im,CH2im,ratioim,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
             mysignal(cellNo,tp-first_tp+1,4) = signalOutputing(regiontype(4),signaltype(4),CH1im,CH2im,ratioim,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
             clear nuc_X nuc_Y cyto_X cyto_Y cell_X cell_Y
-            
         end
     end
-    
-    timestamp(tp-first_tp+1) = timestep;
+    h5write(fullfile(ndpathname,H5filename), signal_name, mysignal(:,tp-first_tp+1,:), [1 tp-first_tp+1 1], [size(mysignal,1) 1 4]);
     clear  CH1im CH2im nuc_im cell_im ratioim
 end
-
-
-
-fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-if ~H5L.exists(fid,signal_name,'H5P_DEFAULT')
-    H5F.close(fid);
-    display(['Initializing ' H5filename ':' signal_name]);
-else
-    H5L.delete(fid,signal_name,'H5P_DEFAULT');
-    display(['Overwriting ' H5filename ':' signal_name]);
-    H5F.close(fid);
-end
-
-h5create(fullfile(ndpathname,H5filename), signal_name, [size(mysignal,1), size(mysignal,2), 4], 'Datatype', 'double', 'ChunkSize', [size(mysignal,1), size(mysignal,2), 1], 'Deflate', 9);
-h5write(fullfile(ndpathname,H5filename), signal_name, mysignal, [1 1 1], [size(mysignal,1) size(mysignal,2) 4]);
-h5writeatt(fullfile(ndpathname,H5filename),signal_name,'outputsignal_name',output_name);
-
-% mysignal1 labeling
-region1 = regions{regiontype(1)};
-signal1 = signals{signaltype(1)};
-h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal1',[region1 '-' signal1]);
-% mysignal2 labeling
-region2 = regions{regiontype(2)};
-signal2 = signals{signaltype(2)};
-h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal2',[region2 '-' signal2]);
-% mysignal3 labeling
-region3 = regions{regiontype(3)};
-signal3 = signals{signaltype(3)};
-h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal3',[region3 '-' signal3]);
-% mysignal4 labeling
-region4 = regions{regiontype(4)};
-signal4 = signals{signaltype(4)};
-h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal4',[region4 '-' signal4]);
-
-
-fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-if ~H5L.exists(fid,timestamp_name,'H5P_DEFAULT')
-    H5F.close(fid);
-    display(['Initializing ' H5filename ':' timestamp_name]);
-else
-    H5L.delete(fid,timestamp_name,'H5P_DEFAULT');
-    display(['Overwriting ' H5filename ':' timestamp_name]);
-    H5F.close(fid);
-end
-
-h5create(fullfile(ndpathname,H5filename), timestamp_name, last_tp-first_tp+1, 'Datatype', 'double');
-h5write(fullfile(ndpathname,H5filename), timestamp_name, timestamp);
-
-fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-if ~H5L.exists(fid,selectedcells_name,'H5P_DEFAULT')
-    H5F.close(fid);
-    display(['Initializing ' H5filename ':' selectedcells_name]);
-else
-    H5L.delete(fid,selectedcells_name,'H5P_DEFAULT');
-    display(['Overwriting ' H5filename ':' selectedcells_name]);
-    H5F.close(fid);
-end
-
-h5create(fullfile(ndpathname,H5filename), selectedcells_name, length(selected_cells), 'Datatype', 'uint32');
-h5write(fullfile(ndpathname,H5filename), selectedcells_name, uint32(selected_cells(:)));
 
 display(['Successfully collected signals from frame' num2str(tps(1)) ':' num2str(tps(end)) ' and saved in ' H5filename]);
 
 function outputsignal = signalOutputing(regiontype,signaltype,CH1im,CH2im,ratioim,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y)
+nucData = [];
+cytoData = [];
+cellData = [];
 switch regiontype
     case 1
         switch signaltype
 
             case 1
-                Average_Nuc = mean(mean(CH1im(nuc_Y,nuc_X)));
-                Average_Cyto = mean(mean(CH1im(cyto_Y,cyto_X)));
+                for i=1:length(nuc_Y)
+                    nucData(i) = CH1im(nuc_Y(i),nuc_X(i));
+                end
+
+                for i=1:length(cyto_Y)
+                    cytoData(i) = CH1im(cyto_Y(i),cyto_X(i));
+                end
+                
+                if ~isempty(nucData)
+                    Average_Nuc = median(nucData);
+                else
+                    Average_Nuc = 0;
+                end
+                if ~isempty(cytoData)
+                    Average_Cyto = median(cytoData);
+                else
+                    Average_Cyto = 0;
+                end
                 
             case 2
-                Average_Nuc = mean(mean(CH2im(nuc_Y,nuc_X)));
-                Average_Cyto = mean(mean(CH2im(cyto_Y,cyto_X)));
+                for i=1:length(nuc_Y)
+                    nucData(i) = CH2im(nuc_Y(i),nuc_X(i));
+                end
+
+                for i=1:length(cyto_Y)
+                    cytoData(i) = CH2im(cyto_Y(i),cyto_X(i));
+                end
+                if ~isempty(nucData)
+                    Average_Nuc = median(nucData);
+                else
+                    Average_Nuc = 0;
+                end
+                if ~isempty(cytoData)
+                    Average_Cyto = median(cytoData);
+                else
+                    Average_Cyto = 0;
+                end
+
             case 3
-                Average_Nuc = mean(mean(ratioim(nuc_Y,nuc_X)));
-                Average_Cyto = mean(mean(ratioim(cyto_Y,cyto_X)));
+                for i=1:length(nuc_Y)
+                    nucData(i) = ratioim(nuc_Y(i),nuc_X(i));
+                end
+
+                for i=1:length(cyto_Y)
+                    cytoData(i) = ratioim(cyto_Y(i),cyto_X(i));
+                end
+                if ~isempty(nucData)
+                    Average_Nuc = median(nucData);
+                else
+                    Average_Nuc = 0;
+                end
+                if ~isempty(cytoData)
+                    Average_Cyto = median(cytoData);
+                else
+                    Average_Cyto = 0;
+                end
 
         end
-        outputsignal = Average_Nuc/Average_Cyto;
+        if Average_Cyto == 0 || Average_Nuc == 0
+            outputsignal = 0;
+        else
+            outputsignal = Average_Nuc/Average_Cyto;
+        end
     case 2
         switch signaltype
             case 1
-                outputsignal = mean(mean(CH1im(nuc_Y,nuc_X)));
+                for i=1:length(nuc_Y)
+                    nucData(i) = CH1im(nuc_Y(i),nuc_X(i));
+                end
+                if ~isempty(nucData)
+                    outputsignal = median(nucData);
+                else
+                    outputsignal = 0;
+                end
             case 2
-                outputsignal = mean(mean(CH2im(nuc_Y,nuc_X)));
+                for i=1:length(nuc_Y)
+                    nucData(i) = CH2im(nuc_Y(i),nuc_X(i));
+                end
+                if ~isempty(nucData)
+                    outputsignal = median(nucData);
+                else
+                    outputsignal = 0;
+                end
             case 3
-                outputsignal = mean(mean(ratioim(nuc_Y,nuc_X)));
+                for i=1:length(nuc_Y)
+                    nucData(i) = ratioim(nuc_Y(i),nuc_X(i));
+                end
+                if ~isempty(nucData)
+                    outputsignal = median(nucData);
+                else
+                    outputsignal = 0;
+                end
         end        
     case 3
         switch signaltype
             case 1
-                outputsignal = mean(mean(CH1im(cyto_Y,cyto_X)));
+                for i=1:length(cyto_Y)
+                    cytoData(i) = CH1im(cyto_Y(i),cyto_X(i));
+                end
+                if ~isempty(cytoData)
+                    outputsignal = median(cytoData);
+                else
+                    outputsignal = 0;
+                end
             case 2
-                outputsignal = mean(mean(CH2im(cyto_Y,cyto_X)));
+                for i=1:length(cyto_Y)
+                    cytoData(i) = CH2im(cyto_Y(i),cyto_X(i));
+                end
+                if ~isempty(cytoData)
+                    outputsignal = median(cytoData);
+                else
+                    outputsignal = 0;
+                end
             case 3
-                outputsignal = mean(mean(ratioim(cyto_Y,cyto_X)));
+                for i=1:length(cyto_Y)
+                    cytoData(i) = ratioim(cyto_Y(i),cyto_X(i));
+                end
+                if ~isempty(cytoData)
+                    outputsignal = median(cytoData);
+                else
+                    outputsignal = 0;
+                end
         end        
     case 4
         switch signaltype
             case 1
-                outputsignal = mean(mean(CH1im(cell_Y,cell_X)));
+                for i=1:length(cell_Y)
+                    cellData(i) = CH1im(cell_Y(i),cell_X(i));
+                end
+                if ~isempty(cellData)
+                    outputsignal = median(cellData);
+                else
+                    outputsignal = 0;
+                end
             case 2
-                outputsignal = mean(mean(CH2im(cell_Y,cell_X)));
+                for i=1:length(cell_Y)
+                    cellData(i) = CH2im(cell_Y(i),cell_X(i));
+                end
+                if ~isempty(cellData)
+                    outputsignal = median(cellData);
+                else
+                    outputsignal = 0;
+                end
             case 3
-                outputsignal = mean(mean(ratioim(cell_Y,cell_X)));
+                for i=1:length(cell_Y)
+                    cellData(i) = ratioim(cell_Y(i),cell_X(i));
+                end
+                if ~isempty(cellData)
+                    outputsignal = median(cellData);
+                else
+                    outputsignal = 0;
+                end
         end        
-end
-
-if isnan(outputsignal)
-    outputsignal=0;
 end
 
 function outputim = loadsignal(filetype,ndpathname,signalformat,blankformat,channelnames,totalCHs,channel,tp,h_gaussian,smooth_opt)

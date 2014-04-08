@@ -1,16 +1,16 @@
 function varargout = FRETPlotting(varargin)
 % Edit the above text to modify the response to help mytab
 
-% Last Modified by GUIDE v2.5 08-Apr-2013 11:19:02
+% Last Modified by GUIDE v2.5 07-Apr-2014 13:45:24
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @FRETPlotting_OpeningFcn, ...
-                   'gui_OutputFcn',  @FRETPlotting_OutputFcn, ...
-                   'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @FRETPlotting_OpeningFcn, ...
+    'gui_OutputFcn',  @FRETPlotting_OutputFcn, ...
+    'gui_LayoutFcn',  [] , ...
+    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -35,7 +35,7 @@ if handles.useblank
             signal_filename = sprintf(signalformat,channel,tp);
             blank_filename = sprintf(blankformat,channel,tp);
             
-            if exist(fullfile(handles.ndpathname,signal_filename),'file') 
+            if exist(fullfile(handles.ndpathname,signal_filename),'file')
                 signalim = im2double(imread(fullfile(handles.ndpathname,signal_filename)));
                 if exist(fullfile(handles.ndpathname,blank_filename),'file')
                     blankim = im2double(imread(fullfile(handles.ndpathname,blank_filename)));
@@ -43,7 +43,7 @@ if handles.useblank
                     normim =(smoothed./median(smoothed(:)));
                     clear blankim smoothed;
                     outputim = signalim./normim;
-                else 
+                else
                     outputim = signalim;
                 end
             end
@@ -58,7 +58,7 @@ if handles.useblank
         case 3
             signal_filename = sprintf(signalformat,channelnames{channel},tp);
             blank_filename = sprintf(blankformat,channelnames{channel},tp);
-            if exist(fullfile(handles.ndpathname,signal_filename),'file') 
+            if exist(fullfile(handles.ndpathname,signal_filename),'file')
                 signalim = im2double(imread(fullfile(handles.ndpathname,signal_filename)));
                 if exist(fullfile(handles.ndpathname,blank_filename),'file')
                     blankim = im2double(imread(fullfile(handles.ndpathname,blank_filename)));
@@ -66,7 +66,7 @@ if handles.useblank
                     normim =(smoothed./median(smoothed(:)));
                     clear blankim smoothed;
                     outputim = signalim./normim;
-                else 
+                else
                     outputim = signalim;
                 end
             end
@@ -230,7 +230,7 @@ if handles.useblank
             signal_filename = sprintf(signalformat,channel,tp);
             blank_filename = sprintf(blankformat,channel,tp);
             
-            if exist(fullfile(handles.ndpathname,signal_filename),'file') 
+            if exist(fullfile(handles.ndpathname,signal_filename),'file')
                 signalim = im2double(imread(fullfile(handles.ndpathname,signal_filename)));
                 if exist(fullfile(handles.ndpathname,blank_filename),'file')
                     blankim = im2double(imread(fullfile(handles.ndpathname,blank_filename)));
@@ -238,7 +238,7 @@ if handles.useblank
                     normim =(smoothed./median(smoothed(:)));
                     clear blankim smoothed;
                     outputim = signalim./normim;
-                else 
+                else
                     set(handles.edit_commu,'String',[blank_filename ' does not exist. Use SignalIM only.']);
                     outputim = signalim;
                 end
@@ -257,7 +257,7 @@ if handles.useblank
         case 3
             signal_filename = sprintf(signalformat,channelnames{channel},tp);
             blank_filename = sprintf(blankformat,channelnames{channel},tp);
-            if exist(fullfile(handles.ndpathname,signal_filename),'file') 
+            if exist(fullfile(handles.ndpathname,signal_filename),'file')
                 signalim = im2double(imread(fullfile(handles.ndpathname,signal_filename)));
                 if exist(fullfile(handles.ndpathname,blank_filename),'file')
                     blankim = im2double(imread(fullfile(handles.ndpathname,blank_filename)));
@@ -265,7 +265,7 @@ if handles.useblank
                     normim =(smoothed./median(smoothed(:)));
                     clear blankim smoothed;
                     outputim = signalim./normim;
-                else 
+                else
                     set(handles.edit_commu,'String',[blank_filename ' does not exist. Use SignalIM only.']);
                     outputim = signalim;
                 end
@@ -349,36 +349,36 @@ function FRETPlotting_OpeningFcn(hObject, ~, handles, varargin)
 
 % Choose default command line output for mytab
 handles.output = hObject;
-filetype = []; 
-trackinginfo = [];  
-imagelocation = []; 
-channelnames = []; 
-fileformat = [];   
+filetype = [];
+trackinginfo = [];
+imagelocation = [];
+channelnames = [];
+fileformat = [];
 
 switch length(varargin)
     case 1
-        filetype = varargin{1}; 
+        filetype = varargin{1};
     case 2
-        filetype = varargin{1}; 
+        filetype = varargin{1};
         if ischar(varargin{2}) && filetype == 3
             fileformat = varargin{2};
         else
             trackinginfo = varargin{2};  % [templateCH tp_1 tp_end]
         end
     case 3
-        filetype = varargin{1}; 
-        trackinginfo = varargin{2}; 
+        filetype = varargin{1};
+        trackinginfo = varargin{2};
         imagelocation = varargin{3}; %[row col field plane]
     case 4
-        filetype = varargin{1}; 
-        trackinginfo = varargin{2}; 
+        filetype = varargin{1};
+        trackinginfo = varargin{2};
         imagelocation = varargin{3};
         channelnames = varargin{4};  %{'CFP';'FRET';'RFP'};
     case 5
-        filetype = varargin{1}; 
-        trackinginfo = varargin{2}; 
+        filetype = varargin{1};
+        trackinginfo = varargin{2};
         imagelocation = varargin{3};
-        channelnames = varargin{4}; 
+        channelnames = varargin{4};
         fileformat = varargin{5};%
     case 0
         filetype = 0;
@@ -392,13 +392,13 @@ end
 
 switch filetype
     case 1 % PE tiff input
-
+        
         if isempty(imagelocation)
             set(handles.edit_commu,'String','Required image location (input#3) for PE-tiff format');
             return;
         end
         filetype = 1;
-        set(handles.radiobutton_petiffs,'Value',1);           
+        set(handles.radiobutton_petiffs,'Value',1);
         row = imagelocation(1);
         col = imagelocation(2);
         field = imagelocation(3);
@@ -406,7 +406,7 @@ switch filetype
         
         if isempty(fileformat)
             fileformat = 'r%02.0fc%02.0ff%02.0fp%02.0frc%1.0f-ch1sk%ufk1fl1.tiff';
-        end    
+        end
         
         if ~isempty(channelnames)
             totalCHs = length(channelnames);
@@ -414,7 +414,7 @@ switch filetype
         end
         
         templateCH = trackinginfo(1);
-        set(handles.edit_template,'String',num2str(templateCH));
+        set(handles.edit_nucCH,'String',num2str(templateCH));
         set(handles.edit_firstframe,'String',num2str(trackinginfo(2)));
         set(handles.edit_lastframe,'String',num2str(trackinginfo(3)));
         set(handles.edit_currentFrame,'String',num2str(trackinginfo(2)));
@@ -428,7 +428,7 @@ switch filetype
         set(handles.edit_signalformat,'String',fileformat);
         
     case 2 % Tiff stack input
-
+        
         if isempty(channelnames)
             display('Required channelnames (input#4) for tiffstack input');
             return;
@@ -464,7 +464,7 @@ switch filetype
         
         
         templateCH = trackinginfo(1);
-        set(handles.edit_template,'String',num2str(templateCH));
+        set(handles.edit_nucCH,'String',num2str(templateCH));
         set(handles.edit_firstframe,'String',num2str(trackinginfo(2)));
         set(handles.edit_lastframe,'String',num2str(trackinginfo(3)));
         set(handles.edit_currentFrame,'String',num2str(trackinginfo(2)));
@@ -543,12 +543,12 @@ switch filetype
         else
             set(handles.edit_signalformat,'String',fileformat);
             templateCH = trackinginfo(1);
-            set(handles.edit_template,'String',num2str(templateCH));
+            set(handles.edit_nucCH,'String',num2str(templateCH));
             set(handles.edit_firstframe,'String',num2str(trackinginfo(2)));
             set(handles.edit_lastframe,'String',num2str(trackinginfo(3)));
             set(handles.edit_currentFrame,'String',num2str(trackinginfo(2)));
         end
-
+        
 end
 
 handles.filetype = filetype;
@@ -659,7 +659,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= str2num(get(handles.edit_template,'String'));
+templateCH= str2num(get(handles.edit_nucCH,'String'));
 CH1= handles.CH1;
 CH2= handles.CH2;
 CH3 = handles.CH3;
@@ -671,6 +671,8 @@ last_tp = str2num(get(handles.edit_lastframe,'String'));
 
 totalCHs = str2num(get(handles.edit_totalCHs,'String'));
 fileformat = get(handles.edit_signalformat,'String');
+
+
 
 switch get(handles.popupmenu_nomin,'Value')
     case 1
@@ -739,49 +741,41 @@ switch startImageIndex
             displayratioIm(displayIM,handles);
         end
 end
-
+set(handles.edit_cellNo,'String',1);
 set(handles.listbox_cells,'String',[]);
+set(handles.listbox_cells,'Value',1);
 handles.cellpath = [];
 handles.bg = [];
 handles.sisterList = [];
 
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
-
+fileattrib(fullfile(handles.ndpathname,H5filename),'+w');
+cellpath_name = ['/field' num2str(field) '/cellpath'];
+sisterList_name = ['/field' num2str(field) '/sisterList'];
+bg_name = ['/field' num2str(field) '/bg'];
 
 if exist(fullfile(handles.ndpathname,H5filename),'file')
-    
-    
-    fileattrib(fullfile(handles.ndpathname,H5filename),'+w');
-    cellpath_name = ['/field' num2str(field) '/cellpath'];
-    sisterList_name = ['/field' num2str(field) '/sisterList'];
-    bg_name = ['/field' num2str(field) '/bg'];
-    
-    cellpathinfo = h5info(fullfile(handles.ndpathname,H5filename), cellpath_name);
-    sisterListinfo = h5info(fullfile(handles.ndpathname,H5filename), sisterList_name);
-    fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-    
-    if H5L.exists(fid,bg_name,'H5P_DEFAULT')
-        H5F.close(fid);
-        bginfo = h5info(fullfile(handles.ndpathname,H5filename), bg_name);
-    end
-
     fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
     if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
         H5F.close(fid);
+        cellpathinfo = h5info(fullfile(handles.ndpathname,H5filename), cellpath_name);
         cellpath_mat = h5read(fullfile(handles.ndpathname,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
         
         for tp=first_tp:last_tp
             cellpath{tp} = cellpath_mat(:,:,tp);
         end
         handles.cellpath=cellpath;
+        set(handles.edit_commu,'String',[H5filename ' ' cellpath_name 'loaded.']);
+        
     else
         handles.cellpath=[];
-        
+        set(handles.edit_commu,'String',[H5filename ' ' cellpath_name ' does not exist.']);
     end
     
     fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
     if H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
         H5F.close(fid);
+        sisterListinfo = h5info(fullfile(handles.ndpathname,H5filename), sisterList_name);
         sisterList_mat = h5read(fullfile(handles.ndpathname,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
         
         for tp=first_tp:last_tp
@@ -789,12 +783,20 @@ if exist(fullfile(handles.ndpathname,H5filename),'file')
         end
         handles.sisterList=sisterList;
     else
-        handles.sisterList = [];
+        if length(cellpath{tp}) > 0
+            for tp=first_tp:last_tp
+                sisterList{tp} = -1* ones(length(cellpath{tp}),3);
+            end
+            handles.sisterList=sisterList;
+        else
+            handles.sisterList = [];
+        end
     end
     
     fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
     if H5L.exists(fid,bg_name,'H5P_DEFAULT')
         H5F.close(fid);
+        bginfo = h5info(fullfile(handles.ndpathname,H5filename), bg_name);
         bg_mat = h5read(fullfile(handles.ndpathname,H5filename),bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
         
         for tp=first_tp:last_tp
@@ -808,6 +810,7 @@ else
     handles.cellpath=[];
     handles.sisterList = [];
     handles.bg=[];
+    set(handles.edit_commu,'String',[H5filename ' does not exist.']);
 end
 
 guidata(hObject, handles);
@@ -862,7 +865,7 @@ for i=2:0.5:6
     BW = bwselect(BW,xg,yg);
     
     BWc = BWc | BW;
-
+    
 end
 
 BW = BWc;
@@ -871,7 +874,7 @@ S  = regionprops(BW, 'centroid');
 if isempty(find(BW==0, 1)) || isempty(find(BW==1, 1))
     x = xg;
     y = yg;
-
+    
 else
     x = round(S.Centroid(1));
     y = round(S.Centroid(2));
@@ -906,7 +909,7 @@ S  = regionprops(outBW, 'centroid');
 if ~isfield(S,'Centroid') || length(S)>1
     x = xg;
     y = yg;
-
+    
 else
     x = round(S.Centroid(1));
     y = round(S.Centroid(2));
@@ -957,7 +960,7 @@ for n=1:num_iter
     % sum Image Force on all components (used for vector image)
     % if 'chan' is applied, this loop become one sigle code as a
     % result of layer = 1
-
+    
     
     % calculate the external force of the image
     force = mu*kappa(phi0)./max(max(abs(kappa(phi0))))+force_image;
@@ -985,7 +988,7 @@ for n=1:num_iter
         
         %make mask from SDF
         seg = phi0<=0; %-- Get mask from levelset
-
+        
         midY = round(size(seg,1)/2);
         midX = round(size(seg,2)/2);
         if seg(midY,midX) > 0
@@ -1024,37 +1027,37 @@ seg = imresize(seg,1/s);
 function showphi(I, phi, i)
 % show curve evolution of phi
 
-% Copyright (c) 2009, 
+% Copyright (c) 2009,
 % Yue Wu @ ECE Department, Tufts University
-% All Rights Reserved  
+% All Rights Reserved
 
 for j = 1:size(phi,3)
     phi_{j} = phi(:,:,j);
 end
-  imshow(I,'initialmagnification','fit','displayrange',[0 255]);
-  hold on;
+imshow(I,'initialmagnification','fit','displayrange',[0 255]);
+hold on;
 
-  if size(phi,3) == 1
-      contour(phi_{1}, [0 0], 'r','LineWidth',4);
-      contour(phi_{1}, [0 0], 'g','LineWidth',1.3);
-  else
-      contour(phi_{1}, [0 0], 'r','LineWidth',4);
-      contour(phi_{1}, [0 0], 'x','LineWidth',1.3);
-      contour(phi_{2}, [0 0], 'g','LineWidth',4);
-      contour(phi_{2}, [0 0], 'x','LineWidth',1.3);
-  end
-  hold off; 
-  title([num2str(i) ' Iterations']); 
-  drawnow;
-  
+if size(phi,3) == 1
+    contour(phi_{1}, [0 0], 'r','LineWidth',4);
+    contour(phi_{1}, [0 0], 'g','LineWidth',1.3);
+else
+    contour(phi_{1}, [0 0], 'r','LineWidth',4);
+    contour(phi_{1}, [0 0], 'x','LineWidth',1.3);
+    contour(phi_{2}, [0 0], 'g','LineWidth',4);
+    contour(phi_{2}, [0 0], 'x','LineWidth',1.3);
+end
+hold off;
+title([num2str(i) ' Iterations']);
+drawnow;
+
 function KG = kappa(I)
 % get curvature information of input image
 % input: 2D image I
 % output: curvature matrix KG
 
-% Copyright (c) 2009, 
+% Copyright (c) 2009,
 % Yue Wu @ ECE Department, Tufts University
-% All Rights Reserved  
+% All Rights Reserved
 
 I = double(I);
 [m,n] = size(I);
@@ -1079,9 +1082,9 @@ KG = KG./max(max(abs(KG)));
 function indicator = checkstop(old,new,dt)
 % indicate whether we should performance further iteraions or stop
 
-% Copyright (c) 2009, 
+% Copyright (c) 2009,
 % Yue Wu @ ECE Department, Tufts University
-% All Rights Reserved  
+% All Rights Reserved
 
 layer = size(new,3);
 
@@ -1117,9 +1120,9 @@ return
 
 function H=Heaviside(z)
 % Heaviside step function (smoothed version)
-% Copyright (c) 2009, 
+% Copyright (c) 2009,
 % Yue Wu @ ECE Department, Tufts University
-% All Rights Reserved  
+% All Rights Reserved
 
 Epsilon=10^(-5);
 H=zeros(size(z,1),size(z,2));
@@ -1152,7 +1155,7 @@ if button_state == get(hObject,'Max')
     setPositionConstraintFcn(h1,fcn);
     setResizable(h1,0);
     handles.rect1 = h1;
-
+    
 elseif button_state == get(hObject,'Min')
     delete(handles.rect1);
 end
@@ -1179,15 +1182,15 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= str2num(get(handles.edit_template,'String'));
+templateCH= str2num(get(handles.edit_nucCH,'String'));
 cellpath = handles.cellpath;
 sisterList = handles.sisterList;
 cellsize = str2num(get(handles.edit_cellsize,'String'));
 tp = str2num(get(handles.edit_currentFrame,'String'));
 
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
-maskdatasetname = ['/field' num2str(field) '/segmentsCH' num2str(templateCH)];
 
+maskdatasetname = ['/field' num2str(field) '/segmentsCH' num2str(templateCH)];
 fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 if H5L.exists(fid,maskdatasetname,'H5P_DEFAULT')
     H5F.close(fid);
@@ -1197,10 +1200,7 @@ if H5L.exists(fid,maskdatasetname,'H5P_DEFAULT')
     selected_cells = h5read(fullfile(handles.ndpathname,H5filename),selectedcells_name);
     
     set(handles.edit_collectedcells,'String',num2str(selected_cells'));
-    set(handles.edit_commu,'String',[num2str(length(selected_cells)) ' cells selected']);
-    
 
-    
     
     firsttp = str2num(get(handles.edit_firstframe,'String'));
     lasttp = str2num(get(handles.edit_lastframe,'String'));
@@ -1223,7 +1223,7 @@ if H5L.exists(fid,maskdatasetname,'H5P_DEFAULT')
     if tp > size(ind_cellpath,1)
         set(handles.edit_commu,'String',['Cell#' num2str(selected_cell) ' is dead at frame' num2str(tp)]);
     else
-
+        
         xL=max(ind_cellpath(tp,1)-cellsize,1);
         xR=min(ind_cellpath(tp,1)+cellsize,imwidth);
         yL=max(ind_cellpath(tp,2)-cellsize,1);
@@ -1288,8 +1288,8 @@ if H5L.exists(fid,maskdatasetname,'H5P_DEFAULT')
             end
             
             bwNucEdge = bwperim(NucMask);
-            bwCytoEdge = bwperim(CellMask);
-            bwCellEdge = bwperim(CytoMask);
+            bwCytoEdge = bwperim(CytoMask);
+            bwCellEdge = bwperim(CellMask);
             
             bwFinal = bwNucEdge| bwCellEdge | bwCytoEdge;
             imAdj = imAdj-bwFinal;
@@ -1315,11 +1315,56 @@ else
     if ~isempty(cellpath) %#ok<*USENS>
         updatecurrentImage(handles,tp);
         axes(handles.axes1);hold on;
-        plot(cellpath{tp}(selected_cell,1),cellpath{tp}(selected_cell,2),'ro');
+        plot(cellpath{tp}(selected_cell,1),cellpath{tp}(selected_cell,2),'ro');hold off;
         set(handles.edit_coord,'String',(sprintf('(%1.0f,%1.0f)',cellpath{tp}(selected_cell,1),cellpath{tp}(selected_cell,2))));
-        hold off;
+        set(handles.edit_sister,'String',num2str(sisterList{tp}(selected_cell,:)));
+        
+        set(handles.edit_commu,'String',['Cell#' num2str(selected_cell) ' was selected']);
+        nucFolder = [handles.ndpathname filesep 'nuclearMask'];
+        cellFolder = [handles.ndpathname filesep 'cellMask'];
+        nucCH = str2num(get(handles.edit_nucCH,'String'));
+        cellCH = str2num(get(handles.edit_cellCH,'String'));
+        signalformat = get(handles.edit_signalformat,'String');
+        channelnames = handles.channelnames;
+        if exist(fullfile(nucFolder, sprintf(signalformat,channelnames{nucCH},tp)),'file')
+            nuc_im   = imread(fullfile(nucFolder, sprintf(signalformat,channelnames{nucCH},tp)));
+            if exist(fullfile(cellFolder,sprintf(signalformat,channelnames{cellCH},tp)),'file')
+                cell_im  = imread(fullfile(cellFolder,sprintf(signalformat,channelnames{cellCH},tp)));
+            elseif exist(fullfile(cellFolder,sprintf(signalformat,channelnames{nucCH},tp)),'file')
+                cell_im  = imread(fullfile(cellFolder,sprintf(signalformat,channelnames{nucCH},tp)));
+            end
+            imwidth = size(nuc_im,2);
+            imheight = size(nuc_im,1);
+            cX = cellpath{tp}(selected_cell,1);
+            cY = cellpath{tp}(selected_cell,2);
+            cellmaskT = bwselect(cell_im,cX,cY,8);
+            nucmaskT  = bwselect(nuc_im,cX,cY,8);
+            if ~isempty(find(nucmaskT,1)) || ~isempty(find(cellmaskT,1))
+                S = regionprops(cellmaskT,{'BoundingBox'});
+                BoundingBox = round(S(1).BoundingBox);
+                
+                xL=max(BoundingBox(1),1);
+                xR=min(xL+BoundingBox(3),imwidth);
+                yL=max(BoundingBox(2),1);
+                yR=min(yL+BoundingBox(4),imheight);
+                
+                cellmask = cellmaskT(yL:yR,xL:xR);
+                nucmask  = nucmaskT(yL:yR,xL:xR);
+                cytomask = cellmask-nucmask;
+                bwNucEdge = double(bwperim(nucmask));
+                bwCytoEdge = double(bwperim(cytomask));
+                bwCellEdge = double(bwperim(cellmask));
+                handles.nucmask = nucmask;
+                handles.cellmask = cellmask;
+                handles.cytomask = cytomask;
+                guidata(hObject, handles);
+                imOut=cat(3,bwNucEdge,bwCellEdge,bwCytoEdge);
+                imshow(imOut,'Parent',handles.axes2);
+            end
+            
+        end
+
     end
-    set(handles.edit_commu,'String',['Ensure templateCH is correct']);
 end
 
 
@@ -1343,7 +1388,7 @@ else
 end
 
 % --- Outputs from this function are returned to the command line.
-function varargout = FRETPlotting_OutputFcn(~, ~, handles) 
+function varargout = FRETPlotting_OutputFcn(~, ~, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1366,7 +1411,7 @@ end
 tp=str2num(get(handles.edit_firstframe,'String'));
 updatecurrentImage(handles,tp);
 guidata(hObject, handles);
-    
+
 
 % --- Executes on button press in pushbutton_topreviousframe.
 function pushbutton_topreviousframe_Callback(hObject, ~, handles)
@@ -1391,7 +1436,7 @@ end
 updatecurrentImage(handles,tp);
 guidata(hObject, handles);
 
-    
+
 
 % --- Executes on button press in pushbutton_tonextframe.
 function pushbutton_tonextframe_Callback(hObject, ~, handles)
@@ -1427,7 +1472,7 @@ end
 tp=str2num(get(handles.edit_lastframe,'String'));
 updatecurrentImage(handles,tp);
 guidata(hObject, handles);
-    
+
 function edit_currentFrame_Callback(hObject, ~, handles)
 % hObject    handle to edit_currentFrame (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1551,7 +1596,7 @@ else
         alpha(himage1,'clear');
         
         
-                
+        
         switch handles.overlayIndex
             case 3
                 alpha(himage1,mat2gray(displayIM,[str2num(get(handles.edit_ch1L,'String')) str2num(get(handles.edit_ch1H,'String'))]));
@@ -1573,12 +1618,12 @@ else
             set(handles.listbox_cells,'String',num2str( [(1:size(cellpath{tp},1))' cellpath{tp} sisterList{tp}] ));
             
             if get(handles.checkbox_cellmarker,'Value')
-            nosisterInd = find(sisterList{tp}(:,1)==-1);
-            sister1Ind = find(sisterList{tp}(:,1)~=-1);
-            hold on;
-            plot(cellpath{tp}(nosisterInd,1),cellpath{tp}(nosisterInd,2),get(handles.edit_mark,'String'));
-            plot(cellpath{tp}(sister1Ind,1),cellpath{tp}(sister1Ind,2),'o','MarkerFaceColor',get(handles.edit_sis1,'String'),'MarkerEdgeColor',get(handles.edit_sis1,'String'));
-            plot(cellpath{tp}(get(handles.listbox_cells,'Value'),1),cellpath{tp}(get(handles.listbox_cells,'Value'),2),'ro');
+                nosisterInd = find(sisterList{tp}(:,1)==-1);
+                sister1Ind = find(sisterList{tp}(:,1)~=-1);
+                hold on;
+                plot(cellpath{tp}(nosisterInd,1),cellpath{tp}(nosisterInd,2),get(handles.edit_mark,'String'));
+                plot(cellpath{tp}(sister1Ind,1),cellpath{tp}(sister1Ind,2),'o','MarkerFaceColor',get(handles.edit_sis1,'String'),'MarkerEdgeColor',get(handles.edit_sis1,'String'));
+                plot(cellpath{tp}(get(handles.listbox_cells,'Value'),1),cellpath{tp}(get(handles.listbox_cells,'Value'),2),'ro');
             end
             
             if get(handles.checkbox_cellnumber,'Value')
@@ -1768,7 +1813,7 @@ guidata(hObject, handles);
 
 % --- Executes when selected object is changed in uibuttongroup_cellrecogmethod.
 function uibuttongroup_cellrecogmethod_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in uibuttongroup_cellrecogmethod 
+% hObject    handle to the selected object in uibuttongroup_cellrecogmethod
 % eventdata  structure with the following fields (see UIBUTTONGROUP)
 %	EventName: string 'SelectionChanged' (read only)
 %	OldValue: handle of the previously selected object or empty if none was selected
@@ -1778,13 +1823,13 @@ function uibuttongroup_cellrecogmethod_SelectionChangeFcn(hObject, eventdata, ha
 switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
     case 'radiobutton_method1'
         set(handles.edit_commu,'String','Cell edging (Canny) chosen');
-        handles.cellrecogmethod = 1; 
+        handles.cellrecogmethod = 1;
     case 'radiobutton_method2'
         set(handles.edit_commu,'String','Contour tracking chosen');
         handles.cellrecogmethod = 2;
     otherwise
 end
-guidata(hObject, handles);      
+guidata(hObject, handles);
 
 
 % --- Executes on button press in pushbutton_load.
@@ -1880,19 +1925,19 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-function edit_template_Callback(hObject, eventdata, handles)
-% hObject    handle to edit_template (see GCBO)
+function edit_nucCH_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_nucCH (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit_template as text
-%        str2double(get(hObject,'String')) returns contents of edit_template as a double
+% Hints: get(hObject,'String') returns contents of edit_nucCH as text
+%        str2double(get(hObject,'String')) returns contents of edit_nucCH as a double
 handles.templateCH = str2num(get(hObject,'String'));
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
-function edit_template_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit_template (see GCBO)
+function edit_nucCH_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_nucCH (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -1902,7 +1947,7 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 handles.templateCH= str2num(get(hObject,'String'));
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
 function edit_plane_CreateFcn(hObject, eventdata, handles) %#ok<*INUSD>
@@ -2113,7 +2158,7 @@ function edit_thresstep_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'String') returns contents of edit_thresstep as text
 %        str2double(get(hObject,'String')) returns contents of edit_thresstep as a double
-handles.thresstep = str2num(get(hObject,'String')); 
+handles.thresstep = str2num(get(hObject,'String'));
 guidata(hObject, handles);
 
 
@@ -2128,7 +2173,7 @@ function edit_thresstep_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
-handles.thresstep = str2num(get(hObject,'String')); 
+handles.thresstep = str2num(get(hObject,'String'));
 guidata(hObject, handles);
 
 function edit_cellareathres_Callback(hObject, eventdata, handles)
@@ -2358,7 +2403,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= str2num(get(handles.edit_template,'String'));
+templateCH= str2num(get(handles.edit_nucCH,'String'));
 CH1= handles.CH1;
 CH2= handles.CH2;
 CH3 = handles.CH3;
@@ -2492,7 +2537,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= str2num(get(handles.edit_template,'String'));
+templateCH= str2num(get(handles.edit_nucCH,'String'));
 CH1= handles.CH1;
 CH2= handles.CH2;
 CH3 = handles.CH3;
@@ -2600,19 +2645,19 @@ for tp=first_tp:last_tp
             case 4
                 displayIM = loadsignal(handles,CH2,tp);
                 displayIM = displayIM(frameY(1):frameY(2),frameX(1):frameX(2));
-
+                
                 imshow(displayIM,[str2num(get(handles.edit_ch2L,'String')) str2num(get(handles.edit_ch2H,'String'))],'Parent',gca,'InitialMagnification',50);
                 colormap(gray);
             case 5
                 displayIM = loadsignal(handles,CH3,tp);
                 displayIM = displayIM(frameY(1):frameY(2),frameX(1):frameX(2));
-
+                
                 imshow(displayIM,[str2num(get(handles.edit_ch3L,'String')) str2num(get(handles.edit_ch3H,'String'))],'Parent',gca,'InitialMagnification',50);
                 colormap(gray);
             case 2
                 displayIM = template;
                 displayIM = displayIM(frameY(1):frameY(2),frameX(1):frameX(2));
-
+                
                 imshow(displayIM,[str2num(get(handles.edit_templateL,'String')) str2num(get(handles.edit_templateH,'String'))],'Parent',gca,'InitialMagnification',50);
                 colormap(gray);
             case 1
@@ -2688,7 +2733,7 @@ for tp=first_tp:last_tp
             
             for cell=1:size(cellpath{tp},1)
                 if(cellpath{tp}(cell,1)-frameX(1) > frameX(1)+20 && cellpath{tp}(cell,1)-frameX(1) < frameX(2)-20 && ...
-                   cellpath{tp}(cell,2)-frameY(1) > frameY(1)+20 && cellpath{tp}(cell,2)-frameY(1) < frameY(2)-20)
+                        cellpath{tp}(cell,2)-frameY(1) > frameY(1)+20 && cellpath{tp}(cell,2)-frameY(1) < frameY(2)-20)
                     if sisterList{tp}(cell)==-1
                         plot(cellpath{tp}(cell,1)-frameX(1),cellpath{tp}(cell,2)-frameY(1),'rx');
                     else
@@ -2741,14 +2786,14 @@ for tp=first_tp:last_tp
     drawnow;
     F = getframe(gca);
     writeVideo(aviobj,F);
-
+    
 end
 close(aviobj);
 close(f1);
 
 % --- Executes when selected object is changed in uibuttongroup_filetype.
 function uibuttongroup_filetype_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in uibuttongroup_filetype 
+% hObject    handle to the selected object in uibuttongroup_filetype
 % eventdata  structure with the following fields (see UIBUTTONGROUP)
 %	EventName: string 'SelectionChanged' (read only)
 %	OldValue: handle of the previously selected object or empty if none was selected
@@ -2760,10 +2805,10 @@ switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
         handles.filetype = 1;
     case 'radiobutton_tiffstack'
         handles.filetype = 2;
-    case 'radiobutton_customtiff'   
+    case 'radiobutton_customtiff'
         handles.filetype = 3;
 end
-guidata(hObject, handles);   
+guidata(hObject, handles);
 
 
 % --- Executes on button press in pushbutton_locatefile.
@@ -2772,13 +2817,13 @@ function pushbutton_locatefile_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 [filename,pathname,FilterIndex] = uigetfile(...
-{'*.tif','stacked tiff Files (*.tif)';
-   '*.*',  'All Files (*.*)'}, 'Pick a file');
+    {'*.tif','stacked tiff Files (*.tif)';
+    '*.*',  'All Files (*.*)'}, 'Pick a file');
 if FilterIndex~=0
     set(handles.edit_signalformat,'String',filename);
     handles.tiffstackname = fullfile(pathname, filename);
 end
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 
 
@@ -2810,7 +2855,7 @@ function uibuttongroup_filetype_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 handles.filetype = 1;
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -2819,7 +2864,7 @@ function uibuttongroup_cellrecogmethod_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 handles.cellrecogmethod =1 ;
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 
 
@@ -2841,7 +2886,7 @@ function edit_fret_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit_fret as a double
 
 handles.CH1= str2num(get(hObject,'String'));
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
 function edit_fret_CreateFcn(hObject, eventdata, handles)
@@ -2855,7 +2900,7 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 handles.CH1= str2num(get(hObject,'String'));
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 
 function edit_cfp_Callback(hObject, eventdata, handles)
@@ -2866,7 +2911,7 @@ function edit_cfp_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of edit_cfp as text
 %        str2double(get(hObject,'String')) returns contents of edit_cfp as a double
 handles.CH2= str2num(get(hObject,'String'));
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
 function edit_cfp_CreateFcn(hObject, eventdata, handles)
@@ -2880,7 +2925,7 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 handles.CH2= str2num(get(hObject,'String'));
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 function edit_yfp_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_yfp (see GCBO)
@@ -2891,7 +2936,7 @@ function edit_yfp_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit_yfp as a double
 
 handles.CH3= str2num(get(hObject,'String'));
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
 function edit_yfp_CreateFcn(hObject, eventdata, handles)
@@ -2906,7 +2951,7 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 handles.CH3= str2num(get(hObject,'String'));
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 function edit_outputname_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_outputname (see GCBO)
@@ -3178,31 +3223,9 @@ function pushbutton_collect_Callback(hObject, eventdata, handles) %#ok<*DEFNU>
 % hObject    handle to pushbutton_collect (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if handles.filetype==0
-    set(handles.edit_commu,'String','No input images.');
-    return;
-end
-
-cellpath = handles.cellpath;
-sisterList = handles.sisterList;
-bg=handles.bg;
-row = str2num(get(handles.edit_row,'String'));
-col = str2num(get(handles.edit_col,'String'));
-field = str2num(get(handles.edit_field,'String'));
-plane = str2num(get(handles.edit_plane,'String'));
-templateCH= str2num(get(handles.edit_template,'String'));
 CH1= handles.CH1;
 CH2= handles.CH2;
 CH3 = handles.CH3;
-
-cellsize = str2num(get(handles.edit_cellsize,'String'));
-totalCHs = str2num(get(handles.edit_totalCHs,'String'));
-fileformat = get(handles.edit_signalformat,'String');
-filetype = handles.filetype;
-channelnames = handles.channelnames;
-first_tp = str2num(get(handles.edit_firstframe,'String'));
-last_tp = str2num(get(handles.edit_lastframe,'String'));
-
 switch get(handles.popupmenu_nomin,'Value')
     case 1
         nominCH=CH1;
@@ -3211,6 +3234,7 @@ switch get(handles.popupmenu_nomin,'Value')
     case 3
         nominCH=CH3;
 end
+handles.nominCH= nominCH;
 
 switch get(handles.popupmenu_denomin,'Value')
     case 1
@@ -3222,247 +3246,68 @@ switch get(handles.popupmenu_denomin,'Value')
     case 4
         denominCH=-1;
 end
+handles.denominCH= denominCH;
+handles.nucCH = str2num(get(handles.edit_nucCH,'String'));
+handles.cellCH = str2num(get(handles.edit_cellCH,'String'));
+handles.cellsize = str2num(get(handles.edit_cellsize,'String'));
+handles.totalCHs = str2num(get(handles.edit_totalCHs,'String'));
+handles.signalformat = get(handles.edit_signalformat,'String');
+handles.blankformat = get(handles.edit_fileformatBG,'String');
+handles.first_tp = str2num(get(handles.edit_firstframe,'String'));
+handles.last_tp = str2num(get(handles.edit_lastframe,'String'));
+handles.minstamp = get(handles.edit_minstamp,'String');
+handles.secstamp = get(handles.edit_secstamp,'String');
+handles.cytosize = get(handles.edit_cytosize,'String');
 
-% Initializing storage variables
-mysignal = zeros(size(cellpath{last_tp},1),last_tp-first_tp+1,4);
+handles.bgnominType = get(handles.popupmenu_bgnomin,'Value');
+handles.bgdenominType = get(handles.popupmenu_bgdenomin,'Value');
+handles.illumlogic = get(handles.checkbox_illumlogic,'Value');
 
-H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
-maskdatasetname = ['/field' num2str(field) '/segmentsCH' num2str(templateCH)];
-selectedcells_name = ['/field' num2str(field) '/selectedcells'];
-selected_cells = h5read(fullfile(handles.ndpathname,H5filename),selectedcells_name);
-timestamp = 1:(last_tp-first_tp+1);
+handles.Var1LOG = get(handles.checkbox_variable1,'Value');
+handles.Var2LOG = get(handles.checkbox_variable2,'Value');
+handles.Var3LOG = get(handles.checkbox_variable3,'Value');
+handles.Var4LOG = get(handles.checkbox_variable4,'Value');
 
-maskinfo = h5info(fullfile(handles.ndpathname,H5filename), maskdatasetname);
-[new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,first_tp,last_tp,1:length(cellpath{last_tp}));
-for tp=first_tp:last_tp
-    % Determine image capture time based on the template channel
-    if handles.filetype == 3
-        filename = sprintf(fileformat,channelnames{templateCH},first_tp);
-        first_info = imfinfo(fullfile(handles.ndpathname,filename));
-        filename = sprintf(fileformat,channelnames{templateCH},tp);
-        current_info = imfinfo(fullfile(handles.ndpathname,filename));
-    end
-    
-    switch handles.framestamp
-        case 1
-            timestep = tp-first_tp+1;
-        case 2
-            switch filetype
-                case 3
-                    [~, ~, D, H, MN, S]  = datevec(datenum(current_info.DateTime,'yyyymmdd HH:MM:SS.FFF')-datenum(first_info.DateTime,'yyyymmdd HH:MM:SS.FFF'));
-                    hour = 24*D+H;
-                    minute = MN;
-                    second = round(S);
-                otherwise
-                    hour = floor(1/60*(tp-1)*( str2num(get(handles.edit_minstamp,'String')) + str2num(get(handles.edit_secstamp,'String'))/60 ));
-                    minute = mod(floor((tp-1)*( str2num(get(handles.edit_minstamp,'String')) + str2num(get(handles.edit_secstamp,'String'))/60 )),60);
-                    second = mod((tp-1)*( str2num(get(handles.edit_minstamp,'String'))*60 + str2num(get(handles.edit_secstamp,'String'))),60);
-            end
-            timestep = hour*60+ minute + second/60;
-    end
-    
-    clc;display(['Processing time point:' num2str(tp) ' of ' num2str(last_tp)]);
-    guidata(hObject, handles);
-    handles = guidata(hObject);
-    
-    % Determine signals
-    CH1im = loadsignal(handles,CH1,tp);
-    CH2im = loadsignal(handles,CH2,tp);
-    CH3im = loadsignal(handles,CH3,tp);
-    ratioIm = calculateFRET(handles,tp,nominCH,denominCH,bg);
-    
-    imwidth = size(CH1im,2);
-    imheight = size(CH1im,1);
-    
-    startind = double([1 tp 1 1 1]);
-    countind = [maskinfo.Dataspace.Size(1) 1 3 maskinfo.Dataspace.Size(4) maskinfo.Dataspace.Size(5)];
-    allmasks = permute(h5read(fullfile(handles.ndpathname,H5filename),maskdatasetname,startind, countind),[4 5 1 3 2]);
-    nucmask  = double(allmasks(:,:,:,1));
-    cellmask  = double(allmasks(:,:,:,2));
-    cytomask  = double(allmasks(:,:,:,3));
-    
-    for cellNo=selected_cells'
+handles.region1LOG = get(handles.popupmenu_regionVar1,'Value');
+handles.region2LOG = get(handles.popupmenu_regionVar2,'Value');
+handles.region3LOG = get(handles.popupmenu_regionVar3,'Value');
+handles.region4LOG = get(handles.popupmenu_regionVar4,'Value');
 
-        ind_cellpath = pos_path(new_cellpath,new_sisterList,cellNo,first_tp,last_tp,imheight,imwidth);
-        
-        if tp <= size(ind_cellpath,1)
-            
-            if ~isempty(find(nucmask(:,:,cellNo),1))
-                
-                if cellsize~=(size(nucmask(:,:,cellNo),1)-1)/2
-                    cellsize = (size(nucmask(:,:,cellNo),1)-1)/2;
-                end
-                
-                xL=max(ind_cellpath(tp,1)-cellsize,1);
-                xR=min(ind_cellpath(tp,1)+cellsize,imwidth);
-                yL=max(ind_cellpath(tp,2)-cellsize,1);
-                yR=min(ind_cellpath(tp,2)+cellsize,imheight);
-                
-                if xR-xL == cellsize*2
-                    borderX = 1:(cellsize*2+1);
-                elseif xR == imwidth
-                    shiftX = imwidth-xL;
-                    borderX = 1:(shiftX+1);
-                elseif xL == 1
-                    shiftX = cellsize*2+1-xR;
-                    borderX = (xL+shiftX):(cellsize*2+1);
-                end
-                
-                if yR-yL == cellsize*2
-                    borderY = 1:(cellsize*2+1);
-                elseif yR == imheight
-                    shiftY = imheight-yL;
-                    borderY = 1:(shiftY+1);
-                elseif yL == 1
-                    shiftY = cellsize*2+1-yR;
-                    borderY = (yL+shiftY):(cellsize*2+1);
-                end
-                
-                cell_ch1 = zeros(2*cellsize+1,2*cellsize+1);
-                cell_ch2 = zeros(2*cellsize+1,2*cellsize+1);
-                cell_ch3 = zeros(2*cellsize+1,2*cellsize+1);
-                mini_ratioIm = zeros(2*cellsize+1,2*cellsize+1);
-                
-                cell_ch1(borderY,borderX) = CH1im(yL:yR,xL:xR);
-                cell_ch2(borderY,borderX) = CH2im(yL:yR,xL:xR);
-                cell_ch3(borderY,borderX) = CH3im(yL:yR,xL:xR);
-                mini_ratioIm(borderY,borderX) = ratioIm(yL:yR,xL:xR);
-                
-                NucMask  = nucmask(:,:,cellNo) ;
-                
-                if ~isempty(find(cellmask(:,:,cellNo),1))
-                    CellMask = cellmask(:,:,cellNo);
-                else
-                    CellMask = bwmorph(NucMask,'dilate',str2num(get(handles.edit_cytosize,'String')));
-                    cellmask(:,:,cellNo) = CellMask;
-                end
-                
-                if ~isempty(find(cytomask(:,:,cellNo),1))
-                    CytoMask = cytomask(:,:,cellNo);
-                else
-                    CytoMask = CellMask-NucMask;
-                    cytomask(:,:,cellNo) = CytoMask;
-                end
-                
-                %for Nuclei region
-                [nuc_Y, nuc_X] = find(NucMask);
-                %for Cytosol region
-                [cyto_Y, cyto_X] = find(CytoMask);
-                %for Cell region
-                [cell_Y, cell_X] = find(CellMask);
-                
-                clear NucMask CytoMask CellMask;
-                
-                
-                if get(handles.checkbox_variable1,'Value') == 1
-                    mysignal(cellNo,tp-first_tp+1,1) = signalOutputing(get(handles.popupmenu_regionVar1,'Value'),get(handles.popupmenu_signal1,'Value'),mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
-                end
-                
-                if get(handles.checkbox_variable2,'Value') == 1
-                    mysignal(cellNo,tp-first_tp+1,2) = signalOutputing(get(handles.popupmenu_regionVar2,'Value'),get(handles.popupmenu_signal2,'Value'),mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
-                end
-                
-                if get(handles.checkbox_variable3,'Value') == 1
-                    mysignal(cellNo,tp-first_tp+1,3) = signalOutputing(get(handles.popupmenu_regionVar3,'Value'),get(handles.popupmenu_signal3,'Value'),mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
-                end
-                
-                if get(handles.checkbox_variable4,'Value') == 1
-                    mysignal(cellNo,tp-first_tp+1,4) = signalOutputing(get(handles.popupmenu_regionVar4,'Value'),get(handles.popupmenu_signal4,'Value'),mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
-                end
-                clear nuc_X nuc_Y cyto_X cyto_Y cell_X cell_Y cell_template mini_ratioIm cell_ch1 cell_ch2 cell_ch3
-            end
-        end
-    end
-    
-    timestamp(tp-first_tp+1) = timestep;
-    
-    clear  ratioIm CH1im CH2im CH3im
-end
+handles.signal1LOG = get(handles.popupmenu_signal1,'Value');
+handles.signal2LOG = get(handles.popupmenu_signal2,'Value');
+handles.signal3LOG = get(handles.popupmenu_signal3,'Value');
+handles.signal4LOG = get(handles.popupmenu_signal4,'Value');
 
-info = h5info(fullfile(handles.ndpathname,H5filename),['/field' num2str(field)]);
-basename='outputsignal';
-cindex = 1;
-outputcounts=[];
-if length(info.Datasets)>0 %#ok<*ISMT>
-    for i=1:length(info.Datasets)
-        tmp = regexp(info.Datasets(i).Name, ['(?<=' basename ')\d+'], 'match');
-        if ~isempty(tmp)
-            outputcounts(cindex) = str2num(tmp{1});
-            cindex=cindex+1;
-        end
-    end
-end
+handles.regions1 = get(handles.popupmenu_regionVar1,'String');
+handles.regions2 = get(handles.popupmenu_regionVar2,'String');
+handles.regions3 = get(handles.popupmenu_regionVar3,'String');
+handles.regions4 = get(handles.popupmenu_regionVar4,'String');
 
-if isempty(outputcounts)
-    signal_name = ['/field' num2str(field) '/outputsignal1'];
-    timestamp_name = ['/field' num2str(field) '/timestamp1'];
-else
-    signal_name = ['/field' num2str(field) '/outputsignal' num2str(max(outputcounts)+1)];
-    timestamp_name = ['/field' num2str(field) '/timestamp' num2str(max(outputcounts)+1)];
-end
+handles.signals1 = get(handles.popupmenu_signal1,'String');
+handles.signals2 = get(handles.popupmenu_signal2,'String');
+handles.signals3 = get(handles.popupmenu_signal3,'String');
+handles.signals4 = get(handles.popupmenu_signal4,'String');
 
-fileattrib(fullfile(handles.ndpathname,H5filename),'+w');
-fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+handles.outputsignalname = get(handles.edit_outputname,'String');
 
-if ~H5L.exists(fid,signal_name,'H5P_DEFAULT')
-    H5F.close(fid);
-    display(['Initializing ' H5filename ':' signal_name]);
-else
-    H5L.delete(fid,signal_name,'H5P_DEFAULT');
-    display(['Overwriting ' H5filename ':' signal_name]);
-    H5F.close(fid);
-end
+handles.filterParam1 = str2num(get(handles.edit_param1,'String'));
+handles.filterParam2 = str2num(get(handles.edit_param2,'String'));
+handles.bgsize = round(str2num(get(handles.edit_BGsize,'String'))/2);
 
-h5create(fullfile(handles.ndpathname,H5filename), signal_name, [size(mysignal,1), size(mysignal,2), 4], 'Datatype', 'double', 'ChunkSize', [size(mysignal,1), size(mysignal,2), 1], 'Deflate', 9);
-h5write(fullfile(handles.ndpathname,H5filename), signal_name, mysignal, [1 1 1], [size(mysignal,1) size(mysignal,2) 4]);
-h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'outputsignal_name',get(handles.edit_outputname,'String'));
+handles.signalShiftN = str2num(get(handles.edit_bg_nomin_custom,'String'));
+handles.signalShiftD = str2num(get(handles.edit_bg_denomin_custom,'String'));
 
-if get(handles.checkbox_variable1,'Value') == 1
-    regions1 = get(handles.popupmenu_regionVar1,'String');
-    region1 = regions1{get(handles.popupmenu_regionVar1,'Value')};
-    signals1 = get(handles.popupmenu_signal1,'String');
-    signal1 = signals1{get(handles.popupmenu_signal1,'Value')};
-    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal1',[region1 '-' signal1]);
-end
-if get(handles.checkbox_variable2,'Value') == 1
-    regions2 = get(handles.popupmenu_regionVar2,'String');
-    region2 = regions2{get(handles.popupmenu_regionVar2,'Value')};
-    signals2 = get(handles.popupmenu_signal2,'String');
-    signal2 = signals2{get(handles.popupmenu_signal2,'Value')};
-    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal2',[region2 '-' signal2]);
-end
-if get(handles.checkbox_variable3,'Value') == 1
-    regions3 = get(handles.popupmenu_regionVar3,'String');
-    region3 = regions3{get(handles.popupmenu_regionVar3,'Value')};
-    signals3 = get(handles.popupmenu_signal3,'String');
-    signal3 = signals3{get(handles.popupmenu_signal3,'Value')};
-    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal3',[region3 '-' signal3]);
-end
-if get(handles.checkbox_variable4,'Value') == 1
-    regions4 = get(handles.popupmenu_regionVar4,'String');
-    region4 = regions4{get(handles.popupmenu_regionVar4,'Value')};
-    signals4 = get(handles.popupmenu_signal4,'String');
-    signal4 = signals4{get(handles.popupmenu_signal4,'Value')};
-    h5writeatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal4',[region4 '-' signal4]);
-end
-
-
-fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-if ~H5L.exists(fid,timestamp_name,'H5P_DEFAULT')
-    H5F.close(fid);
-    display(['Initializing ' H5filename ':' timestamp_name]);
-else
-    H5L.delete(fid,timestamp_name,'H5P_DEFAULT');
-    display(['Overwriting ' H5filename ':' timestamp_name]);
-    H5F.close(fid);
-end
-
-h5create(fullfile(handles.ndpathname,H5filename), timestamp_name, last_tp-first_tp+1, 'Datatype', 'double');
-h5write(fullfile(handles.ndpathname,H5filename), timestamp_name, timestamp);
 guidata(hObject, handles);
 handles = guidata(hObject);
-set(handles.edit_commu,'String','finished collecting data');
-updateOutputList(handles)
+
+signalformat = get(handles.edit_signalformat,'String');
+blankformat = get(handles.edit_fileformatBG,'String');
+row = str2num(get(handles.edit_row,'String'));
+col = str2num(get(handles.edit_col,'String'));
+field = str2num(get(handles.edit_field,'String'));
+plane = str2num(get(handles.edit_plane,'String'));
+collectdata_individual(handles,row,col,field,signalformat,blankformat);
+updateOutputList(handles);
 
 function [new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,first_tp,last_tp,testList)
 sis_cellpath = cell(last_tp,1);
@@ -3472,7 +3317,7 @@ cInd=1;
 withSisInd = intersect(find(sisterList{last_tp}(:,1)~=-1),testList);
 % Determine cells without sisters
 
-while ~isempty(withSisInd) 
+while ~isempty(withSisInd)
     SisList = withSisInd(1);
     firstSis = setdiff(sisterList{last_tp}(withSisInd(1),:),-1);
     secondSis = firstSis;
@@ -3566,62 +3411,206 @@ if exist(fullfile(handles.ndpathname,H5filename),'file')
     set(handles.popupmenu_output,'Value',1);
 end
 function outputsignal = signalOutputing(regiontype,signaltype,mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y)
+nucData = [];
+cytoData = [];
+cellData = [];
 switch regiontype
     case 1
         switch signaltype
             case 1
-                Average_Nuc = mean(mean(mini_ratioIm(nuc_Y,nuc_X)));
-                Average_Cyto = mean(mean(mini_ratioIm(cyto_Y,cyto_X)));
-
+                for i=1:length(nuc_Y)
+                    nucData(i) = mini_ratioIm(nuc_Y(i),nuc_X(i));
+                end
+                for i=1:length(cyto_Y)
+                    cytoData(i) = mini_ratioIm(cyto_Y(i),cyto_X(i));
+                end
+                if ~isempty(nucData)
+                    Average_Nuc = median(nucData);
+                else
+                    Average_Nuc = 0;
+                end
+                if ~isempty(cytoData)
+                    Average_Cyto = median(cytoData);
+                else
+                    Average_Cyto = 0;
+                end
             case 2
-                Average_Nuc = mean(mean(cell_ch1(nuc_Y,nuc_X)));
-                Average_Cyto = mean(mean(cell_ch1(cyto_Y,cyto_X)));
+                for i=1:length(nuc_Y)
+                    nucData(i) = cell_ch1(nuc_Y(i),nuc_X(i));
+                end
+
+                for i=1:length(cyto_Y)
+                    cytoData(i) = cell_ch1(cyto_Y(i),cyto_X(i));
+                end
+                if ~isempty(nucData)
+                    Average_Nuc = median(nucData);
+                else
+                    Average_Nuc = 0;
+                end
+                if ~isempty(cytoData)
+                    Average_Cyto = median(cytoData);
+                else
+                    Average_Cyto = 0;
+                end
                 
             case 3
-                Average_Nuc = mean(mean(cell_ch2(nuc_Y,nuc_X)));
-                Average_Cyto = mean(mean(cell_ch2(cyto_Y,cyto_X)));
+                for i=1:length(nuc_Y)
+                    nucData(i) = cell_ch2(nuc_Y(i),nuc_X(i));
+                end
+                for i=1:length(cyto_Y)
+                    cytoData(i) = cell_ch2(cyto_Y(i),cyto_X(i));
+                end
+                if ~isempty(nucData)
+                    Average_Nuc = median(nucData);
+                else
+                    Average_Nuc = 0;
+                end
+                if ~isempty(cytoData)
+                    Average_Cyto = median(cytoData);
+                else
+                    Average_Cyto = 0;
+                end
             case 4
-                Average_Nuc = mean(mean(cell_ch3(nuc_Y,nuc_X)));
-                Average_Cyto = mean(mean(cell_ch3(cyto_Y,cyto_X)));
+                for i=1:length(nuc_Y)
+                    nucData(i) = cell_ch3(nuc_Y(i),nuc_X(i));
+                end
+
+                for i=1:length(cyto_Y)
+                    cytoData(i) = cell_ch3(cyto_Y(i),cyto_X(i));
+                end
+                if ~isempty(nucData)
+                    Average_Nuc = median(nucData);
+                else
+                    Average_Nuc = 0;
+                end
+                if ~isempty(cytoData)
+                    Average_Cyto = median(cytoData);
+                else
+                    Average_Cyto = 0;
+                end
         end
-        outputsignal = Average_Nuc/Average_Cyto;
+        if Average_Cyto == 0 || Average_Nuc == 0
+            outputsignal = 0;
+        else
+            outputsignal = Average_Nuc/Average_Cyto;
+        end
     case 2
         switch signaltype
             case 1
-                outputsignal = mean(mean(mini_ratioIm(nuc_Y,nuc_X)));
+                for i=1:length(nuc_Y)
+                    nucData(i) = mini_ratioIm(nuc_Y(i),nuc_X(i));
+                end
+                if ~isempty(nucData)
+                    outputsignal = median(nucData);
+                else
+                    outputsignal = 0;
+                end
             case 2
-                outputsignal = mean(mean(cell_ch1(nuc_Y,nuc_X)));
+                for i=1:length(nuc_Y)
+                    nucData(i) = cell_ch1(nuc_Y(i),nuc_X(i));
+                end
+                if ~isempty(nucData)
+                    outputsignal = median(nucData);
+                else
+                    outputsignal = 0;
+                end
             case 3
-                outputsignal = mean(mean(cell_ch2(nuc_Y,nuc_X)));
+                for i=1:length(nuc_Y)
+                    nucData(i) = cell_ch2(nuc_Y(i),nuc_X(i));
+                end
+                if ~isempty(nucData)
+                    outputsignal = median(nucData);
+                else
+                    outputsignal = 0;
+                end
             case 4
-                outputsignal = mean(mean(cell_ch3(nuc_Y,nuc_X)));
-        end        
+                for i=1:length(nuc_Y)
+                    nucData(i) = cell_ch3(nuc_Y(i),nuc_X(i));
+                end
+                if ~isempty(nucData)
+                    outputsignal = median(nucData);
+                else
+                    outputsignal = 0;
+                end
+        end
     case 3
         switch signaltype
             case 1
-                outputsignal = mean(mean(mini_ratioIm(cyto_Y,cyto_X)));
+                for i=1:length(cyto_Y)
+                    cytoData(i) = mini_ratioIm(cyto_Y(i),cyto_X(i));
+                end
+                if ~isempty(cytoData)
+                    outputsignal = median(cytoData);
+                else
+                    outputsignal = 0;
+                end
             case 2
-                outputsignal = mean(mean(cell_ch1(cyto_Y,cyto_X)));
+                for i=1:length(cyto_Y)
+                    cytoData(i) = cell_ch1(cyto_Y(i),cyto_X(i));
+                end
+                if ~isempty(cytoData)
+                    outputsignal = median(cytoData);
+                else
+                    outputsignal = 0;
+                end
             case 3
-                outputsignal = mean(mean(cell_ch2(cyto_Y,cyto_X)));
+                for i=1:length(cyto_Y)
+                    cytoData(i) = cell_ch2(cyto_Y(i),cyto_X(i));
+                end
+                if ~isempty(cytoData)
+                    outputsignal = median(cytoData);
+                else
+                    outputsignal = 0;
+                end
             case 4
-                outputsignal = mean(mean(cell_ch3(cyto_Y,cyto_X)));
-        end        
+                for i=1:length(cyto_Y)
+                    cytoData(i) = cell_ch3(cyto_Y(i),cyto_X(i));
+                end
+                if ~isempty(cytoData)
+                    outputsignal = median(cytoData);
+                else
+                    outputsignal = 0;
+                end
+        end
     case 4
         switch signaltype
             case 1
-                outputsignal = mean(mean(mini_ratioIm(cell_Y,cell_X)));
+                for i=1:length(cell_Y)
+                    cellData(i) = mini_ratioIm(cell_Y(i),cell_X(i));
+                end
+                if ~isempty(cellData)
+                    outputsignal = median(cellData);
+                else
+                    outputsignal = 0;
+                end
             case 2
-                outputsignal = mean(mean(cell_ch1(cell_Y,cell_X)));
+                for i=1:length(cell_Y)
+                    cellData(i) = cell_ch1(cell_Y(i),cell_X(i));
+                end
+                if ~isempty(cellData)
+                    outputsignal = median(cellData);
+                else
+                    outputsignal = 0;
+                end
             case 3
-                outputsignal = mean(mean(cell_ch2(cell_Y,cell_X)));
+                for i=1:length(cell_Y)
+                    cellData(i) = cell_ch2(cell_Y(i),cell_X(i));
+                end
+                if ~isempty(cellData)
+                    outputsignal = median(cellData);
+                else
+                    outputsignal = 0;
+                end
             case 4
-                outputsignal = mean(mean(cell_ch3(cell_Y,cell_X)));
-        end        
-end
-
-if isnan(outputsignal)
-    outputsignal=0;
+                for i=1:length(cell_Y)
+                    cellData(i) = cell_ch3(cell_Y(i),cell_X(i));
+                end
+                if ~isempty(cellData)
+                    outputsignal = median(cellData);
+                else
+                    outputsignal = 0;
+                end
+        end
 end
 
 function edit_param1_Callback(hObject, eventdata, handles)
@@ -3711,7 +3700,7 @@ end
 
 % --- Executes when selected object is changed in uipanel_createmovie.
 function uipanel_createmovie_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in uipanel_createmovie 
+% hObject    handle to the selected object in uipanel_createmovie
 % eventdata  structure with the following fields (see UIBUTTONGROUP)
 %	EventName: string 'SelectionChanged' (read only)
 %	OldValue: handle of the previously selected object or empty if none was selected
@@ -3724,7 +3713,7 @@ switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
         handles.framestamp = 2;
     otherwise
 end
-guidata(hObject, handles);   
+guidata(hObject, handles);
 
 function edit_sis1_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_sis1 (see GCBO)
@@ -3778,7 +3767,7 @@ for i=1:4
     mask{i} = bwmorph(im,'majority',10);
     cellarea(i) = bwarea(mask{i});
     
-
+    
 end
 drawnow;
 ind = find(cellarea>sizeThres(1) & cellarea<sizeThres(2));
@@ -3839,7 +3828,7 @@ switch get(handles.popupmenu_colormap,'Value')
     case 5
         handles.mycmap5=mycmap;
 end
-guidata(hObject, handles);   
+guidata(hObject, handles);
 
 
 
@@ -3849,7 +3838,7 @@ function uipanel_datacollectiontype_CreateFcn(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 handles.collectiontypeind = 1;
-guidata(hObject, handles);   
+guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
 function edit_cytosize_CreateFcn(hObject, eventdata, handles)
@@ -4228,7 +4217,7 @@ end
 
 % --- Executes when selected object is changed in uipanel_mainchoice.
 function uipanel_mainchoice_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in uipanel_mainchoice 
+% hObject    handle to the selected object in uipanel_mainchoice
 % eventdata  structure with the following fields (see UIBUTTONGROUP)
 %	EventName: string 'SelectionChanged' (read only)
 %	OldValue: handle of the previously selected object or empty if none was selected
@@ -4261,7 +4250,7 @@ switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
         set(handles.radiobutton_ch3overlay,'Value',1);
         handles.overlayIndex = 5;
 end
-guidata(hObject, handles); 
+guidata(hObject, handles);
 handles = guidata(hObject);
 
 tp=str2num(get(handles.edit_currentFrame,'String'));
@@ -4303,31 +4292,30 @@ if ~strcmp(allOutputs,'<not present>')
     end
     
     H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
-
+    
     if exist(fullfile(handles.ndpathname,H5filename),'file')
         fileattrib(fullfile(handles.ndpathname,H5filename),'+w');
         fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
         if H5L.exists(fid,signal_name,'H5P_DEFAULT') &&  H5L.exists(fid,timestamp_name,'H5P_DEFAULT')
             H5F.close(fid);
-            legendList=cell(1);
+            legendList=[];
             signalinfo = h5info(fullfile(handles.ndpathname,H5filename), signal_name);
             startind = double([1 1 1]);
             countind = [signalinfo.Dataspace.Size(1) signalinfo.Dataspace.Size(2) 4];
             signal = permute(h5read(fullfile(handles.ndpathname,H5filename),signal_name,startind, countind),[2 1 3]);
             timestamp = double(h5read(fullfile(handles.ndpathname,H5filename),timestamp_name));
             
-            
-            
             figure(1);
-            
             legendListCount = 1;
-
+            
             if get(handles.checkbox_variable1,'Value')
                 PosTime = find(signal(:,scell,1));
                 if ~isempty(PosTime)
                     myy = signal(PosTime,scell,1)/median(signal(PosTime,scell,1));
-                    plot(timestamp(PosTime)/60,(myy-min(myy(round(length(myy)/2):end)))/(max(myy(round(length(myy)/2):end))-min(myy(round(length(myy)/2):end))),'b');
+                    plot(timestamp(PosTime)/60,myy,'b');
+                    if length(signalinfo.Attributes)~=0
                     legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal1');
+                    end
                     assignin('base','signal1',signal(PosTime,scell,1));
                     assignin('base','timestamp1',timestamp(PosTime));
                     legendListCount=legendListCount+1;
@@ -4340,8 +4328,10 @@ if ~strcmp(allOutputs,'<not present>')
                 PosTime = find(signal(:,scell,2));
                 if ~isempty(PosTime)
                     myy = signal(PosTime,scell,2)/median(signal(PosTime,scell,2));
-                    hold on;plot(timestamp(PosTime)/60,(myy-min(myy(round(length(myy)/2):end)))/(max(myy(round(length(myy)/2):end))-min(myy(round(length(myy)/2):end))),'r');hold off;
-                    legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal2');
+                    hold on;plot(timestamp(PosTime)/60,myy,'r');hold off;
+                    if length(signalinfo.Attributes)~=0
+                        legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal2');
+                    end
                     assignin('base','signal2',signal(PosTime,scell,2));
                     assignin('base','timestamp2',timestamp(PosTime));
                     legendListCount=legendListCount+1;
@@ -4355,8 +4345,10 @@ if ~strcmp(allOutputs,'<not present>')
                 if ~isempty(PosTime)
                     
                     myy = signal(PosTime,scell,3)/median(signal(PosTime,scell,3));
-                    hold on;plot(timestamp(PosTime)/60,(myy-min(myy(round(length(myy)/2):end)))/(max(myy(round(length(myy)/2):end))-min(myy(round(length(myy)/2):end))),'g');hold off;
-                    legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal3');
+                    hold on;plot(timestamp(PosTime)/60,myy,'g');hold off;
+                    if length(signalinfo.Attributes)~=0
+                        legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal3');
+                    end
                     assignin('base','signal3',signal(PosTime,scell,3));
                     assignin('base','timestamp3',timestamp(PosTime));
                     legendListCount=legendListCount+1;
@@ -4368,8 +4360,10 @@ if ~strcmp(allOutputs,'<not present>')
                 PosTime = find(signal(:,scell,4));
                 if ~isempty(PosTime)
                     myy = signal(PosTime,scell,4)/median(signal(PosTime,scell,4));
-                    hold on;plot(timestamp(PosTime)/60,(myy-min(myy(round(length(myy)/2):end)))/(max(myy(round(length(myy)/2):end))-min(myy(round(length(myy)/2):end))),'k');hold off;
-                    legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal4');
+                    hold on;plot(timestamp(PosTime)/60,myy,'k');hold off;
+                    if length(signalinfo.Attributes)~=0
+                        legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal4');
+                    end
                     assignin('base','signal4',signal(PosTime,scell,4));
                     assignin('base','timestamp4',timestamp(PosTime));
                     legendListCount=legendListCount+1;
@@ -4377,8 +4371,9 @@ if ~strcmp(allOutputs,'<not present>')
                     display('Parameter 4 not available');
                 end
             end
-            
-            title(h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'outputsignal_name'),'interpreter','none');
+            if length(signalinfo.Attributes)~=0
+                title(h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'outputsignal_name'),'interpreter','none');
+            end
             if legendListCount>1
                 figure(1);
                 legend(legendList);
@@ -4391,6 +4386,8 @@ if ~strcmp(allOutputs,'<not present>')
     else
         set(handles.edit_commu,'String','Check to make sure that H5 file exists');
     end
+else
+    set(handles.edit_commu,'String','Data not available');
 end
 
 function text_ch1_Callback(hObject, eventdata, handles)
@@ -4465,7 +4462,7 @@ set(handles.popupmenu_signal4,'String',mylist);
 
 % --- Executes when selected object is changed in uipanel_overlaychoice.
 function uipanel_overlaychoice_SelectionChangeFcn(hObject, eventdata, handles)
-% hObject    handle to the selected object in uipanel_overlaychoice 
+% hObject    handle to the selected object in uipanel_overlaychoice
 % eventdata  structure with the following fields (see UIBUTTONGROUP)
 %	EventName: string 'SelectionChanged' (read only)
 %	OldValue: handle of the previously selected object or empty if none was selected
@@ -4480,16 +4477,16 @@ switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
     case 'radiobutton_mathoverlay'
         handles.overlayIndex = 1;
     case 'radiobutton_templateoverlay'
-
+        
         handles.overlayIndex = 2;
     case 'radiobutton_ch1overlay'
-
+        
         handles.overlayIndex = 3;
     case 'radiobutton_ch2overlay'
-
+        
         handles.overlayIndex = 4;
     case 'radiobutton_ch3overlay'
-
+        
         handles.overlayIndex = 5;
 end
 guidata(hObject, handles);
@@ -4507,7 +4504,7 @@ function edit_ndfilename_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of edit_ndfilename as text
 %        str2double(get(hObject,'String')) returns contents of edit_ndfilename as a double
 handles.ndfilename = get(hObject,'String');
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
 function edit_ndfilename_CreateFcn(hObject, eventdata, handles)
@@ -4532,7 +4529,7 @@ row = str2num(get(handles.edit_row,'String'));
 col = str2num(get(handles.edit_col,'String'));
 field = str2num(get(handles.edit_field,'String'));
 plane = str2num(get(handles.edit_plane,'String'));
-templateCH= str2num(get(handles.edit_template,'String'));
+templateCH= str2num(get(handles.edit_nucCH,'String'));
 fileformat = get(handles.edit_signalformat,'String');
 selected_cell = get(handles.listbox_cells,'Value');
 CH1= handles.CH1;
@@ -4591,9 +4588,9 @@ end
 switch handles.filetype
     case 3
         MaskGenerating(3,[templateCH nominCH denominCH 1 last_tp],...
-                       [row col field plane],handles.channelnames, ...
-                       handles.ndfilename,selected_cell,stageLoc,...
-                       ind_cellpath,nucmask,cytomask,cellmask,handles.selected_cells);
+            [row col field plane],handles.channelnames, ...
+            handles.ndfilename,selected_cell,stageLoc,...
+            ind_cellpath,nucmask,cytomask,cellmask,handles.selected_cells);
 end
 handles.nucmask = nucmask;
 handles.cellmask = cellmask;
@@ -4609,12 +4606,12 @@ if FilterIndex~=0
     set(handles.edit_ndfilename,'String',filename);
     handles.ndfilename = filename;
     handles.ndpathname = PathName;
-    set(handles.edit_sourceF,'String',PathName); 
+    set(handles.edit_sourceF,'String',PathName);
 end
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 function [notp stagePos stageName waveName] = readndfile(pathname,filename)
-% Search for number of string matches per line.  
+% Search for number of string matches per line.
 notp=-1;
 stagePos = [];
 stageName = [];
@@ -4721,7 +4718,7 @@ handles.filetype = 3;
 set(handles.radiobutton_customtiff,'Value',1);
 handles.framestamp = 2;
 set(handles.radiobutton_timestamp,'Value',1);
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 % --- Executes on selection change in popupmenu_stagePosData.
 function popupmenu_stagePosData_Callback(hObject, eventdata, handles)
@@ -4768,7 +4765,7 @@ switch handles.filetype
         else
             set(handles.edit_field,'String','1');
         end
-
+        
     case 1
         row = str2num(get(handles.edit_row,'String'));
         col = str2num(get(handles.edit_col,'String'));
@@ -4777,7 +4774,7 @@ switch handles.filetype
         set(handles.edit_signalformat,'String',['r' num2str(row,'%02.0f') 'c' num2str(col,'%02.0f') 'f' num2str(field,'%02.0f') 'p' num2str(plane,'%02.0f') 'rc%1.0f-ch1sk%ufk1fl1.tiff']);
 end
 
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 
 % --- Executes on selection change in popupmenu_stagePosBG.
@@ -4799,7 +4796,7 @@ switch handles.filetype
         set(handles.edit_stageInfobg,'String',handles.stageName{get(hObject,'Value')});
         fileformat = [handles.prefix '_%s_s' num2str(get(hObject,'Value')) '_t%g.TIF'];
         set(handles.edit_fileformatBG,'String',fileformat);
- 
+        
     case 1
         row = str2num(get(handles.edit_row,'String'));
         col = str2num(get(handles.edit_col,'String'));
@@ -4808,26 +4805,26 @@ switch handles.filetype
         set(handles.edit_fileformatBG,'String',['r' num2str(row,'%02.0f') 'c' num2str(col,'%02.0f') 'f' num2str(field,'%02.0f') 'p' num2str(plane,'%02.0f') 'rc%1.0f-ch1sk%ufk1fl1.tiff']);
 end
 
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 
-% 
+%
 % if handles.filetype==0
 %     set(handles.edit_commu,'String','No input images.');
 %     return;
 % end
-% 
+%
 % set(handles.edit_stageInfobg,'String',handles.stageName{get(hObject,'Value')});
 % fileformat = [handles.prefix '_%s_s' num2str(get(hObject,'Value')) '_t%g.TIF'];
 % set(handles.edit_fileformatBG,'String',fileformat);
-% 
+%
 % filename = sprintf(fileformate,channelnames{channel},tp);
 % h = fspecial('gaussian',[10 10],0.5);
 % I = imfilter(imresize(im2double(imread('01152013-r2_w1Camera-YFP_s13_t1.TIF')),0.1),h,'replicate');
 % [X,Y] = meshgrid(1:size(I,2),1:size(I,1));
 % sfit = fit([X(:),Y(:)],I(:), 'poly33','Robust','LAR');
-% 
-% guidata(hObject, handles);  
+%
+% guidata(hObject, handles);
 
 
 % --- Executes during object creation, after setting all properties.
@@ -4964,7 +4961,7 @@ if get(hObject,'Value')
     field = str2num(get(handles.edit_field,'String'));
     plane = str2num(get(handles.edit_plane,'String'));
     channelnames = handles.channelnames;
-    templateCH= str2num(get(handles.edit_template,'String'));
+    templateCH= str2num(get(handles.edit_nucCH,'String'));
     totalCHs = str2num(get(handles.edit_totalCHs,'String'));
     tp = str2num(get(handles.edit_currentFrame,'String'));
     blackIm = loadblank(handles,templateCH,tp);
@@ -5126,7 +5123,7 @@ function pushbutton_autothres_template_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 tp = str2num(get(handles.edit_currentFrame,'String'));
-channel = str2num(get(handles.edit_template,'String'));
+channel = str2num(get(handles.edit_nucCH,'String'));
 displayIM = loadsignal(handles,channel,tp);
 set(handles.edit_templateL,'String',num2str(min(displayIM(:))));
 set(handles.edit_templateH,'String',num2str(max(displayIM(:))));
@@ -5387,7 +5384,7 @@ function edit_cellNo_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of edit_cellNo as text
 %        str2double(get(hObject,'String')) returns contents of edit_cellNo as a double
 set(handles.listbox_cells,'Value',str2num(get(hObject,'String')));
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 
 
@@ -5399,7 +5396,7 @@ function edit_sourceF_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of edit_sourceF as text
 %        str2double(get(hObject,'String')) returns contents of edit_sourceF as a double
 handles.ndpathname = get(hObject,'String');
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
 function edit_sourceF_CreateFcn(hObject, eventdata, handles)
@@ -5414,7 +5411,7 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 set(hObject,'String',pwd);
 handles.ndpathname = get(hObject,'String');
-guidata(hObject, handles);  
+guidata(hObject, handles);
 
 % --- Executes during object creation, after setting all properties.
 function pushbutton_locatendfile_CreateFcn(hObject, eventdata, handles)
@@ -5532,7 +5529,6 @@ function pushbutton_storeall_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_storeall (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-templateCH= str2num(get(handles.edit_template,'String'));
 CH1= handles.CH1;
 CH2= handles.CH2;
 CH3 = handles.CH3;
@@ -5557,7 +5553,8 @@ switch get(handles.popupmenu_denomin,'Value')
         denominCH=-1;
 end
 handles.denominCH= denominCH;
-
+handles.nucCH = str2num(get(handles.edit_nucCH,'String'));
+handles.cellCH = str2num(get(handles.edit_cellCH,'String'));
 handles.cellsize = str2num(get(handles.edit_cellsize,'String'));
 handles.totalCHs = str2num(get(handles.edit_totalCHs,'String'));
 handles.signalformat = get(handles.edit_signalformat,'String');
@@ -5636,7 +5633,7 @@ parfor s=1:length(sites)
     else
         field = 1;
     end
-
+    
     collectdata_individual(handles,row,col,field,signalformat,blankformat);
 end
 set(handles.edit_commu,'String','finished collecting all data');
@@ -5670,7 +5667,8 @@ filetype = handles.filetype;
 channelnames = handles.channelnames;
 ndpathname = handles.ndpathname;
 outputsignalname=handles.outputsignalname;
-
+nucCH = handles.nucCH; 
+cellCH = handles.cellCH; 
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
 cellpath_name = ['/field' num2str(field) '/cellpath'];
 sisterList_name = ['/field' num2str(field) '/sisterList'];
@@ -5678,239 +5676,323 @@ bg_name = ['/field' num2str(field) '/bg'];
 maskdatasetname = ['/field' num2str(field) '/segmentsCH' num2str(templateCH)];
 selectedcells_name = ['/field' num2str(field) '/selectedcells'];
 
-
-if exist(fullfile(ndpathname,H5filename),'file')
-    fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-    if  H5L.exists(fid,cellpath_name,'H5P_DEFAULT') && ...
-            H5L.exists(fid,sisterList_name,'H5P_DEFAULT') && ...
-            H5L.exists(fid,maskdatasetname,'H5P_DEFAULT') && ...
-            H5L.exists(fid,selectedcells_name,'H5P_DEFAULT')
+if exist(fullfile(handles.ndpathname,H5filename),'file')
+    fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
         H5F.close(fid);
-        cellpathinfo = h5info(fullfile(ndpathname,H5filename), cellpath_name);
-        cellpath_mat = h5read(fullfile(ndpathname,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
-        
-        clc;display(['r' num2str(row) 'c' num2str(col) 'f' num2str(field) '-Start Processing']);
+        cellpathinfo = h5info(fullfile(handles.ndpathname,H5filename), cellpath_name);
+        cellpath_mat = h5read(fullfile(handles.ndpathname,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
         
         for tp=first_tp:last_tp
             cellpath{tp} = cellpath_mat(:,:,tp);
         end
-        
-        %sisterListinfo = h5info(fullfile(ndpathname,H5filename), sisterList_name);
-        %sisterList_mat = h5read(fullfile(ndpathname,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
-        
-        %for tp=first_tp:last_tp
-        %    sisterList{tp} = sisterList_mat(:,:,tp);
-        %end
-        
-        % Initializing storage variables
-        mysignal = zeros(size(cellpath{last_tp},1),last_tp-first_tp+1,4);
-        selected_cells = h5read(fullfile(ndpathname,H5filename),selectedcells_name);
-        timestamp = 1:(last_tp-first_tp+1);
-        maskinfo = h5info(fullfile(ndpathname,H5filename), maskdatasetname);
-        
-        %[new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,first_tp,last_tp,1:length(cellpath{last_tp}));
-        
-        for tp=first_tp:last_tp
-            % Determine image capture time based on the template channel
-            if filetype == 3
-                filename = sprintf(signalformat,channelnames{templateCH},first_tp);
-                first_info = imfinfo(fullfile(ndpathname,filename));
-                filename = sprintf(signalformat,channelnames{templateCH},tp);
-                current_info = imfinfo(fullfile(ndpathname,filename));
-            end
-            
-            switch handles.framestamp
-                case 1
-                    timestep = tp-first_tp+1;
-                case 2
-                    switch filetype
-                        case 3
-                            [~, ~, D, H, MN, S]  = datevec(datenum(current_info.DateTime,'yyyymmdd HH:MM:SS.FFF')-datenum(first_info.DateTime,'yyyymmdd HH:MM:SS.FFF'));
-                            hour = 24*D+H;
-                            minute = MN;
-                            second = round(S);
-                        otherwise
-                            hour = floor(1/60*(tp-1)*( str2num(minstamp) + str2num(secstamp)/60 ));
-                            minute = mod(floor((tp-1)*( str2num(minstamp) + str2num(secstamp)/60 )),60);
-                            second = mod((tp-1)*( str2num(minstamp)*60 + str2num(secstamp)),60);
-                    end
-                    timestep = hour*60+ minute + second/60;
-            end
-            
-            % Determine signals
-            CH1im = loadsignalV2(handles,CH1,tp,signalformat,blankformat);
-            CH2im = loadsignalV2(handles,CH2,tp,signalformat,blankformat);
-            CH3im = loadsignalV2(handles,CH3,tp,signalformat,blankformat);
-            ratioIm = calculateFRETV2(handles,[],tp,nominCH,denominCH,signalformat,blankformat);
-            
-            imwidth = size(CH1im,2);
-            imheight = size(CH1im,1);
-            
-            startind = double([1 tp 1 1 1]);
-            countind = [maskinfo.Dataspace.Size(1) 1 3 maskinfo.Dataspace.Size(4) maskinfo.Dataspace.Size(5)];
-            allmasks = permute(h5read(fullfile(ndpathname,H5filename),maskdatasetname,startind, countind),[4 5 1 3 2]);
-            nucmask  = double(allmasks(:,:,:,1));
-            cellmask  = double(allmasks(:,:,:,2));
-            cytomask  = double(allmasks(:,:,:,3));
-            
-            for cellNo=selected_cells'
-                ind_cellpath = cellpath{tp}(cellNo,:);
-                %ind_cellpath = pos_path(new_cellpath,new_sisterList,cellNo,first_tp,last_tp,imheight,imwidth);
-                if ind_cellpath(1)>0 && ind_cellpath(2)>0 %tp <= size(ind_cellpath,1)
-                    
-                    if ~isempty(find(nucmask(:,:,cellNo),1))
-                        
-                        if cellsize~=(size(nucmask(:,:,cellNo),1)-1)/2
-                            cellsize = (size(nucmask(:,:,cellNo),1)-1)/2;
-                        end
-                        
-                        xL=max(ind_cellpath(1)-cellsize,1);
-                        xR=min(ind_cellpath(1)+cellsize,imwidth);
-                        yL=max(ind_cellpath(2)-cellsize,1);
-                        yR=min(ind_cellpath(2)+cellsize,imheight);
-                        
-                        if xR-xL == cellsize*2
-                            borderX = 1:(cellsize*2+1);
-                        elseif xR == imwidth
-                            shiftX = imwidth-xL;
-                            borderX = 1:(shiftX+1);
-                        elseif xL == 1
-                            shiftX = cellsize*2+1-xR;
-                            borderX = (xL+shiftX):(cellsize*2+1);
-                        end
-                        
-                        if yR-yL == cellsize*2
-                            borderY = 1:(cellsize*2+1);
-                        elseif yR == imheight
-                            shiftY = imheight-yL;
-                            borderY = 1:(shiftY+1);
-                        elseif yL == 1
-                            shiftY = cellsize*2+1-yR;
-                            borderY = (yL+shiftY):(cellsize*2+1);
-                        end
-                        cell_ch1 = zeros(2*cellsize+1,2*cellsize+1);
-                        cell_ch2 = zeros(2*cellsize+1,2*cellsize+1);
-                        cell_ch3 = zeros(2*cellsize+1,2*cellsize+1);
-                        mini_ratioIm = zeros(2*cellsize+1,2*cellsize+1);
-                        
-                        cell_ch1(borderY,borderX) = CH1im(yL:yR,xL:xR);
-                        cell_ch2(borderY,borderX) = CH2im(yL:yR,xL:xR);
-                        cell_ch3(borderY,borderX) = CH3im(yL:yR,xL:xR);
-                        mini_ratioIm(borderY,borderX) = ratioIm(yL:yR,xL:xR);
-                        
-                        NucMask  = nucmask(:,:,cellNo) ;
-                        
-                        if ~isempty(find(cellmask(:,:,cellNo),1))
-                            CellMask = cellmask(:,:,cellNo);
-                        else
-                            CellMask = bwmorph(NucMask,'dilate',str2num(handles.cytosize));
-                            cellmask(:,:,cellNo) = CellMask;
-                        end
-                        
-                        if ~isempty(find(cytomask(:,:,cellNo),1))
-                            CytoMask = cytomask(:,:,cellNo);
-                        else
-                            CytoMask = CellMask-NucMask;
-                            cytomask(:,:,cellNo) = CytoMask;
-                        end
-                        
-                        %for Nuclei region
-                        [nuc_Y, nuc_X] = find(NucMask);
-                        %for Cytosol region
-                        [cyto_Y, cyto_X] = find(CytoMask);
-                        %for Cell region
-                        [cell_Y, cell_X] = find(CellMask);
-                        
-                        clear NucMask CytoMask CellMask;
-                        
-                        
-                        if Var1LOG == 1
-                            mysignal(cellNo,tp-first_tp+1,1) = signalOutputing(region1LOG,signal1LOG,mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
-                        end
-                        
-                        if Var2LOG == 1
-                            mysignal(cellNo,tp-first_tp+1,2) = signalOutputing(region2LOG,signal2LOG,mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
-                        end
-                        
-                        if Var3LOG == 1
-                            mysignal(cellNo,tp-first_tp+1,3) = signalOutputing(region3LOG,signal3LOG,mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
-                        end
-                        
-                        if Var4LOG == 1
-                            mysignal(cellNo,tp-first_tp+1,4) = signalOutputing(region4LOG,signal4LOG,mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
-                        end
-                        clear nuc_X nuc_Y cyto_X cyto_Y cell_X cell_Y cell_template mini_ratioIm cell_ch1 cell_ch2 cell_ch3
-                    end
-                end
-            end
-            
-            timestamp(tp-first_tp+1) = timestep;
-            
-            clear  ratioIm CH1im CH2im CH3im
-        end
-        
-        info = h5info(fullfile(ndpathname,H5filename),['/field' num2str(field)]);
-        basename='outputsignal';
-        cindex = 1;
-        outputcounts=[];
-        if length(info.Datasets)>0 %#ok<*ISMT>
-            for i=length(info.Datasets):-1:1
-                outputsignalname = info.Datasets(i).Name;
-                tmp = regexp(outputsignalname, ['(?<=' basename ')\d+'], 'match');
-                if ~isempty(tmp)
-                    fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-                    H5L.delete(fid,['/field' num2str(field) '/outputsignal' tmp{1}],'H5P_DEFAULT');
-                    H5F.close(fid);
-                    clc;display(['Deleting r' num2str(row) 'c' num2str(col) 'f' num2str(field) '-' outputsignalname]);
-                end
-            end 
-        end
-        
-        signal_name = ['/field' num2str(field) '/outputsignal1'];
-        timestamp_name = ['/field' num2str(field) '/timestamp1'];
-        
-        h5create(fullfile(ndpathname,H5filename), signal_name, [size(mysignal,1), size(mysignal,2), 4], 'Datatype', 'double', 'ChunkSize', [size(mysignal,1), size(mysignal,2), 1], 'Deflate', 9);
-        h5write(fullfile(ndpathname,H5filename), signal_name, mysignal, [1 1 1], [size(mysignal,1) size(mysignal,2) 4]);
-        h5writeatt(fullfile(ndpathname,H5filename),signal_name,'outputsignal_name',outputsignalname);
-        
-        if Var1LOG == 1
-            region1 = handles.regions1{region1LOG};
-            signal1 = handles.signals1{signal1LOG};
-            h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal1',[region1 '-' signal1]);
-        end
-        if Var2LOG == 1
-            region2 = handles.regions2{region2LOG};
-            signal2 = handles.signals2{signal2LOG};
-            h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal2',[region2 '-' signal2]);
-        end
-        if Var3LOG == 1
-            region3 = handles.regions3{region3LOG};
-            signal3 = handles.signals3{signal3LOG};
-            h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal3',[region3 '-' signal3]);
-        end
-        if Var4LOG == 1
-            region4 = handles.regions4{region4LOG};
-            signal4 = handles.signals4{signal4LOG};
-            h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal4',[region4 '-' signal4]);
-        end
-        
-        fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
-        if ~H5L.exists(fid,timestamp_name,'H5P_DEFAULT')
-            H5F.close(fid);
-            display(['Initializing ' H5filename ':' timestamp_name]);
-        else
-            H5L.delete(fid,timestamp_name,'H5P_DEFAULT');
-            display(['Overwriting ' H5filename ':' timestamp_name]);
-            H5F.close(fid);
-        end
-        
-        h5create(fullfile(ndpathname,H5filename), timestamp_name, last_tp-first_tp+1, 'Datatype', 'double');
-        h5write(fullfile(ndpathname,H5filename), timestamp_name, timestamp);
-        clc;display(['r' num2str(row) 'c' num2str(col) 'f' num2str(field) '-Finished']);
     else
         H5F.close(fid);
+        set(handles.edit_commu,'String',[H5filename ' ' cellpath_name 'does not exist.']);
+        return;
+    end
+    
+    fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+    if H5L.exists(fid,maskdatasetname,'H5P_DEFAULT')
+        H5F.close(fid);
+        maskOption = 1;
+    else
+        nucFolder = [handles.ndpathname filesep 'nuclearMask'];
+        cellFolder = [handles.ndpathname filesep 'cellMask'];
+        if exist(nucFolder,'dir') && exist(cellFolder,'dir')
+            
+            maskOption = 2;
+        else
+            set(handles.edit_commu,'String','Mask folders do not exist.');
+            return;
+        end
+    end
+    
+else
+    set(handles.edit_commu,'String',[H5filename ' does not exist.']);
+    return;
+end
+
+FractionExistingLimit = 0.6;
+i=1;
+serpen = [];
+for c=1:size(cellpath_mat,1)
+    myX = squeeze(cellpath_mat(c,1,:));
+    myY = squeeze(cellpath_mat(c,2,:));
+    pos_time = find(myX >0 & myY >0);
+    
+    if ~isempty(pos_time)
+        
+        end_p_idx = find(diff(pos_time)~=1,1,'first');
+        start_p = min(pos_time);
+        
+        if isempty(end_p_idx)
+            end_p = max(pos_time);
+        else
+            end_p = pos_time(end_p_idx);
+        end
+        serpen(i,:) = [end_p-start_p+1, c, start_p, end_p,];
+        i=i+1;
+    end
+    clear myX myY pos_time;
+end
+serpen = sortrows(serpen,[-1 2 3 4]);
+sSerpen_idx = find(serpen(:,1)> size(cellpath_mat,3)*FractionExistingLimit);
+selected_cells = sort(serpen(sSerpen_idx,2));
+fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if ~H5L.exists(fid,selectedcells_name,'H5P_DEFAULT')
+    H5F.close(fid);
+    display(['Initializing ' H5filename ':' selectedcells_name]);
+else
+    H5L.delete(fid,selectedcells_name,'H5P_DEFAULT');
+    display(['Overwriting ' H5filename ':' selectedcells_name]);
+    H5F.close(fid);
+end
+
+h5create(fullfile(ndpathname,H5filename), selectedcells_name, length(selected_cells), 'Datatype', 'uint32');
+h5write(fullfile(ndpathname,H5filename), selectedcells_name, uint32(selected_cells(:)));
+
+
+signal_name = ['/field' num2str(field) '/outputsignal1'];
+timestamp_name = ['/field' num2str(field) '/timestamp1'];
+basename='outputsignal';
+info = h5info(fullfile(ndpathname,H5filename),['/field' num2str(field)]);
+cindex = 1;
+outputcounts=[];
+if length(info.Datasets)>0 %#ok<*ISMT>
+    for i=length(info.Datasets):-1:1
+        outputsignalname = info.Datasets(i).Name;
+        tmp = regexp(outputsignalname, ['(?<=' basename ')\d+'], 'match');
+        if ~isempty(tmp)
+            fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+            H5L.delete(fid,['/field' num2str(field) '/outputsignal' tmp{1}],'H5P_DEFAULT');
+            H5F.close(fid);
+            display(['Deleting r' num2str(row) 'c' num2str(col) 'f' num2str(field) '-' outputsignalname]);
+        end
     end
 end
+
+% Initializing storage variables
+mysignal = zeros(size(cellpath{last_tp},1),last_tp-first_tp+1,4);
+h5create(fullfile(ndpathname,H5filename), signal_name, [size(mysignal,1), size(mysignal,2), 4], 'Datatype', 'double', 'ChunkSize', [size(mysignal,1), size(mysignal,2), 1], 'Deflate', 9);
+h5write(fullfile(ndpathname,H5filename), signal_name, mysignal, [1 1 1], [size(mysignal,1) size(mysignal,2) 4]);
+h5writeatt(fullfile(ndpathname,H5filename),signal_name,'outputsignal_name',outputsignalname);
+if Var1LOG == 1
+    region1 = handles.regions1{region1LOG};
+    signal1 = handles.signals1{signal1LOG};
+    h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal1',[region1 '-' signal1]);
+end
+if Var2LOG == 1
+    region2 = handles.regions2{region2LOG};
+    signal2 = handles.signals2{signal2LOG};
+    h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal2',[region2 '-' signal2]);
+end
+if Var3LOG == 1
+    region3 = handles.regions3{region3LOG};
+    signal3 = handles.signals3{signal3LOG};
+    h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal3',[region3 '-' signal3]);
+end
+if Var4LOG == 1
+    region4 = handles.regions4{region4LOG};
+    signal4 = handles.signals4{signal4LOG};
+    h5writeatt(fullfile(ndpathname,H5filename),signal_name,'signal4',[region4 '-' signal4]);
+end
+
+timestamp = 1:(last_tp-first_tp+1);
+fid = H5F.open(fullfile(ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
+if ~H5L.exists(fid,timestamp_name,'H5P_DEFAULT')
+    H5F.close(fid);
+else
+    H5L.delete(fid,timestamp_name,'H5P_DEFAULT');
+    display(['Overwriting ' H5filename ':' timestamp_name]);
+    H5F.close(fid);
+end
+h5create(fullfile(ndpathname,H5filename), timestamp_name, last_tp-first_tp+1, 'Datatype', 'double');
+
+%[new_cellpath,new_sisterList] = removeSister(cellpath,sisterList,first_tp,last_tp,1:length(cellpath{last_tp}));
+
+for tp=first_tp:last_tp
+    % Determine image capture time based on the template channel
+    if filetype == 3
+        filename = sprintf(signalformat,channelnames{templateCH},first_tp);
+        first_info = imfinfo(fullfile(ndpathname,filename));
+        filename = sprintf(signalformat,channelnames{templateCH},tp);
+        current_info = imfinfo(fullfile(ndpathname,filename));
+    end
+    
+    switch handles.framestamp
+        case 1
+            timestep = tp-first_tp+1;
+        case 2
+            switch filetype
+                case 3
+                    [~, ~, D, H, MN, S]  = datevec(datenum(current_info.DateTime,'yyyymmdd HH:MM:SS.FFF')-datenum(first_info.DateTime,'yyyymmdd HH:MM:SS.FFF'));
+                    hour = 24*D+H;
+                    minute = MN;
+                    second = round(S);
+                otherwise
+                    hour = floor(1/60*(tp-1)*( str2num(minstamp) + str2num(secstamp)/60 ));
+                    minute = mod(floor((tp-1)*( str2num(minstamp) + str2num(secstamp)/60 )),60);
+                    second = mod((tp-1)*( str2num(minstamp)*60 + str2num(secstamp)),60);
+            end
+            timestep = hour*60+ minute + second/60;
+    end
+    
+    h5write(fullfile(ndpathname,H5filename), timestamp_name, timestep,tp-first_tp+1,1);
+    % Determine signals
+    
+    skipframe = 0;
+    switch maskOption
+        case 1
+            maskinfo = h5info(fullfile(ndpathname,H5filename), maskdatasetname);
+        case 2
+            if exist(fullfile(nucFolder, sprintf(signalformat,channelnames{nucCH},tp)),'file')
+                nuc_im   = imread(fullfile(nucFolder, sprintf(signalformat,channelnames{nucCH},tp)));
+                if exist(fullfile(cellFolder,sprintf(signalformat,channelnames{cellCH},tp)),'file')
+                    cell_im  = imread(fullfile(cellFolder,sprintf(signalformat,channelnames{cellCH},tp)));
+                elseif exist(fullfile(cellFolder,sprintf(signalformat,channelnames{nucCH},tp)),'file')
+                    cell_im  = imread(fullfile(cellFolder,sprintf(signalformat,channelnames{nucCH},tp)));
+                else
+                    display([fullfile(cellFolder,sprintf(signalformat,channelnames{cellCH},tp)) ' does not exist.']);
+                    skipframe = 1;
+                end
+            else
+                display([fullfile(nucFolder,sprintf(signalformat,channelnames{cellCH},tp)) ' does not exist.']);
+                skipframe = 1;
+            end
+    end
+    if ~skipframe
+        display(['Processing ' H5filename 'time point:' num2str(tp) ' of ' num2str(last_tp)]);
+        CH1im = loadsignalV2(handles,CH1,tp,signalformat,blankformat);
+        CH2im = loadsignalV2(handles,CH2,tp,signalformat,blankformat);
+        CH3im = loadsignalV2(handles,CH3,tp,signalformat,blankformat);
+        ratioIm = calculateFRETV2(handles,[],tp,nominCH,denominCH,signalformat,blankformat);
+        
+        imwidth = size(CH1im,2);
+        imheight = size(CH1im,1);
+        
+        for s=sSerpen_idx'
+            skipcell = 0;
+            pos_time = (serpen(s,3):serpen(s,4));
+            if ismember(tp,pos_time)
+                cellNo = serpen(s,2);
+                cX = cellpath_mat(cellNo,1,tp);
+                cY = cellpath_mat(cellNo,2,tp);
+                switch maskOption
+                    case 1
+                        startind = double([cellNo tp 1 1 1]);
+                        countind = [1 1 3 maskinfo.Dataspace.Size(4) maskinfo.Dataspace.Size(5)];
+                        allmasks = permute(h5read(fullfile(ndpathname,H5filename),maskdatasetname,startind, countind),[4 5 3 1 2]);
+                        nucmask  = double(allmasks(:,:,1));
+                        cellmask  = double(allmasks(:,:,2));
+                        cytomask  = double(allmasks(:,:,3));
+                        if ~isempty(find(nucmask,1))
+                            skipcell = 1;
+                        end
+                        
+                    case 2
+                        cellmaskT = bwselect(cell_im,cX,cY,8);
+                        nucmaskT  = bwselect(nuc_im,cX,cY,8);
+                        if ~isempty(find(nucmaskT,1)) || ~isempty(find(cellmaskT,1))
+                            S = regionprops(cellmaskT,{'BoundingBox'});
+                            BoundingBox = round(S(1).BoundingBox);
+                            
+                            xL=max(BoundingBox(1),1);
+                            xR=min(xL+BoundingBox(3),imwidth);
+                            yL=max(BoundingBox(2),1);
+                            yR=min(yL+BoundingBox(4),imheight);
+
+                            cellmask = cellmaskT(yL:yR,xL:xR);
+                            nucmask  = nucmaskT(yL:yR,xL:xR);
+                            cytomask = cellmask-nucmask;
+                        else
+                            skipcell = 1;
+                        end
+                end
+                if ~skipcell
+                    %for Nuclei region
+                    [nuc_Y, nuc_X] = find(nucmask~=0);
+                    %for Cytosol region
+                    [cyto_Y, cyto_X] = find(cytomask~=0);
+                    %for Cell region
+                    [cell_Y, cell_X] = find(cellmask~=0);
+
+                    switch maskOption
+                        case 1
+                            if cellsize~=(size(nucmask,1)-1)/2
+                                cellsize = (size(nucmask,1)-1)/2;
+                            end
+                            xL=max(cX-cellsize,1);
+                            xR=min(cX+cellsize,imwidth);
+                            yL=max(cY-cellsize,1);
+                            yR=min(cY+cellsize,imheight);
+                            if xR-xL == cellsize*2
+                                borderX = 1:(cellsize*2+1);
+                            elseif xR == imwidth
+                                shiftX = imwidth-xL;
+                                borderX = 1:(shiftX+1);
+                            elseif xL == 1
+                                shiftX = cellsize*2+1-xR;
+                                borderX = (xL+shiftX):(cellsize*2+1);
+                            end
+                            
+                            if yR-yL == cellsize*2
+                                borderY = 1:(cellsize*2+1);
+                            elseif yR == imheight
+                                shiftY = imheight-yL;
+                                borderY = 1:(shiftY+1);
+                            elseif yL == 1
+                                shiftY = cellsize*2+1-yR;
+                                borderY = (yL+shiftY):(cellsize*2+1);
+                            end
+                            cell_ch1 = zeros(2*cellsize+1,2*cellsize+1);
+                            cell_ch2 = zeros(2*cellsize+1,2*cellsize+1);
+                            cell_ch3 = zeros(2*cellsize+1,2*cellsize+1);
+                            mini_ratioIm = zeros(2*cellsize+1,2*cellsize+1);
+                            
+                            cell_ch1(borderY,borderX) = CH1im(yL:yR,xL:xR);
+                            cell_ch2(borderY,borderX) = CH2im(yL:yR,xL:xR);
+                            cell_ch3(borderY,borderX) = CH3im(yL:yR,xL:xR);
+                            mini_ratioIm(borderY,borderX) = ratioIm(yL:yR,xL:xR);
+                        case 2
+                            cell_ch1 = CH1im(yL:yR,xL:xR);
+                            cell_ch2 = CH2im(yL:yR,xL:xR);
+                            cell_ch3 = CH3im(yL:yR,xL:xR);
+                            mini_ratioIm = ratioIm(yL:yR,xL:xR);
+                    end
+                    
+                    if Var1LOG == 1
+                        mysignal(cellNo,tp-first_tp+1,1) = signalOutputing(region1LOG,signal1LOG,mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
+                    end
+                    
+                    if Var2LOG == 1
+                        mysignal(cellNo,tp-first_tp+1,2) = signalOutputing(region2LOG,signal2LOG,mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
+                    end
+                    
+                    if Var3LOG == 1
+                        mysignal(cellNo,tp-first_tp+1,3) = signalOutputing(region3LOG,signal3LOG,mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
+                    end
+                    
+                    if Var4LOG == 1
+                        mysignal(cellNo,tp-first_tp+1,4) = signalOutputing(region4LOG,signal4LOG,mini_ratioIm,cell_ch1,cell_ch2,cell_ch3,nuc_X,nuc_Y,cyto_X,cyto_Y,cell_X,cell_Y);
+                    end
+                    clear nuc_X nuc_Y cyto_X cyto_Y cell_X cell_Y cell_template mini_ratioIm cell_ch1 cell_ch2 cell_ch3
+                    %else
+                    %    display(['Skipping cell:' num2str(cellNo) H5filename 'time point:' num2str(tp) ]);
+                end
+            end
+        end
+        h5write(fullfile(ndpathname,H5filename), signal_name, mysignal(:,tp-first_tp+1,:), [1 tp-first_tp+1 1], [size(mysignal,1) 1 4]);
+        
+        %else
+        %    display(['Skipping all cells ' H5filename 'time point:' num2str(tp) ' of ' num2str(last_tp)]);
+        clear  ratioIm CH1im CH2im CH3im;
+    end
+end
+
+display(['r' num2str(row) 'c' num2str(col) 'f' num2str(field) '-Finished']);
+
+
 
 function edit_selectedSites_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_selectedSites (see GCBO)
@@ -5924,6 +6006,58 @@ function edit_selectedSites_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function edit_selectedSites_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to edit_selectedSites (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_mathname_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_mathname (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_mathname as text
+%        str2double(get(hObject,'String')) returns contents of edit_mathname as a double
+
+mylist = get(handles.popupmenu_signal1,'String');
+mylist{1} = get(hObject,'String');
+set(handles.popupmenu_signal1,'String',mylist);
+set(handles.popupmenu_signal2,'String',mylist);
+set(handles.popupmenu_signal3,'String',mylist);
+set(handles.popupmenu_signal4,'String',mylist);
+
+% --- Executes during object creation, after setting all properties.
+function edit_mathname_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_mathname (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_cellCH_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_cellCH (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_cellCH as text
+%        str2double(get(hObject,'String')) returns contents of edit_cellCH as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_cellCH_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_cellCH (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 

@@ -10,7 +10,7 @@ function varargout = CellTracking(varargin)
 %  CellTracking(2,[templateCH tp_1 tp_end],[],{'1';'2';'3'},<tiff stack file>)
 %  CellTracking(3,[templateCH tp_1 tp_end],[],{'CFP';'YFP';'RFP'},'2012-11-16_%s_xy087_t%03g.tif')
 %
-% Last Modified by GUIDE v2.5 12-Dec-2013 21:13:03
+% Last Modified by GUIDE v2.5 18-Mar-2014 20:03:34
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -667,13 +667,14 @@ end
 
 
 
-function [x y BW] = templateToCentroid(M,xg,yg,maxI,invertLog)
+function [x,y,BW] = templateToCentroid(M,xg,yg,maxI,invertLog)
 if invertLog
     inverted = ((maxI)-1)-M;
 end
 BWc = zeros(size(M));
 for i=1.2:0.6:3
     edgedIm = edge(M,'canny',0,i);
+    
     BW = imfill(edgedIm,'holes');
     
     BW = bwmorph(BW,'open',1);
@@ -683,39 +684,69 @@ for i=1.2:0.6:3
     
 end
 
-BW = BWc;
+if ~isempty(xg) && ~isempty(yg)
+    BW = bwselect(BWc,xg,yg);
+else
+    BW = BWc;
+end
+
 S  = regionprops(BW, 'centroid');
 
-if isempty(find(BW==0, 1)) || isempty(find(BW==1, 1))
+if ~isfield(S,'Centroid') 
     x = xg;
     y = yg;
     
-else
+elseif length(S)==1
     x = round(S.Centroid(1));
     y = round(S.Centroid(2));
+elseif length(S)>1
+    for i=1:length(S)
+        cx(i) = S{i}.Centroid(1);
+        cy(i) = S{i}.Centroid(2);
+        cdistance(i) = pdist([cx(i) cy(i);round(size(M,2)/2) round(size(M,1)/2)]);
+    end
+    x=round(cx(cdistance == min(cdistance)));
+    y=round(cy(cdistance == min(cdistance)));
+else
+    x=xg;
+    y=yg;
 end
 
-function [x y BW] = templateToCentroid2(M,xg,yg,maxI,invertLog)
+function [x,y,BW] = templateToCentroid2(M,xg,yg,maxI,invertLog)
 if invertLog
     M = ((maxI)-1)-M;
 end
 
 BW = im2bw(imadjust(M), 1.3*graythresh(imadjust(M)));
-BW = bwselect(BW,xg,yg);
+if ~isempty(xg) && ~isempty(yg)
+    BW = bwselect(BW,xg,yg);
+else
+    BW = BW;
+end
 
 S  = regionprops(BW, 'centroid');
 
-if ~isfield(S,'Centroid') || length(S)>1
+if ~isfield(S,'Centroid') 
     x = xg;
     y = yg;
     
-else
+elseif length(S)==1
     x = round(S.Centroid(1));
     y = round(S.Centroid(2));
+elseif length(S)>1
+    for i=1:length(S)
+        cx(i) = S{i}.Centroid(1);
+        cy(i) = S{i}.Centroid(2);
+        cdistance(i) = pdist([cx(i) cy(i);round(size(M,2)/2) round(size(M,1)/2)]);
+    end
+    x=round(cx(cdistance == min(cdistance)));
+    y=round(cy(cdistance == min(cdistance)));
+else
+    x=xg;
+    y=yg;
 end
 
-
-function [x y BW] = templateToCentroid3(M,xg,yg,maxI,invertLog,outerbox)
+function [x,y,BW] = templateToCentroid3(M,xg,yg,maxI,invertLog,outerbox)
 if invertLog
     M = ((maxI)-1)-M;
 end
@@ -724,24 +755,41 @@ M(1,:) = 0;
 M(end,:) = 0;
 M(:,1) = 0;
 M(:,end) = 0;
-outBW = modchenvese(M,80,0.05,outerbox);
-se = strel('disk',3);
+outBW = modchenvese(M,150,0.07,30);
+se = strel('disk',1);
 outBW = imclose(outBW,se);
 outBW(1,:) = 0;
 outBW(end,:) = 0;
 outBW(:,1) = 0;
 outBW(:,end) = 0;
 
-BW = bwselect(outBW,xg,yg);
+if ~isempty(xg) && ~isempty(yg)
+    BW = bwselect(outBW,xg,yg);
+else
+    BW = outBW;
+end
+
+
 S  = regionprops(BW, 'centroid');
 
-if ~isfield(S,'Centroid') || length(S)>1
+if ~isfield(S,'Centroid') 
     x = xg;
     y = yg;
     
-else
+elseif length(S)==1
     x = round(S.Centroid(1));
     y = round(S.Centroid(2));
+elseif length(S)>1
+    for i=1:length(S)
+        cx(i) = S{i}.Centroid(1);
+        cy(i) = S{i}.Centroid(2);
+        cdistance(i) = pdist([cx(i) cy(i);round(size(M,2)/2) round(size(M,1)/2)]);
+    end
+    x=round(cx(cdistance == min(cdistance)));
+    y=round(cy(cdistance == min(cdistance)));
+else
+    x=xg;
+    y=yg;
 end
 
 %   Adapted from code by Yue Wu (yue.wu@tufts.edu)
@@ -753,7 +801,7 @@ s = outerbox./min(size(I,1),size(I,2)); % resize scale
 n = zeros(size(I));
 midY = round(size(n,1)/2);
 midX = round(size(n,2)/2);
-boxsize = round(size(I,1)*0.1);%round(outerbox/2*.9);
+boxsize = round(size(I,1)*0.07);%round(outerbox/2*.9);
 n(midY-boxsize:midY+boxsize,midX-boxsize:midX+boxsize) = 1;
 I = imresize(I,s);
 mask = imresize(n,s);
@@ -988,7 +1036,18 @@ for cell=PosInd
     yL=max(cellpath{tp}(cell,2)-cellsize,1);
     yR=min(cellpath{tp}(cell,2)+cellsize,size(currentframe,1));
     template = currentframe(yL:yR,xL:xR);
-    [x1 y1 BW] = templateToCentroid(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
+   % [x1 y1 BW] = templateToCentroid(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
+    
+    switch handles.cellrecogmethod
+        case 1
+            [x1,y1,BW] = templateToCentroid(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
+        case 2
+            [x1,y1,BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
+        case 3
+            [x1,y1,BW] = templateToCentroid3(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
+            
+    end
+
     cellpath{tp}(cell,:) = [xL+x1 yL+y1];
 end
 set(handles.edit_commu,'String',['Finished optimizing all points in frame:' num2str(tp)]);
@@ -1052,6 +1111,17 @@ yL=max(cellpath{tp}(cell,2)-cellsize,1);
 yR=min(cellpath{tp}(cell,2)+cellsize,size(currentframe,1));
 template = currentframe(yL:yR,xL:xR);
 [x1 y1 BW] = templateToCentroid(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
+
+switch handles.cellrecogmethod
+    case 1
+        [x1,y1,BW] = templateToCentroid(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
+    case 2
+        [x1,y1,BW] = templateToCentroid2(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog);
+    case 3
+        [x1,y1,BW] = templateToCentroid3(template,round(size(template,2)/2),round(size(template,1)/2),handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
+        
+end
+
 edge = bwmorph(BW,'remove');
 imshow(imadjust(template),'Parent',handles.axes2);
 set(handles.axes2,'NextPlot','add');
@@ -1893,6 +1963,12 @@ end
 
 if cFrame~=endFrame+handles.increment
     
+    previousframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],cFrame,handles.channelnames,handles.SourceF);
+    previousframe = previousframe(300:end-300,300:end-300);
+    currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],cFrame+handles.increment,handles.channelnames,handles.SourceF);
+    opt1 = detbestlength2(FFTrv,FFTiv,IFFTiv,size(currentframe),size(previousframe),isreal(currentframe),isreal(previousframe));
+    
+    
     opt = detbestlength2(FFTrv,FFTiv,IFFTiv,2*[outersize outersize],2*[cellsize cellsize],1,1);
     
     handles.greenflag = 1;
@@ -1904,10 +1980,19 @@ if cFrame~=endFrame+handles.increment
         
         tp=t;
         previousframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+        previousframe_small = previousframe(300:end-300,300:end-300);
         tp=t+handles.increment;
         currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
         imshow(imadjust((currentframe),[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
         
+        [xg yg maxVal] = corrMatching2(currentframe,previousframe_small,opt1);
+        if maxVal> str2num(get(handles.edit_similarityThres,'String'))
+            xshift = xg-round(size(currentframe,2)/2);
+            yshift = yg-round(size(currentframe,1)/2);
+        else
+            xshift = 0;
+            yshift = 0;
+        end
         
         set(handles.edit_currentFrame,'String',num2str(tp));
         set(handles.slider_frames,'Value',tp);
@@ -1932,22 +2017,37 @@ if cFrame~=endFrame+handles.increment
             
             template = previousframe(yL:yR,xL:xR);
             
-            xL=max(cellpath{tp-handles.increment}(cell,1)-outersize,1);
-            xR=min(cellpath{tp-handles.increment}(cell,1)+outersize-1,size(currentframe,2));
-            yL=max(cellpath{tp-handles.increment}(cell,2)-outersize,1);
-            yR=min(cellpath{tp-handles.increment}(cell,2)+outersize-1,size(currentframe,1));
+            xL=max(cellpath{tp-handles.increment}(cell,1)+xshift-outersize,1);
+            xR=min(cellpath{tp-handles.increment}(cell,1)+xshift+outersize-1,size(currentframe,2));
+            yL=max(cellpath{tp-handles.increment}(cell,2)+yshift-outersize,1);
+            yR=min(cellpath{tp-handles.increment}(cell,2)+yshift+outersize-1,size(currentframe,1));
             
             testframe = currentframe(yL:yR,xL:xR);
             
             [x1 y1 maxVal] = corrMatching2(testframe, template,opt);
+            
             if isempty(x1) || maxVal<str2num(get(handles.edit_similarityThres,'String'))
                 x1 = cellpath{tp-handles.increment}(cell,1)-xL;
                 y1 = cellpath{tp-handles.increment}(cell,2)-yL;
             end
             
             if get(handles.checkbox_autooptimize,'Value')==1
-                [x1 y1 BW] = templateToCentroid(testframe,x1,y1,handles.maxI,handles.invertedLog);
+                switch handles.cellrecogmethod
+                    case 1
+                        [x11,y11,BW] = templateToCentroid(testframe,x1,y1,handles.maxI,handles.invertedLog);
+                    case 2
+                        [x11,y11,BW] = templateToCentroid2(testframe,x1,y1,handles.maxI,handles.invertedLog);
+                    case 3
+                        [x11,y11,BW] = templateToCentroid3(testframe,x1,y1,handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
+                end
+                
+                if ~isempty(x11) || ~isempty(y11)
+                    x1 = x11;
+                    y1 = y11;
+                end
             end
+            
+
             
             cellpath{tp}(cell,:) = [xL+x1 yL+y1];
         end
@@ -2028,16 +2128,25 @@ switch handles.increment
 end
 
 if cFrame~=endFrame
-    
+
     tp=cFrame;
     previousframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+    previousframe_small = previousframe(300:end-300,300:end-300);
     tp=cFrame+handles.increment;
     currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
-    
+    opt1 = detbestlength2(FFTrv,FFTiv,IFFTiv,size(currentframe),size(previousframe),isreal(currentframe),isreal(previousframe));
+
     set(handles.edit_currentFrame,'String',num2str(tp));
     set(handles.slider_frames,'Value',tp);
     imshow(imadjust((currentframe),[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
-    
+    [xg yg maxVal] = corrMatching2(currentframe,previousframe_small,opt1);
+    if maxVal> str2num(get(handles.edit_similarityThres,'String'))
+        xshift = xg-round(size(currentframe,2)/2);
+        yshift = yg-round(size(currentframe,1)/2);
+    else
+        xshift = 0;
+        yshift = 0;
+    end
     opt = detbestlength2(FFTrv,FFTiv,IFFTiv,2*[outersize outersize],2*[cellsize cellsize],1,1);
     
     if  length(sisterList) >= tp && ~isempty(sisterList{tp}) && ~isempty(sisterList{1})
@@ -2061,10 +2170,10 @@ if cFrame~=endFrame
         
         template = previousframe(yL:yR,xL:xR);
         
-        xL=max(cellpath{tp-handles.increment}(cell,1)-outersize,1);
-        xR=min(cellpath{tp-handles.increment}(cell,1)+outersize,size(currentframe,2));
-        yL=max(cellpath{tp-handles.increment}(cell,2)-outersize,1);
-        yR=min(cellpath{tp-handles.increment}(cell,2)+outersize,size(currentframe,1));
+        xL=max(cellpath{tp-handles.increment}(cell,1)+xshift-outersize,1);
+        xR=min(cellpath{tp-handles.increment}(cell,1)+xshift+outersize-1,size(currentframe,2));
+        yL=max(cellpath{tp-handles.increment}(cell,2)+yshift-outersize,1);
+        yR=min(cellpath{tp-handles.increment}(cell,2)+yshift+outersize-1,size(currentframe,1));
         
         testframe = currentframe(yL:yR,xL:xR);
         
@@ -2073,9 +2182,21 @@ if cFrame~=endFrame
             x1 = cellpath{tp-handles.increment}(cell,1)-xL;
             y1 = cellpath{tp-handles.increment}(cell,2)-yL;
         end
-        if get(handles.checkbox_autooptimize,'Value')==1
-            [x1 y1 BW] = templateToCentroid(testframe,x1,y1,handles.maxI,handles.invertedLog);
-        end
+            if get(handles.checkbox_autooptimize,'Value')==1
+                switch handles.cellrecogmethod
+                    case 1
+                        [x11,y11,BW] = templateToCentroid(testframe,x1,y1,handles.maxI,handles.invertedLog);
+                    case 2
+                        [x11,y11,BW] = templateToCentroid2(testframe,x1,y1,handles.maxI,handles.invertedLog);
+                    case 3
+                        [x11,y11,BW] = templateToCentroid3(testframe,x1,y1,handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
+                end
+            end
+            
+            if ~isempty(x11) || ~isempty(y11)
+                x1 = x11;
+                y1 = y11;
+            end
         
         cellpath{tp}(cell,:) = [xL+x1 yL+y1];
         assignin('base','cellpath',cellpath);
@@ -5172,9 +5293,6 @@ if ~isempty(cellpath)
     updateLists(new_cellpath,new_sisterList,handles.res_cellpath,handles.res_sisterList,bg,handles,tp);
 end
 
-
-
-
 set(handles.edit_commu,'String','Done cleaning list.');
 currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
 imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
@@ -6142,3 +6260,376 @@ handles.cellpath = cellpath;
 handles.sisterList = sisterList;
 guidata(hObject, handles);
 drawnow;
+
+
+% --- Executes on button press in pushbutton_clearframe.
+function pushbutton_clearframe_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_clearframe (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+row = str2num(get(handles.edit_row,'String'));
+col = str2num(get(handles.edit_col,'String'));
+field = str2num(get(handles.edit_field,'String'));
+plane = str2num(get(handles.edit_plane,'String'));
+channel= str2num(get(handles.edit_CH,'String'));
+cellsize = str2num(get(handles.edit_cellsize,'String'));
+tp = str2num(get(handles.edit_currentFrame,'String'));
+first_tp = str2num(get(handles.edit_firstframe,'String'));
+last_tp = str2num(get(handles.edit_lastframe,'String'));
+
+set(handles.edit_cellNo,'String','1');
+set(handles.listbox_cells,'Value',1);
+set(handles.listbox_Restcells,'Value',1);
+
+cellpath = handles.cellpath;
+sisterList = handles.sisterList;
+bg=handles.bg;
+
+if ~isempty(cellpath)
+    [new_cellpath, new_sisterList] = removenegativecells(cellpath,sisterList,first_tp,last_tp);
+    handles.cellpath   = new_cellpath;
+    handles.sisterList = new_sisterList;
+    
+    guidata(hObject, handles);
+    handles = guidata(hObject);
+    updateLists(new_cellpath,new_sisterList,handles.res_cellpath,handles.res_sisterList,bg,handles,tp);
+end
+
+set(handles.edit_commu,'String','Done clearing dead cells and cells with sisters');
+currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
+if get(handles.checkbox_cellmarking,'Value')
+    [p bg_p] = plotTrackpoints(handles,new_cellpath,new_sisterList,handles.res_cellpath,handles.res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+    handles.p = p;
+    handles.bg_p = bg_p;
+    guidata(hObject, handles);
+end
+drawnow;
+
+function [new_cellpath, new_sisterList] = removenegativecells(cellpath,sisterList,first_tp,last_tp)
+
+noSisnonnegativeInd = find(sisterList{last_tp}(:,1)==-1 & cellpath{last_tp}(:,1)>0 & cellpath{last_tp}(:,2)>0) ;
+
+for t = first_tp:last_tp
+    new_cellpath{t}   = cellpath{t}(noSisnonnegativeInd,:);
+    new_sisterList{t} = sisterList{t}(noSisnonnegativeInd,:) ;
+end
+
+
+% --- Executes on button press in pushbutton_clearsismat.
+function pushbutton_clearsismat_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_clearsismat (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+row = str2num(get(handles.edit_row,'String'));
+col = str2num(get(handles.edit_col,'String'));
+field = str2num(get(handles.edit_field,'String'));
+plane = str2num(get(handles.edit_plane,'String'));
+channel= str2num(get(handles.edit_CH,'String'));
+cellsize = str2num(get(handles.edit_cellsize,'String'));
+tp = str2num(get(handles.edit_currentFrame,'String'));
+first_tp = str2num(get(handles.edit_firstframe,'String'));
+last_tp = str2num(get(handles.edit_lastframe,'String'));
+
+set(handles.edit_cellNo,'String','1');
+set(handles.listbox_cells,'Value',1);
+set(handles.listbox_Restcells,'Value',1);
+
+sisterList = handles.sisterList;
+bg=handles.bg;
+
+if ~isempty(handles.cellpath)
+    [new_sisterList] = removesismat(sisterList,first_tp,last_tp);
+    handles.sisterList = new_sisterList;
+    
+    guidata(hObject, handles);
+    handles = guidata(hObject);
+    updateLists(handles.cellpath,new_sisterList,handles.res_cellpath,handles.res_sisterList,bg,handles,tp);
+end
+
+set(handles.edit_commu,'String','Done clearing sister matrix');
+currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+imshow(imadjust(currentframe,[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
+if get(handles.checkbox_cellmarking,'Value')
+    [p bg_p] = plotTrackpoints(handles,handles.cellpath,new_sisterList,handles.res_cellpath,handles.res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+    handles.p = p;
+    handles.bg_p = bg_p;
+    guidata(hObject, handles);
+end
+drawnow;
+
+function [new_sisterList] = removesismat(sisterList,first_tp,last_tp)
+for t = first_tp:last_tp
+    oldsis = sisterList{t};
+    new_sisterList{t} = -1*ones(size(oldsis));
+end
+
+
+% --- Executes on button press in pushbutton_closestpoint.
+function pushbutton_closestpoint_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_closestpoint (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if isempty(handles.initialframe)
+    set(handles.edit_commu,'String',['No input images.']);
+    return;
+end
+set(handles.togglebutton_editable,'Value',0);
+cellpath = handles.cellpath;
+sisterList = handles.sisterList;
+res_cellpath = handles.res_cellpath;
+res_sisterList = handles.res_sisterList;
+bg = handles.bg;
+row = str2num(get(handles.edit_row,'String'));
+col = str2num(get(handles.edit_col,'String'));
+field = str2num(get(handles.edit_field,'String'));
+plane = str2num(get(handles.edit_plane,'String'));
+channel= str2num(get(handles.edit_CH,'String'));
+cellsize = str2num(get(handles.edit_cellsize,'String'));
+outersize = str2num(get(handles.edit_outersize,'String'));
+FFTiv=handles.FFTiv;
+FFTrv=handles.FFTrv;
+IFFTiv=handles.IFFTiv;
+
+cFrame = str2num(get(handles.edit_currentFrame,'String'));
+
+switch handles.increment
+    case 1
+        endFrame   = str2num(get(handles.edit_lastframe,'String'));
+    case -1
+        endFrame   = str2num(get(handles.edit_firstframe,'String'));
+end
+
+if cFrame~=endFrame
+    
+    tp=cFrame;
+    previousframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+    tp=cFrame+handles.increment;
+    currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+    
+    set(handles.edit_currentFrame,'String',num2str(tp));
+    set(handles.slider_frames,'Value',tp);
+    imshow(imadjust((currentframe),[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
+    
+    opt = detbestlength2(FFTrv,FFTiv,IFFTiv,2*[outersize outersize],2*[cellsize cellsize],1,1);
+    
+    if  length(sisterList) >= tp && ~isempty(sisterList{tp}) && ~isempty(sisterList{1})
+        sisExistInd = find(sisterList{tp}(:,1) ~= -1 & sisterList{tp}(:,1) ~= 0);
+    else
+        sisExistInd = [];
+    end
+    
+    
+    PosInd = find(cellpath{tp-handles.increment}(:,1)>0 & cellpath{tp-handles.increment}(:,2)>0)';
+    
+    for cell=PosInd
+        if isempty(find(cell==sisExistInd,1))
+            sisterList{tp}(cell,:) = sisterList{tp-handles.increment}(cell,:);
+        end
+        
+        xL=max(cellpath{tp-handles.increment}(cell,1)-outersize,1);
+        xR=min(cellpath{tp-handles.increment}(cell,1)+outersize-1,size(currentframe,2));
+        yL=max(cellpath{tp-handles.increment}(cell,2)-outersize,1);
+        yR=min(cellpath{tp-handles.increment}(cell,2)+outersize-1,size(currentframe,1));
+        testframe = currentframe(yL:yR,xL:xR);
+        
+        switch handles.cellrecogmethod
+            case 1
+                [x1,y1,BW] = templateToCentroid(testframe,[],[],handles.maxI,handles.invertedLog);
+            case 2
+                [x1,y1,BW] = templateToCentroid2(testframe,[],[],handles.maxI,handles.invertedLog);
+            case 3
+                [x1,y1,BW] = templateToCentroid3(testframe,[],[],handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));
+                
+        end
+        
+        if isempty(x1) || isempty(y1)
+            x1 = cellpath{tp-handles.increment}(cell,1)-xL;
+            y1 = cellpath{tp-handles.increment}(cell,2)-yL;
+        end
+        
+        cellpath{tp}(cell,:) = [xL+x1 yL+y1];
+        assignin('base','cellpath',cellpath);
+        
+    end
+    
+    DeathInd = find(cellpath{tp-handles.increment}(:,1)==-2)';
+    
+    for cell=DeathInd
+        sisterList{tp}(cell,:) = sisterList{tp-handles.increment}(cell,:);
+        cellpath{tp}(cell,:) = cellpath{tp-handles.increment}(cell,:);
+    end
+    
+    handles.sisterList = sisterList;
+    handles.cellpath = cellpath;
+    
+    if ~isempty(bg)
+        xshift = mean(cellpath{tp}(:,1))-mean(cellpath{tp-handles.increment}(:,1));
+        yshift = mean(cellpath{tp}(:,2))-mean(cellpath{tp-handles.increment}(:,2));
+        bg{tp}(:,1) = bg{tp-handles.increment}(:,1)+round(xshift);
+        bg{tp}(:,2) = bg{tp-handles.increment}(:,2)+round(yshift);
+        handles.bg = bg;
+    end
+    updateLists(cellpath,sisterList,res_cellpath,res_sisterList,bg,handles,tp);
+    guidata(hObject, handles);
+    handles = guidata(hObject);
+    if get(handles.checkbox_cellmarking,'Value')
+        [p bg_p] = plotTrackpoints(handles,cellpath,sisterList,handles.res_cellpath,handles.res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+        handles.p = p;
+        handles.bg_p = bg_p;
+        guidata(hObject, handles);
+    end
+    drawnow;
+    
+    guidata(hObject, handles);
+    handles = guidata(hObject);
+    restoreCellList(handles,tp);
+    
+else
+    set(handles.edit_commu,'String',{'Optimize points and press Record to save positions for each frame.'});
+end
+
+
+
+% --- Executes on button press in pushbutton_closestpointthru.
+function pushbutton_closestpointthru_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton_closestpointthru (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if isempty(handles.initialframe)
+    set(handles.edit_commu,'String',['No input images.']);
+    return;
+end
+set(handles.togglebutton_editable,'Value',0);
+cellpath = handles.cellpath;
+sisterList = handles.sisterList;
+res_cellpath = handles.res_cellpath;
+res_sisterList = handles.res_sisterList;
+bg=handles.bg;
+row = str2num(get(handles.edit_row,'String'));
+col = str2num(get(handles.edit_col,'String'));
+field = str2num(get(handles.edit_field,'String'));
+plane = str2num(get(handles.edit_plane,'String'));
+channel= str2num(get(handles.edit_CH,'String'));
+cellsize = str2num(get(handles.edit_cellsize,'String'));
+outersize = str2num(get(handles.edit_outersize,'String'));
+
+FFTiv=handles.FFTiv;
+FFTrv=handles.FFTrv;
+IFFTiv=handles.IFFTiv;
+cFrame = str2num(get(handles.edit_currentFrame,'String'));
+switch handles.increment
+    case 1
+        endFrame   = str2num(get(handles.edit_lastframe,'String'))-1;
+    case -1
+        endFrame   = str2num(get(handles.edit_firstframe,'String'))+1;
+end
+
+if cFrame~=endFrame+handles.increment
+    
+    previousframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],cFrame,handles.channelnames,handles.SourceF);
+    previousframe = previousframe(300:end-300,300:end-300);
+    currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],cFrame+handles.increment,handles.channelnames,handles.SourceF);
+    opt = detbestlength2(FFTrv,FFTiv,IFFTiv,size(currentframe),size(previousframe),isreal(currentframe),isreal(previousframe));
+    
+    handles.greenflag = 1;
+    guidata(hObject, handles);
+    handles = guidata(hObject);
+    
+    set(handles.edit_commu,'String',{'Processing...'});
+    for t=cFrame:handles.increment:endFrame
+        tp=t;
+        previousframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+        previousframe_small = previousframe(300:end-300,300:end-300);
+        tp=t+handles.increment;
+        currentframe = loadimage(handles.filetype,get(handles.edit_fileformat,'String'),[row col field plane channel],tp,handles.channelnames,handles.SourceF);
+        imshow(imadjust((currentframe),[str2num(get(handles.edit_thresMin,'String')) str2num(get(handles.edit_thresMax,'String'))],[0 1]),'Parent',handles.axes1);
+        
+        [xg yg maxVal] = corrMatching2(currentframe,previousframe_small,opt);
+        if maxVal> str2num(get(handles.edit_similarityThres,'String'))
+            xshift = xg-round(size(currentframe,2)/2);
+            yshift = yg-round(size(currentframe,1)/2);
+        else
+            xshift = 0;
+            yshift = 0;
+        end
+        
+        
+        if  length(sisterList) >= tp && ~isempty(sisterList{tp}) && ~isempty(sisterList{1})
+            sisExistInd = find(sisterList{tp}(:,1) ~= -1 & sisterList{tp}(:,1) ~= 0);
+        else
+            sisExistInd = [];
+        end
+        PosInd = find(cellpath{tp-handles.increment}(:,1)>0 & cellpath{tp-handles.increment}(:,2)>0)';
+        set(handles.edit_currentFrame,'String',num2str(tp));
+        set(handles.slider_frames,'Value',tp);
+
+        for cell=PosInd
+            if isempty(find(cell==sisExistInd,1))
+                sisterList{tp}(cell,:) = sisterList{tp-handles.increment}(cell,:);
+            end
+            
+            xL=max(cellpath{tp-handles.increment}(cell,1)+xshift-outersize,1);
+            xR=min(cellpath{tp-handles.increment}(cell,1)+xshift+outersize-1,size(currentframe,2));
+            yL=max(cellpath{tp-handles.increment}(cell,2)+yshift-outersize,1);
+            yR=min(cellpath{tp-handles.increment}(cell,2)+yshift+outersize-1,size(currentframe,1));
+            %display(num2str([cellpath{tp-handles.increment}(cell,1) cellpath{tp-handles.increment}(cell,2) xshift yshift yL yR xL xR]));
+            testframe = currentframe(yL:yR,xL:xR);
+            
+            switch handles.cellrecogmethod
+                case 1
+                    [x1,y1,BW] = templateToCentroid(testframe,[],[],handles.maxI,handles.invertedLog);
+                case 2
+                    [x1,y1,BW] = templateToCentroid2(testframe,[],[],handles.maxI,handles.invertedLog);
+                case 3
+                    [x1,y1,BW] = templateToCentroid3(testframe,[],[],handles.maxI,handles.invertedLog,str2num(get(handles.edit_outersize,'String')));   
+            end
+            
+            if isempty(x1) || isempty(y1) 
+                x1 = cellpath{tp-handles.increment}(cell,1)-xL;
+                y1 = cellpath{tp-handles.increment}(cell,2)-yL;
+            end
+            
+            cellpath{tp}(cell,:) = [xL+x1 yL+y1];
+        end
+        
+        DeathInd = find(cellpath{tp-handles.increment}(:,1)==-2)';
+        
+        for cell=DeathInd
+            sisterList{tp}(cell,:) = sisterList{tp-handles.increment}(cell,:);
+            cellpath{tp}(cell,:) = cellpath{tp-handles.increment}(cell,:);
+        end
+        
+        if ~isempty(bg)
+            %updating bg points by
+            xshift = mean(cellpath{tp}(:,1))-mean(cellpath{tp-handles.increment}(:,1));
+            yshift = mean(cellpath{tp}(:,2))-mean(cellpath{tp-handles.increment}(:,2));
+            bg{tp}(:,1) = bg{tp-handles.increment}(:,1)+round(xshift);
+            bg{tp}(:,2) = bg{tp-handles.increment}(:,2)+round(yshift);
+            handles.bg = bg;
+        end
+        updateLists(cellpath,sisterList,res_cellpath,res_sisterList,bg,handles,tp);
+        guidata(hObject, handles);
+        handles = guidata(hObject);
+        if get(handles.checkbox_cellmarking,'Value')
+            [p bg_p] = plotTrackpoints(handles,cellpath,sisterList,handles.res_cellpath,handles.res_sisterList,bg,tp,str2num(get(handles.edit_cellNo,'String')));
+            handles.p = p;
+            handles.bg_p = bg_p;
+            guidata(hObject, handles);
+        end
+        drawnow;
+        handles = guidata(hObject);
+        if handles.greenflag==0
+            break;
+        end
+    end
+    handles.greenflag = 1;
+    handles.cellpath = cellpath;
+    handles.sisterList = sisterList;
+    if tp==endFrame
+        set(handles.edit_commu,'String',{'Optimize points and press Record to save positions for each frame.'});
+    end
+    guidata(hObject, handles);
+    handles = guidata(hObject);
+    restoreCellList(handles,tp);
+end

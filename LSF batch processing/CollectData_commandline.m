@@ -1,5 +1,31 @@
-function CollectData_commandline(filetype,ndpathname,row,col,field,tps,signalformat,blankformat,channelnames,totalCHs)
-load trackingparameters
+function CollectData_commandline(analysisparam)
+filetype = analysisparam.filetype;
+ndpathname = analysisparam.ndpathname;
+row = analysisparam.row;
+col = analysisparam.col;
+field = analysisparam.field;
+tps = analysisparam.tps;
+signalformat = analysisparam.signalformat;
+channelnames = analysisparam.channelnames;
+
+nucCH = analysisparam.nucCH ;
+cellCH = analysisparam.cellCH;
+CH1 = analysisparam.CH1;
+CH2 = analysisparam.CH2;
+nominCH = analysisparam.nominCH ;
+denominCH = analysisparam.denominCH;
+
+regiontype = analysisparam.regiontype;
+signaltype = analysisparam.signaltype;
+regions = analysisparam.regions;
+signals = analysisparam.signals;
+outputsignalNo = analysisparam.outputsignalNo;
+output_name = analysisparam.output_name;
+nucFolder = analysisparam.nucFolder;
+cellFolder = analysisparam.cellFolder;
+
+minstamp = analysisparam.minstamp;
+secstamp = analysisparam.secstamp;
 
 currentPath = pwd;
 eval('cd ..');
@@ -8,9 +34,7 @@ cd(currentPath);
 
 first_tp = tps(1);
 last_tp = tps(end);
-load fftexecutiontimes
-h_gaussian = 1/273*[1 4 7 4 1;4 16 26 26 4;7 26 41 26 7;4 16 26 16 4;1 4 7 4 1];
-smooth_opt = detbestlength2(FFTrv,FFTiv,IFFTiv,[image_height image_width],size(h_gaussian),1,1);
+
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
 fileattrib(fullfile(ndpathname,H5filename),'+w');
 cellpath_name = ['/field' num2str(field) '/cellpath'];
@@ -46,7 +70,7 @@ if length(info.Datasets)>0 %#ok<*ISMT>
 end
 
 % Initializing storage variables
-mysignal = zeros(size(cellpath_mat,3),last_tp-first_tp+1,4);
+mysignal = zeros(size(cellpath_mat,1),last_tp-first_tp+1,4);
 h5create(fullfile(ndpathname,H5filename), signal_name, [size(mysignal,1), size(mysignal,2), 4], 'Datatype', 'double', 'ChunkSize', [size(mysignal,1), size(mysignal,2), 1], 'Deflate', 9);
 h5write(fullfile(ndpathname,H5filename), signal_name, mysignal, [1 1 1], [size(mysignal,1) size(mysignal,2) 4]);
 h5writeatt(fullfile(ndpathname,H5filename),signal_name,'outputsignal_name',output_name);
@@ -150,9 +174,9 @@ for tp=first_tp:last_tp
 
     
     % Determine signals
-    CH1im = loadsignal(filetype,ndpathname,signalformat,blankformat,channelnames,totalCHs,CH1,tp,h_gaussian,smooth_opt);
-    CH2im = loadsignal(filetype,ndpathname,signalformat,blankformat,channelnames,totalCHs,CH2,tp,h_gaussian,smooth_opt);
-    ratioim = calculateFRET(filetype,ndpathname,signalformat,blankformat,channelnames,totalCHs,tp,[],filterParam1,filterParam2,bgsize,signalShiftN,signalShiftD,h_gaussian,smooth_opt,useblank_LOG);
+    CH1im = loadsignal(analysisparam,tp,CH1);
+    CH2im = loadsignal(analysisparam,tp,CH2);
+    ratioim = calculateFRET(analysisparam,tp,nominCH,denominCH,[]);
 
     nuc_im   = imread(fullfile(ndpathname,nucFolder, sprintf(signalformat,channelnames{nucCH},tp)));
     if exist(fullfile(ndpathname,cellFolder,sprintf(signalformat,channelnames{cellCH},tp)),'file')
@@ -356,9 +380,15 @@ switch regiontype
         end        
 end
 
-function outputim = loadsignal(filetype,ndpathname,signalformat,blankformat,channelnames,totalCHs,channel,tp,h_gaussian,smooth_opt)
+function outputim = loadsignal(analysisparam,tp,channel)
 outputim = [];
-load trackingparameters
+filetype = analysisparam.filetype;
+ndpathname = analysisparam.ndpathname;
+signalformat = analysisparam.signalformat;
+blankformat = analysisparam.blankformat;
+channelnames = analysisparam.channelnames;
+totalCHs = analysisparam.totalCHs;
+useblank_LOG = analysisparam.useblank_LOG; % 1 = use BLANK for illumination correction, 0 = not using
 
 if useblank_LOG
     
@@ -437,8 +467,12 @@ else
     end
 end
 
-function outputim = loadblank(filetype,ndpathname,blankformat,channelnames,totalCHs,channel,tp)
-
+function outputim = loadblank(analysisparam,tp,channel)
+filetype = analysisparam.filetype;
+ndpathname = analysisparam.ndpathname;
+blankformat = analysisparam.blankformat;
+channelnames = analysisparam.channelnames;
+totalCHs = analysisparam.totalCHs;
 outputim = [];
 
 switch filetype
@@ -471,25 +505,41 @@ width = size(im,2);
 [x,y] = meshgrid(-floor(width/2):floor((width-1)/2),-floor(height/2):floor((height-1)/2));
 out = 1-(1./(1+(sqrt(x.^2+y.^2)/d).^(2*n)));
 
-function ratioim = calculateFRET(filetype,ndpathname,signalformat,blankformat,channelnames,totalCHs,tp,bg,filterParam1,filterParam2,bgsize,signalShiftN,signalShiftD,h_gaussian,smooth_opt,useblank_LOG)
-load trackingparameters
-nominIM = loadsignal(filetype,ndpathname,signalformat,blankformat,channelnames,totalCHs,nominCH,tp,h_gaussian,smooth_opt);
+function ratioim = calculateFRET(analysisparam,tp,nominCH,denominCH,bg)
+
+filetype = analysisparam.filetype;
+ndpathname = analysisparam.ndpathname;
+signalformat = analysisparam.signalformat;
+blankformat = analysisparam.blankformat;
+channelnames = analysisparam.channelnames;
+totalCHs = analysisparam.totalCHs;
+bgnomin_LOG = analysisparam.bgnomin_LOG ; % 1 = median of BG points in SIGNAL, 2=median of BLANK
+bgdenomin_LOG = analysisparam.bgdenomin_LOG; % 1 = median of BG points in SIGNAL, 2=median of BLANK
+illumlogic = analysisparam.illumlogic; % 1 = use high-pass filtering, 0 = no filtering
+
+filterParam1 = analysisparam.filterParam1;
+filterParam2 = analysisparam.filterParam2;
+bgsize = analysisparam.bgsize;
+signalShiftN = analysisparam.signalShiftN;
+signalShiftD = analysisparam.signalShiftD;
+
+nominIM = loadsignal(analysisparam,tp,nominCH);
 if denominCH == -1
     denomIM = im2double(ones(size(nominIM)));
 else
-    denomIM = loadsignal(filetype,ndpathname,signalformat,blankformat,channelnames,totalCHs,denominCH,tp,h_gaussian,smooth_opt);
+    denomIM = loadsignal(analysisparam,tp,denominCH);
 end
 
 % Load blank images if user chose to use BG points from BLANK images
 if bgnomin_LOG==2
-    nominBLK = loadblank(filetype,ndpathname,blankformat,channelnames,totalCHs,nominCH,tp);
+    nominBLK = loadblank(analysisparam,tp,nominCH);
     
 end
 if bgdenomin_LOG==2
     if denominCH == -1
         denomBLK = im2double(ones(size(nominIM)));
     else
-        denomBLK = loadblank(filetype,ndpathname,blankformat,channelnames,totalCHs,denominCH,tp);
+        denomBLK = loadblank(analysisparam,tp,denominCH);
     end
 end
 
@@ -500,8 +550,6 @@ else
     normN = nominIM;
     normD = denomIM;
 end
-
-
 
 switch bgnomin_LOG
     case 1

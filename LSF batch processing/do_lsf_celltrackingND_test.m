@@ -1,22 +1,29 @@
 function do_lsf_celltrackingND_test()
 % Define information about input images and necessary parameters-----------
-templateCH = 2;
+templateCH = 1;
 increment = -1;
-cellsize = 20;
+cellsize = 22;
 outersize = 40;
 similarityThres = 0.9;
-maxWholeImShift = 300;
-maxNucMaskShift = 10;
+maxWholeImShift = 100;
+maxNucMaskShift = 7;
 nucleiOptimizeLog = 1;
+avgNucDiameter = 17;
+thresParam = 8; % The higher the more stringent the threshold
+minAreaRatio=1.25;
+minCytosolWidth=5;
 save celltrackingparameters2;
 %---------------------------------------
-ndfilename ='02152014-r3.nd';
-sourcefolder = 'Q:\sorger\data\NIC\Pat\02-15-2014';
+ndfilename ='03302014-r1.nd';
+sourcefolder = 'Q:\sorger\data\NIC\Pat\03-30-2014';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
 [notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
 tps = [1 notp];
-sites = 9;
+sites = 5;
+% if matlabpool('size') == 0
+%   matlabpool open;
+% end
 
 for site = sites
     
@@ -54,7 +61,6 @@ waveName = [];
 
 if exist(fullfile(sourcefolder,filename),'file')
     fid = fopen(fullfile(sourcefolder,filename));
-    y = 0;
     tline = fgetl(fid);
     sind = 1;
     wind = 1;

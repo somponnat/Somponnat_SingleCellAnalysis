@@ -1,31 +1,35 @@
 function do_lsf_celltrackingND()
 
 % Define information about input images and necessary parameters-----------
-templateCH = 2;
+templateCH = 1;
 increment = -1;
-cellsize = 20;
+cellsize = 19;
 outersize = 40;
 similarityThres = 0.9;
-maxWholeImShift = 300;
-maxNucMaskShift = 10;
+maxWholeImShift = 100;
+maxNucMaskShift = 7;
 nucleiOptimizeLog = 1;
+avgNucDiameter = 17;
+thresParam = 8; % The higher the more stringent the threshold
+minAreaRatio=1.25;
+minCytosolWidth=5;
 save celltrackingparameters2;
 %---------------------------------------
-ndfilename ='02152014-r3.nd';
-sourcefolder = '/hms/scratch1/ss240/02-15-2014';
+ndfilename ='03302014-r1.nd';
+sourcefolder = '/hms/scratch1/ss240/03-30-2014';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
 [notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
-tps = [1 notp];
-sites = [7 8 9 12 11 10 25 26 27 30 29 28 43 44 45 48 47 46 61 62 63];
+sites        = [3  10 14  15  17:48                      57:64                       69];
+endingFrame  = [30 10 111 115 notp*ones(1,length(17:48)) notp*ones(1,length(57:64))  23];
 
 jobmgr = findResource('scheduler', 'type', 'lsf');
 jobmgr.ClusterMatlabRoot = '/opt/matlab';
-jobmgr.SubmitArguments = '-q short -W 12:00 -M 16777216 -n 1 -R "rusage[matlab_dc_lic=1]"';
+jobmgr.SubmitArguments = '-q short -W 12:00 -n 1 -R "rusage[matlab_dc_lic=1]"';
 job = jobmgr.createJob();
 
-for site = sites
-    
+for i = 1:length(sites)
+    site = sites(i);
     fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
     L = regexp(stageName{site}, 'r(?<row>\d+)','names');
     if ~isempty(L)
@@ -46,7 +50,7 @@ for site = sites
         field = 1;
     end
     plane = 1;
-    
+    tps = [1 endingFrame(i)];
     job.createTask(@CellTracking_commandline, 0, ...
         {3,sourcefolder,row,col,field,plane,templateCH,tps,increment,fileformat,channelnames,cellsize,outersize,similarityThres});
 
@@ -65,7 +69,6 @@ waveName = [];
 
 if exist(fullfile(sourcefolder,filename),'file')
     fid = fopen(fullfile(sourcefolder,filename));
-    y = 0;
     tline = fgetl(fid);
     sind = 1;
     wind = 1;

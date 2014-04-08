@@ -40,7 +40,7 @@ if handles.useblank
                 if exist(fullfile(handles.ndpathname,blank_filename),'file')
                     blankim = im2double(imread(fullfile(handles.ndpathname,blank_filename)));
                     smoothed = fftolamopt2(blankim,handles.gaussian,handles.smooth_opt,'same');
-                    normim =(smoothed./median(smoothed(:)));
+                    normim =(smoothed./mean(smoothed(:)));
                     clear blankim smoothed;
                     outputim = signalim./normim;
                 else
@@ -63,7 +63,7 @@ if handles.useblank
                 if exist(fullfile(handles.ndpathname,blank_filename),'file')
                     blankim = im2double(imread(fullfile(handles.ndpathname,blank_filename)));
                     smoothed = fftolamopt2(blankim,handles.gaussian,handles.smooth_opt,'same');
-                    normim =(smoothed./median(smoothed(:)));
+                    normim =(smoothed./mean(smoothed(:)));
                     clear blankim smoothed;
                     outputim = signalim./normim;
                 else
@@ -171,7 +171,7 @@ switch handles.bgnominType
                 yL=max(bg{tp}(b,2)-bgsize,1);
                 yR=min(bg{tp}(b,2)+bgsize,size(nominIM,1));
                 selectedN = normN(yL:yR,xL:xR);
-                BG_N(b) = median(selectedN(:));
+                BG_N(b) = mean(selectedN(:));
             end
         end
     case 3
@@ -179,7 +179,7 @@ switch handles.bgnominType
         xR=round(size(nominIM,2)/2)+2*bgsize;
         yL=round(size(nominIM,1)/2)-2*bgsize;
         yR=round(size(nominIM,1)/2)+2*bgsize;
-        BG_N = median(nominBLK(:));
+        BG_N = mean(nominBLK(:));
 end
 
 switch handles.bgdenominType
@@ -191,7 +191,7 @@ switch handles.bgdenominType
                 yL=max(bg{tp}(b,2)-bgsize,1);
                 yR=min(bg{tp}(b,2)+bgsize,size(nominIM,1));
                 selectedD = normD(yL:yR,xL:xR);
-                BG_D(b) = median(selectedD(:));
+                BG_D(b) = mean(selectedD(:));
             end
         end
     case 3
@@ -199,7 +199,7 @@ switch handles.bgdenominType
         xR=round(size(nominIM,2)/2)+2*bgsize;
         yL=round(size(nominIM,1)/2)-2*bgsize;
         yR=round(size(nominIM,1)/2)+2*bgsize;
-        BG_D = median(denomBLK(:));
+        BG_D = mean(denomBLK(:));
 end
 
 normN = normN-mean(BG_N);
@@ -235,7 +235,7 @@ if handles.useblank
                 if exist(fullfile(handles.ndpathname,blank_filename),'file')
                     blankim = im2double(imread(fullfile(handles.ndpathname,blank_filename)));
                     smoothed = fftolamopt2(blankim,handles.gaussian,handles.smooth_opt,'same');
-                    normim =(smoothed./median(smoothed(:)));
+                    normim =(smoothed./mean(smoothed(:)));
                     clear blankim smoothed;
                     outputim = signalim./normim;
                 else
@@ -262,7 +262,7 @@ if handles.useblank
                 if exist(fullfile(handles.ndpathname,blank_filename),'file')
                     blankim = im2double(imread(fullfile(handles.ndpathname,blank_filename)));
                     smoothed = fftolamopt2(blankim,handles.gaussian,handles.smooth_opt,'same');
-                    normim =(smoothed./median(smoothed(:)));
+                    normim =(smoothed./mean(smoothed(:)));
                     clear blankim smoothed;
                     outputim = signalim./normim;
                 else
@@ -713,6 +713,7 @@ handles.mycmap1 = mycmap1;
 handles.mycmap2 = mycmap2;
 handles.mycmap3 = mycmap3;
 handles.mycmap4 = mycmap4;
+handles.outputsignalname = get(handles.edit_outputname,'String');
 clear mycmap1 mycmap2 mycmap3 mycmap4
 switch startImageIndex
     case 3
@@ -1742,7 +1743,7 @@ switch get(handles.popupmenu_bgnomin,'Value')
                 yL=max(bg{tp}(b,2)-bgsize,1);
                 yR=min(bg{tp}(b,2)+bgsize,size(nominIM,1));
                 selectedN = normN(yL:yR,xL:xR);
-                BG_N(b) = median(selectedN(:));
+                BG_N(b) = mean(selectedN(:));
             end
         end
     case 3
@@ -1750,7 +1751,7 @@ switch get(handles.popupmenu_bgnomin,'Value')
         xR=round(size(nominIM,2)/2)+2*bgsize;
         yL=round(size(nominIM,1)/2)-2*bgsize;
         yR=round(size(nominIM,1)/2)+2*bgsize;
-        BG_N = median(nominBLK(:));
+        BG_N = mean(nominBLK(:));
 end
 
 switch get(handles.popupmenu_bgdenomin,'Value')
@@ -1762,7 +1763,7 @@ switch get(handles.popupmenu_bgdenomin,'Value')
                 yL=max(bg{tp}(b,2)-bgsize,1);
                 yR=min(bg{tp}(b,2)+bgsize,size(nominIM,1));
                 selectedD = normD(yL:yR,xL:xR);
-                BG_D(b) = median(selectedD(:));
+                BG_D(b) = mean(selectedD(:));
             end
         end
     case 3
@@ -1770,7 +1771,7 @@ switch get(handles.popupmenu_bgdenomin,'Value')
         xR=round(size(nominIM,2)/2)+2*bgsize;
         yL=round(size(nominIM,1)/2)-2*bgsize;
         yR=round(size(nominIM,1)/2)+2*bgsize;
-        BG_D = median(denomBLK(:));
+        BG_D = mean(denomBLK(:));
 end
 
 
@@ -3288,7 +3289,7 @@ handles.signals2 = get(handles.popupmenu_signal2,'String');
 handles.signals3 = get(handles.popupmenu_signal3,'String');
 handles.signals4 = get(handles.popupmenu_signal4,'String');
 
-handles.outputsignalname = get(handles.edit_outputname,'String');
+handles.outputsignaldatasetname = get(handles.edit_outputname,'String');
 
 handles.filterParam1 = str2num(get(handles.edit_param1,'String'));
 handles.filterParam2 = str2num(get(handles.edit_param2,'String'));
@@ -3425,12 +3426,12 @@ switch regiontype
                     cytoData(i) = mini_ratioIm(cyto_Y(i),cyto_X(i));
                 end
                 if ~isempty(nucData)
-                    Average_Nuc = median(nucData);
+                    Average_Nuc = mean(nucData);
                 else
                     Average_Nuc = 0;
                 end
                 if ~isempty(cytoData)
-                    Average_Cyto = median(cytoData);
+                    Average_Cyto = mean(cytoData);
                 else
                     Average_Cyto = 0;
                 end
@@ -3443,12 +3444,12 @@ switch regiontype
                     cytoData(i) = cell_ch1(cyto_Y(i),cyto_X(i));
                 end
                 if ~isempty(nucData)
-                    Average_Nuc = median(nucData);
+                    Average_Nuc = mean(nucData);
                 else
                     Average_Nuc = 0;
                 end
                 if ~isempty(cytoData)
-                    Average_Cyto = median(cytoData);
+                    Average_Cyto = mean(cytoData);
                 else
                     Average_Cyto = 0;
                 end
@@ -3461,12 +3462,12 @@ switch regiontype
                     cytoData(i) = cell_ch2(cyto_Y(i),cyto_X(i));
                 end
                 if ~isempty(nucData)
-                    Average_Nuc = median(nucData);
+                    Average_Nuc = mean(nucData);
                 else
                     Average_Nuc = 0;
                 end
                 if ~isempty(cytoData)
-                    Average_Cyto = median(cytoData);
+                    Average_Cyto = mean(cytoData);
                 else
                     Average_Cyto = 0;
                 end
@@ -3479,12 +3480,12 @@ switch regiontype
                     cytoData(i) = cell_ch3(cyto_Y(i),cyto_X(i));
                 end
                 if ~isempty(nucData)
-                    Average_Nuc = median(nucData);
+                    Average_Nuc = mean(nucData);
                 else
                     Average_Nuc = 0;
                 end
                 if ~isempty(cytoData)
-                    Average_Cyto = median(cytoData);
+                    Average_Cyto = mean(cytoData);
                 else
                     Average_Cyto = 0;
                 end
@@ -3501,7 +3502,7 @@ switch regiontype
                     nucData(i) = mini_ratioIm(nuc_Y(i),nuc_X(i));
                 end
                 if ~isempty(nucData)
-                    outputsignal = median(nucData);
+                    outputsignal = mean(nucData);
                 else
                     outputsignal = 0;
                 end
@@ -3510,7 +3511,7 @@ switch regiontype
                     nucData(i) = cell_ch1(nuc_Y(i),nuc_X(i));
                 end
                 if ~isempty(nucData)
-                    outputsignal = median(nucData);
+                    outputsignal = mean(nucData);
                 else
                     outputsignal = 0;
                 end
@@ -3519,7 +3520,7 @@ switch regiontype
                     nucData(i) = cell_ch2(nuc_Y(i),nuc_X(i));
                 end
                 if ~isempty(nucData)
-                    outputsignal = median(nucData);
+                    outputsignal = mean(nucData);
                 else
                     outputsignal = 0;
                 end
@@ -3528,7 +3529,7 @@ switch regiontype
                     nucData(i) = cell_ch3(nuc_Y(i),nuc_X(i));
                 end
                 if ~isempty(nucData)
-                    outputsignal = median(nucData);
+                    outputsignal = mean(nucData);
                 else
                     outputsignal = 0;
                 end
@@ -3540,7 +3541,7 @@ switch regiontype
                     cytoData(i) = mini_ratioIm(cyto_Y(i),cyto_X(i));
                 end
                 if ~isempty(cytoData)
-                    outputsignal = median(cytoData);
+                    outputsignal = mean(cytoData);
                 else
                     outputsignal = 0;
                 end
@@ -3549,7 +3550,7 @@ switch regiontype
                     cytoData(i) = cell_ch1(cyto_Y(i),cyto_X(i));
                 end
                 if ~isempty(cytoData)
-                    outputsignal = median(cytoData);
+                    outputsignal = mean(cytoData);
                 else
                     outputsignal = 0;
                 end
@@ -3558,7 +3559,7 @@ switch regiontype
                     cytoData(i) = cell_ch2(cyto_Y(i),cyto_X(i));
                 end
                 if ~isempty(cytoData)
-                    outputsignal = median(cytoData);
+                    outputsignal = mean(cytoData);
                 else
                     outputsignal = 0;
                 end
@@ -3567,7 +3568,7 @@ switch regiontype
                     cytoData(i) = cell_ch3(cyto_Y(i),cyto_X(i));
                 end
                 if ~isempty(cytoData)
-                    outputsignal = median(cytoData);
+                    outputsignal = mean(cytoData);
                 else
                     outputsignal = 0;
                 end
@@ -3579,7 +3580,7 @@ switch regiontype
                     cellData(i) = mini_ratioIm(cell_Y(i),cell_X(i));
                 end
                 if ~isempty(cellData)
-                    outputsignal = median(cellData);
+                    outputsignal = mean(cellData);
                 else
                     outputsignal = 0;
                 end
@@ -3588,7 +3589,7 @@ switch regiontype
                     cellData(i) = cell_ch1(cell_Y(i),cell_X(i));
                 end
                 if ~isempty(cellData)
-                    outputsignal = median(cellData);
+                    outputsignal = mean(cellData);
                 else
                     outputsignal = 0;
                 end
@@ -3597,7 +3598,7 @@ switch regiontype
                     cellData(i) = cell_ch2(cell_Y(i),cell_X(i));
                 end
                 if ~isempty(cellData)
-                    outputsignal = median(cellData);
+                    outputsignal = mean(cellData);
                 else
                     outputsignal = 0;
                 end
@@ -3606,7 +3607,7 @@ switch regiontype
                     cellData(i) = cell_ch3(cell_Y(i),cell_X(i));
                 end
                 if ~isempty(cellData)
-                    outputsignal = median(cellData);
+                    outputsignal = mean(cellData);
                 else
                     outputsignal = 0;
                 end
@@ -4311,7 +4312,7 @@ if ~strcmp(allOutputs,'<not present>')
             if get(handles.checkbox_variable1,'Value')
                 PosTime = find(signal(:,scell,1));
                 if ~isempty(PosTime)
-                    myy = signal(PosTime,scell,1)/median(signal(PosTime,scell,1));
+                    myy = signal(PosTime,scell,1)/mean(signal(PosTime,scell,1));
                     plot(timestamp(PosTime)/60,myy,'b');
                     if length(signalinfo.Attributes)~=0
                     legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal1');
@@ -4327,7 +4328,7 @@ if ~strcmp(allOutputs,'<not present>')
             if get(handles.checkbox_variable2,'Value')
                 PosTime = find(signal(:,scell,2));
                 if ~isempty(PosTime)
-                    myy = signal(PosTime,scell,2)/median(signal(PosTime,scell,2));
+                    myy = signal(PosTime,scell,2)/mean(signal(PosTime,scell,2));
                     hold on;plot(timestamp(PosTime)/60,myy,'r');hold off;
                     if length(signalinfo.Attributes)~=0
                         legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal2');
@@ -4344,7 +4345,7 @@ if ~strcmp(allOutputs,'<not present>')
                 PosTime = find(signal(:,scell,3));
                 if ~isempty(PosTime)
                     
-                    myy = signal(PosTime,scell,3)/median(signal(PosTime,scell,3));
+                    myy = signal(PosTime,scell,3)/mean(signal(PosTime,scell,3));
                     hold on;plot(timestamp(PosTime)/60,myy,'g');hold off;
                     if length(signalinfo.Attributes)~=0
                         legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal3');
@@ -4359,7 +4360,7 @@ if ~strcmp(allOutputs,'<not present>')
             if get(handles.checkbox_variable4,'Value')
                 PosTime = find(signal(:,scell,4));
                 if ~isempty(PosTime)
-                    myy = signal(PosTime,scell,4)/median(signal(PosTime,scell,4));
+                    myy = signal(PosTime,scell,4)/mean(signal(PosTime,scell,4));
                     hold on;plot(timestamp(PosTime)/60,myy,'k');hold off;
                     if length(signalinfo.Attributes)~=0
                         legendList{legendListCount} = h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal4');
@@ -5594,7 +5595,7 @@ handles.signals2 = get(handles.popupmenu_signal2,'String');
 handles.signals3 = get(handles.popupmenu_signal3,'String');
 handles.signals4 = get(handles.popupmenu_signal4,'String');
 
-handles.outputsignalname = get(handles.edit_outputname,'String');
+handles.outputsignaldatasetname = get(handles.edit_outputname,'String');
 
 handles.filterParam1 = str2num(get(handles.edit_param1,'String'));
 handles.filterParam2 = str2num(get(handles.edit_param2,'String'));
@@ -5645,6 +5646,7 @@ nucCH = handles.nucCH;
 CH1= handles.CH1;
 CH2= handles.CH3;
 CH3= handles.CH3;
+outputsignaldatasetname = handles.outputsignaldatasetname;
 nominCH= handles.nominCH;
 denominCH= handles.denominCH;
 first_tp=handles.first_tp ;
@@ -5713,7 +5715,7 @@ else
     return;
 end
 
-FractionExistingLimit = 0.6;
+FractionExistingLimit = 0.4;
 i=1;
 serpen = [];
 for c=1:size(cellpath_mat,1)
@@ -5776,7 +5778,7 @@ end
 mysignal = zeros(size(cellpath{last_tp},1),last_tp-first_tp+1,4);
 h5create(fullfile(ndpathname,H5filename), signal_name, [size(mysignal,1), size(mysignal,2), 4], 'Datatype', 'double', 'ChunkSize', [size(mysignal,1), size(mysignal,2), 1], 'Deflate', 9);
 h5write(fullfile(ndpathname,H5filename), signal_name, mysignal, [1 1 1], [size(mysignal,1) size(mysignal,2) 4]);
-h5writeatt(fullfile(ndpathname,H5filename),signal_name,'outputsignal_name',outputsignalname);
+h5writeatt(fullfile(ndpathname,H5filename),signal_name,'outputsignal_name',outputsignaldatasetname);
 if Var1LOG == 1
     region1 = handles.regions1{region1LOG};
     signal1 = handles.signals1{signal1LOG};

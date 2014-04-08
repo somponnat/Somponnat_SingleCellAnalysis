@@ -210,12 +210,12 @@ switch regiontype
                 end
                 
                 if ~isempty(nucData)
-                    Average_Nuc = median(nucData);
+                    Average_Nuc = mean(nucData);
                 else
                     Average_Nuc = 0;
                 end
                 if ~isempty(cytoData)
-                    Average_Cyto = median(cytoData);
+                    Average_Cyto = mean(cytoData);
                 else
                     Average_Cyto = 0;
                 end
@@ -229,12 +229,12 @@ switch regiontype
                     cytoData(i) = CH2im(cyto_Y(i),cyto_X(i));
                 end
                 if ~isempty(nucData)
-                    Average_Nuc = median(nucData);
+                    Average_Nuc = mean(nucData);
                 else
                     Average_Nuc = 0;
                 end
                 if ~isempty(cytoData)
-                    Average_Cyto = median(cytoData);
+                    Average_Cyto = mean(cytoData);
                 else
                     Average_Cyto = 0;
                 end
@@ -248,12 +248,12 @@ switch regiontype
                     cytoData(i) = ratioim(cyto_Y(i),cyto_X(i));
                 end
                 if ~isempty(nucData)
-                    Average_Nuc = median(nucData);
+                    Average_Nuc = mean(nucData);
                 else
                     Average_Nuc = 0;
                 end
                 if ~isempty(cytoData)
-                    Average_Cyto = median(cytoData);
+                    Average_Cyto = mean(cytoData);
                 else
                     Average_Cyto = 0;
                 end
@@ -271,7 +271,7 @@ switch regiontype
                     nucData(i) = CH1im(nuc_Y(i),nuc_X(i));
                 end
                 if ~isempty(nucData)
-                    outputsignal = median(nucData);
+                    outputsignal = mean(nucData);
                 else
                     outputsignal = 0;
                 end
@@ -280,7 +280,7 @@ switch regiontype
                     nucData(i) = CH2im(nuc_Y(i),nuc_X(i));
                 end
                 if ~isempty(nucData)
-                    outputsignal = median(nucData);
+                    outputsignal = mean(nucData);
                 else
                     outputsignal = 0;
                 end
@@ -289,7 +289,7 @@ switch regiontype
                     nucData(i) = ratioim(nuc_Y(i),nuc_X(i));
                 end
                 if ~isempty(nucData)
-                    outputsignal = median(nucData);
+                    outputsignal = mean(nucData);
                 else
                     outputsignal = 0;
                 end
@@ -301,7 +301,7 @@ switch regiontype
                     cytoData(i) = CH1im(cyto_Y(i),cyto_X(i));
                 end
                 if ~isempty(cytoData)
-                    outputsignal = median(cytoData);
+                    outputsignal = mean(cytoData);
                 else
                     outputsignal = 0;
                 end
@@ -310,7 +310,7 @@ switch regiontype
                     cytoData(i) = CH2im(cyto_Y(i),cyto_X(i));
                 end
                 if ~isempty(cytoData)
-                    outputsignal = median(cytoData);
+                    outputsignal = mean(cytoData);
                 else
                     outputsignal = 0;
                 end
@@ -319,7 +319,7 @@ switch regiontype
                     cytoData(i) = ratioim(cyto_Y(i),cyto_X(i));
                 end
                 if ~isempty(cytoData)
-                    outputsignal = median(cytoData);
+                    outputsignal = mean(cytoData);
                 else
                     outputsignal = 0;
                 end
@@ -331,7 +331,7 @@ switch regiontype
                     cellData(i) = CH1im(cell_Y(i),cell_X(i));
                 end
                 if ~isempty(cellData)
-                    outputsignal = median(cellData);
+                    outputsignal = mean(cellData);
                 else
                     outputsignal = 0;
                 end
@@ -340,7 +340,7 @@ switch regiontype
                     cellData(i) = CH2im(cell_Y(i),cell_X(i));
                 end
                 if ~isempty(cellData)
-                    outputsignal = median(cellData);
+                    outputsignal = mean(cellData);
                 else
                     outputsignal = 0;
                 end
@@ -349,7 +349,7 @@ switch regiontype
                     cellData(i) = ratioim(cell_Y(i),cell_X(i));
                 end
                 if ~isempty(cellData)
-                    outputsignal = median(cellData);
+                    outputsignal = mean(cellData);
                 else
                     outputsignal = 0;
                 end
@@ -512,11 +512,11 @@ switch bgnomin_LOG
                 yL=max(bg{tp}(b,2)-bgsize,1);
                 yR=min(bg{tp}(b,2)+bgsize,size(nominIM,1));
                 selectedN = normN(yL:yR,xL:xR);
-                BG_N(b) = median(selectedN(:));
+                BG_N(b) = mean(selectedN(:));
             end
         end
     case 2
-        BG_N = median(nominBLK(:));
+        BG_N = mean(nominBLK(:));
     otherwise
         BG_N = 0;
 end
@@ -530,11 +530,11 @@ switch bgdenomin_LOG
                 yL=max(bg{tp}(b,2)-bgsize,1);
                 yR=min(bg{tp}(b,2)+bgsize,size(nominIM,1));
                 selectedD = normD(yL:yR,xL:xR);
-                BG_D(b) = median(selectedD(:));
+                BG_D(b) = mean(selectedD(:));
             end
         end
     case 2
-        BG_D = median(denomBLK(:));
+        BG_D = mean(denomBLK(:));
     otherwise
         BG_D = 0;
 end

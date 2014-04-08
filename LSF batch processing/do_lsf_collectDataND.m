@@ -11,21 +11,21 @@ denominCH = 2;
 useblank_LOG = 0; % 1 = use BLANK for illumination correction, 0 = not using
 bgnomin_LOG = 0 ; % 1 = median of BG points in SIGNAL, 2=median of BLANK
 bgdenomin_LOG = 0; % 1 = median of BG points in SIGNAL, 2=median of BLANK
-illumlogic = 1; % 1 = use high-pass filtering, 0 = no filtering
+illumlogic = 0; % 1 = use high-pass filtering, 0 = no filtering
 
-outputname = 'signals';
-cytosize = 4;
+cytosize = 5;
 cellsize = 40;
 filterParam1 = 2;
 filterParam2 = 2;
 bgsize = 30;
 signalShiftN = 0.001;
 signalShiftD = 0.001;
-regiontype = [1 2 3 4]; %1=nuc/cyto,2=nuc,3=cyto,4=cell
-signaltype = [2 2 2 2];%1=ch1,2=ch2,3=nominCH/denominCH
+regiontype = [2 3 2 3]; %1=nuc/cyto,2=nuc,3=cyto,4=cell
+signaltype = [1 1 2 2];%1=ch1,2=ch2,3=nominCH/denominCH
 regions = {'Nuc/Cyto';'Nuclei';'Cytosol';'Cell'};
 signals = {'mCherry';'FOXO3a';'EKAREV'};
-output_name = 'FOXO3a_ratio';
+outputsignalNo = 1; % 'outputsignal' + 'digit'
+output_name = 'mCherry/FOXO3a';
 nucFolder = 'nuclearMask';
 cellFolder = 'cellMask';
 
@@ -43,11 +43,11 @@ sourcefolder = '/hms/scratch1/ss240/02-12-2014-wtAkt';
 prefix = ndfilename(1:(end-3));
 [notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
 tps = [1 notp];
-sites = 1:63;
+sites = 1:length(stagePos);
 
 jobmgr = findResource('scheduler', 'type', 'lsf');
 jobmgr.ClusterMatlabRoot = '/opt/matlab';
-jobmgr.SubmitArguments = '-q short -W 12:00 -M 8388608 -n 1 -R "rusage[matlab_dc_lic=1]" ';
+jobmgr.SubmitArguments = '-q short -W 12:00 -n 1 -R "rusage[matlab_dc_lic=1]" ';
 job = jobmgr.createJob();
 
 for site = sites

@@ -3,21 +3,28 @@ function do_lsf_autoinitiateseedsND()
 % Define information about input images and necessary parameters-----------
 templateCH = 1;
 increment = -1;
-forceseeding = false;
+forceseeding = true;
 minNucDiameter = 10;
 maxNucDiameter = 100;
 %---------------------------------------
-ndfilename ='03302014-r1.nd';
-sourcefolder = '/hms/scratch1/ss240/03-30-2014';
+ndfilename ='02272014-r1.nd';
+sourcefolder = '/hms/scratch1/ss240/02-27-2014';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
 [notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
 tps = [1 notp];
-sites = [1	2	3	4 24	23	22	21 25	26	27	28 48	47	46	45 49	50	51	52 72	71	70	69];
+sites = [1	2	3	4	5	6,...
+18	17	16	15	14	13,...
+19	20	21	22	23	24,...
+36	35	34	33	32	31,...
+37	38	39	40	41	42,...
+54	53	52	51	50	49,...
+55	56	57	58	59	60,...
+];
 
 jobmgr = findResource('scheduler', 'type', 'lsf');
 jobmgr.ClusterMatlabRoot = '/opt/matlab';
-jobmgr.SubmitArguments = '-q short -W 12:00 -M 16777216 -n 1 -R "rusage[matlab_dc_lic=1]"';
+jobmgr.SubmitArguments = '-q short -W 12:00 -n 1 -R "rusage[matlab_dc_lic=1]"';
 job = jobmgr.createJob();
 
 for site = sites

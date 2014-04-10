@@ -1,24 +1,24 @@
 function do_lsf_autoinitiateseedsNDtest()
 
 % Define information about input images and necessary parameters-----------
-templateCH = 1;
+templateCH = 2;
 increment = -1;
 forceseeding = true;
 minNucDiameter = 14;
 maxNucDiameter = 100;
 %---------------------------------------
-ndfilename ='03302014-r1.nd';
-sourcefolder = 'Q:\sorger\data\NIC\Pat\03-30-2014';
+ndfilename ='02272014-r1.nd';
+sourcefolder = 'Q:\sorger\data\NIC\Pat\02-27-2014';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
 [notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
-sites = [17:48 57:64];
+sites = [7	8	9 12	11	10 25	26	27 30	29	28 43	44	45 48	47	46 61	62	63];
 tps = [1 notp];
 if matlabpool('size') == 0
   matlabpool open;
 end
 
-for i = 1:length(sites)
+parfor i = 1:length(sites)
     site = sites(i);
     fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
     L = regexp(stageName{site}, 'r(?<row>\d+)','names');

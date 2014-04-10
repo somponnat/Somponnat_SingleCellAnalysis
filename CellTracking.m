@@ -2515,6 +2515,10 @@ if H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
     for tp=first_tp:sisterListinfo.Dataspace.Size(3)
         sisterList{tp} = sisterList_mat(:,:,tp);
     end
+else
+    for tp=first_tp:cellpathinfo.Dataspace.Size(3)
+        sisterList{tp} = -1*ones(size(cellpath_mat,1),3);
+    end
 end
 
 fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');

@@ -1,31 +1,39 @@
 function do_lsf_celltrackingND()
 
 % Define information about input images and necessary parameters-----------
-templateCH = 1;
-increment = -1;
-cellsize = 19;
-outersize = 40;
-similarityThres = 0.9;
-maxWholeImShift = 100;
-maxNucMaskShift = 7;
-nucleiOptimizeLog = 1;
-avgNucDiameter = 17;
-thresParam = 8; % The higher the more stringent the threshold
-minAreaRatio=1.25;
-minCytosolWidth=5;
-save celltrackingparameters2;
+analysisparameter.channel = 1;
+analysisparameter.increment = -1;
+analysisparameter.cellsize = 20;
+analysisparameter.outersize = 40;
+analysisparameter.similarityThres = 0.9;
+maxWholeImShift = 150;
+analysisparameter.maxWholeImShift = maxWholeImShift;
+analysisparameter.maxNucMaskShift = 7;
+analysisparameter.nucleiOptimizeLog = 1;
+analysisparameter.avgNucDiameter = 17;
+analysisparameter.thresParam = 8; % The higher the more stringent the threshold
+analysisparameter.minAreaRatio=1.25;
+analysisparameter.minCytosolWidth=5;
+
 %---------------------------------------
-ndfilename ='03302014-r1.nd';
-sourcefolder = '/hms/scratch1/ss240/03-30-2014';
+ndfilename ='02272014-r1.nd';
+SourceF = '/hms/scratch1/ss240/02-27-2014';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
-[notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
-sites        = [3  10 14  15  17:48                      57:64                       69];
-endingFrame  = [30 10 111 115 notp*ones(1,length(17:48)) notp*ones(1,length(57:64))  23];
+[notp,stagePos,stageName,channelnames] = readndfile(SourceF,ndfilename);
+analysisparameter.channelnames=channelnames;
+analysisparameter.SourceF=SourceF;
+analysisparameter.ndfilename=ndfilename;
+analysisparameter.stageName=stageName;
+analysisparameter.filetype=3;
+
+sites = 1:length(stagePos);
+tps = 1:notp;
+analysisparameter.tps = tps;
 
 jobmgr = findResource('scheduler', 'type', 'lsf');
 jobmgr.ClusterMatlabRoot = '/opt/matlab';
-jobmgr.SubmitArguments = '-q short -W 12:00 -n 1 -R "rusage[matlab_dc_lic=1]"';
+jobmgr.SubmitArguments = '-q sorger_1d -n 1 -R "rusage[matlab_dc_lic=1]"';
 job = jobmgr.createJob();
 
 for i = 1:length(sites)
@@ -50,16 +58,21 @@ for i = 1:length(sites)
         field = 1;
     end
     plane = 1;
-    tps = [1 endingFrame(i)];
-    job.createTask(@CellTracking_commandline, 0, ...
-        {3,sourcefolder,row,col,field,plane,templateCH,tps,increment,fileformat,channelnames,cellsize,outersize,similarityThres});
-
+    analysisparameter.site = site;
+    analysisparameter.row=row;
+    analysisparameter.col=col;
+    analysisparameter.field=field;
+    analysisparameter.plane=plane;
+    analysisparameter.fileformat=fileformat;
+    
+    job.createTask(@CellTracking_commandline, 0, {analysisparameter});
+    save(fullfile(SourceF,['site' num2str(site) 'tracking.mat']),'analysisparameter');
 end
 
 job.submit();
 
 
-function [notp,stagePos,stageName,waveName] = readndfile(sourcefolder,filename)
+function [notp,stagePos,stageName,waveName] = readndfile(SourceF,filename)
 % Search for number of string matches per line.
 notp=-1;
 stagePos = [];
@@ -67,8 +80,8 @@ stageName = [];
 waveName = [];
 
 
-if exist(fullfile(sourcefolder,filename),'file')
-    fid = fopen(fullfile(sourcefolder,filename));
+if exist(fullfile(SourceF,filename),'file')
+    fid = fopen(fullfile(SourceF,filename));
     tline = fgetl(fid);
     sind = 1;
     wind = 1;

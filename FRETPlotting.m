@@ -773,20 +773,30 @@ if exist(fullfile(handles.ndpathname,H5filename),'file')
         set(handles.edit_commu,'String',[H5filename ' ' cellpath_name ' does not exist.']);
     end
     
+    
     fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
     if H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
         H5F.close(fid);
         sisterListinfo = h5info(fullfile(handles.ndpathname,H5filename), sisterList_name);
         sisterList_mat = h5read(fullfile(handles.ndpathname,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
         
-        for tp=first_tp:last_tp
-            sisterList{tp} = sisterList_mat(:,:,tp);
+        if size(sisterList_mat,1) == size(cellpath_mat,1) && size(sisterList_mat,2) == size(cellpath_mat,2) && size(sisterList_mat,3) == size(cellpath_mat,3)
+            
+            for tp=first_tp:sisterListinfo.Dataspace.Size(3)
+                sisterList{tp} = sisterList_mat(:,:,tp);
+            end
+        else
+            for tp=first_tp:cellpathinfo.Dataspace.Size(3)
+                sisterList{tp} = -1*ones(size(cellpath_mat,1),3);
+            end
         end
+        
         handles.sisterList=sisterList;
+        
     else
         if length(cellpath{tp}) > 0
             for tp=first_tp:last_tp
-                sisterList{tp} = -1* ones(length(cellpath{tp}),3);
+                sisterList{tp} = -1*ones(size(cellpath{tp},1),3);
             end
             handles.sisterList=sisterList;
         else
@@ -794,16 +804,21 @@ if exist(fullfile(handles.ndpathname,H5filename),'file')
         end
     end
     
+    
     fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
     if H5L.exists(fid,bg_name,'H5P_DEFAULT')
         H5F.close(fid);
         bginfo = h5info(fullfile(handles.ndpathname,H5filename), bg_name);
         bg_mat = h5read(fullfile(handles.ndpathname,H5filename),bg_name,[1 1 1], [bginfo.Dataspace.Size(1) bginfo.Dataspace.Size(2) bginfo.Dataspace.Size(3)]);
-        
-        for tp=first_tp:last_tp
-            bg{tp} = bg_mat(:,:,tp);
+        if size(bg_mat,3) == size(cellpath_mat,3)
+            
+            for tp=first_tp:last_tp
+                bg{tp} = bg_mat(:,:,tp);
+            end
+            handles.bg = bg;
+        else
+            handles.bg=[];
         end
-        handles.bg = bg;
     else
         handles.bg=[];
     end
@@ -4372,6 +4387,24 @@ if ~strcmp(allOutputs,'<not present>')
                     display('Parameter 4 not available');
                 end
             end
+            
+            if get(handles.checkbox_variable1,'Value')
+                
+                myy = signal(:,scell,4)./signal(:,scell,3);
+                myy(signal(:,scell,4) == 0 | signal(:,scell,3) == 0) = NaN;
+                
+                myy = myy/nanmean(myy);
+                
+                hold on;plot(timestamp/60,myy,'m');hold off;
+                if length(signalinfo.Attributes)~=0
+                    legendList{legendListCount} = [h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal4') '/' h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'signal3')];
+                end
+                assignin('base','signal5',myy);
+                assignin('base','timestamp5',timestamp);
+                legendListCount=legendListCount+1;
+                
+            end
+            
             if length(signalinfo.Attributes)~=0
                 title(h5readatt(fullfile(handles.ndpathname,H5filename),signal_name,'outputsignal_name'),'interpreter','none');
             end

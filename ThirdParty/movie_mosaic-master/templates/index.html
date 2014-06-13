@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en-US">
+
+  <head>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <script type="text/javascript" src="static/jquery-1.11.0.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="static/jquery-ui-1.11.0-pre.min.css"/>
+    <script type="text/javascript" src="static/jquery-ui-1.11.0-pre.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="static/mediaelementplayer.min.css"/>
+    <script type="text/javascript" src="static/mediaelement-and-player.min.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="static/main.css"/>
+    <script type="text/javascript" src="static/main.js"></script>
+
+    <title>Movie mosaic browser</title>
+
+  </head>
+
+  <body>
+
+    <table id="lookup-table" class="lookup-table">
+      <tr>
+        <th></th>
+        {% for column in column_numbers %}
+          <th>C{{ column }}</th>
+        {% endfor %}
+      </tr>
+      {% for row in row_numbers %}
+        <tr>
+          <th>R{{ row }}</th>
+          {% for column in column_numbers %}
+            {% if column in table[row] %}
+              {% set cell = table[row][column] %}
+              <td class="full cell-{{ cell.rc_address }}"
+                  {% if not movies_only %}
+                  style="background-image: url({{ cell.image_filename }});"
+                  {% endif %}
+                  >
+                  {% if movies_only %}
+                    <video type="video/mp4" src="{{ cell.movie_filename }}"
+                           controls loop></video>
+                  {% endif %}
+              </td>
+            {% else %}
+              <td class="empty"></td>
+            {% endif %}
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </table>
+
+    {% if not movies_only %}
+      {% for cell in cells %}
+        <div class="lookup-table-popup" id="popup-cell-{{ cell.rc_address }}"
+             title="{{ cell.rc_address }}">
+          <a class="media-ondemand" href="{{ cell.image_filename }}">Expanded time course</a>
+          <img />
+          <a class="media-ondemand" href="{{ cell.movie_filename }}">Time-lapse movie of cells</a>
+          <video type="video/mp4" controls loop></video>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+  </body>
+
+</html>

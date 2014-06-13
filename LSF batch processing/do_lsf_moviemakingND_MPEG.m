@@ -7,9 +7,9 @@ signalshift = 0.001;
 bgsubstractlogic = 0; % 
 illumcorlogic = 1; % Algorithmic illumination correction by high-pass filter
 framshift_logic = 0;
-ImageIndex = 1; % 1=nomin/denomin, 2=templateCH, 3=nomin,4=denomin
-intensityrange = [0.0031128 0.0040742]; % For other images
-displaygate = [0.3 2]; % For FRET Only
+ImageIndex = 2; % 1=nomin/denomin, 2=templateCH, 3=nomin,4=denomin
+intensityrange = [0.0025 0.029]; % For other images
+displaygate = [0.39112 2.0996]; % For FRET Only
 filterParam = [2 2]; 
 cellsize = 15;
 timestamplogic = 2; % 1 = frame no, 2 = actual time
@@ -18,25 +18,25 @@ save videoparameters;
 
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename = '02032013-r1.nd';
-templateCH = 2;
+ndfilename = 'C8TransTest.nd';
+templateCH = 3;
 nominCH = 2;
 denominCH = 3;
-sourcefolder = 'Q:\sorger\data\NIC\Pat\02-03-2013';
+sourcefolder = 'N:\SORGER PROJECTS\people\Arshed\NIC Data\5_14_14\';
 %------------------------------------------------
 
 prefix = ndfilename(1:(end-3));
 [notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename);
 
-tps = [1 180];
+tps = [1 500];
 sites = 1:length(stagePos);
 
 if matlabpool('size') == 0
   matlabpool open;
 end
 
-parfor site = sites
-    
+parfor i = 1:length(sites)
+    site = sites(i);
     fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
     L = regexp(stageName{site}, 'r(?<row>\d+)','names');
     if ~isempty(L)
@@ -103,9 +103,14 @@ if exist(fullfile(sourcefolder,filename),'file')
         testInd = regexp(tline,'WaveName\d+');
         num = length(testInd);
         if num > 0
-            wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match')
-            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_).+(?=")', 'match')
-            waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
+            wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match');
+            wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_)\w+(?=")', 'match');
+            wavename3  = regexp(tline, '(?<="WaveName\d+", ").+(?=")', 'match');
+            if ~isempty(wavename1) && ~isempty(wavename2)
+                waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
+            else
+                waveName{wind} = ['w' num2str(wind) wavename3{1}];
+            end
             wind=wind+1;
         end
         

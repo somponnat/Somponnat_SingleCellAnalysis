@@ -1,22 +1,23 @@
 function do_lsf_maskgeneratingND_test()
-clear all;
 % Define information about input images and necessary parameters-----------
-templateCH = 2;
-cellsize = 40;
+templateCH = 1;
+cellsize = 18;
 celldilatesize = 4;
-
 %---------------------------------------
-ndfilename ='02152014-r3.nd';
-sourcefolder = 'Q:\sorger\data\NIC\Pat\02-15-2014';
+ndfilename ='0223201410A1806-r1.nd';
+sourcefolder = 'Q:\sorger\data\NIC\Pat\03-23-2014-10A1806';
 %------------------------------------------------
 
 prefix = ndfilename(1:(end-3));
 [notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
 tps = [1 notp];
-sites = [7];
+sites = [45 64];
 
+if matlabpool('size') == 0
+  matlabpool open;
+end
 
-for i=1:length(sites)
+parfor i=1:length(sites)
     site = sites(i);
     
     fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
@@ -63,7 +64,6 @@ fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
 if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
     H5F.close(fid);
     cellpathinfo = h5info(fullfile(SourceF,H5filename), cellpath_name);
-    
     cellpath_mat = h5read(fullfile(SourceF,H5filename),cellpath_name,[1 1 1], [cellpathinfo.Dataspace.Size(1) cellpathinfo.Dataspace.Size(2) cellpathinfo.Dataspace.Size(3)]);
     
     for tp=firsttp:lasttp
@@ -74,7 +74,7 @@ if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
 else
     cellpath = [];
 end
-
+clear cellpath_mat;
 datasetname = ['/field' num2str(field) '/segmentsCH' num2str(templateCH)];
 selectedcells_name = ['/field' num2str(field) '/selectedcells'];
 fileattrib(fullfile(SourceF,H5filename),'+w');
@@ -95,23 +95,18 @@ templateinfo = loadimageinfo(filetype,fileformat,[row col field plane templateCH
 imwidth = templateinfo.Width;
 imheight = templateinfo.Height;
 
-CellInd = find(cellpath{lasttp}(:,1)~=-1 & cellpath{lasttp}(:,2)~=-1)';
+%CellInd = find(cellpath{lasttp}(:,1)~=-1 & cellpath{lasttp}(:,2)~=-1)';
 
-for cellNo = CellInd
-    
+for cellNo = 1:size(cellpath{lasttp},1)
     for t = firsttp:lasttp
         c_cellpath(t,:) = cellpath{t}(cellNo,:);
     end
-    
-    %clc;display(['r' num2str(row) 'c' num2str(col) 'f' num2str(field) ',Processing cell:' num2str(cellNo)]);
-    selected_cells = [selected_cells;cellNo];
-
-    template = zeros(2*cellsize+1,2*cellsize+1,lasttp);
-    
-    newsegments = zeros(firsttp,lasttp,3,size(template,1),size(template,2), 'uint8');
-    
+    clc;display(['r' num2str(row) 'c' num2str(col) 'f' num2str(field) ',Processing cell:' num2str(cellNo)]);
+    newsegments = zeros(firsttp,lasttp,3,2*cellsize+1,2*cellsize+1, 'uint8');
+    posFrameInd = 0;
     for tp = firsttp:lasttp
-        if c_cellpath(tp,1)>0 && c_cellpath(tp,2)>0
+        
+        if c_cellpath(tp,1)>0 && c_cellpath(tp,2)>0 && c_cellpath(tp,1)<= imwidth && c_cellpath(tp,2) <= imheight
             xL=max(c_cellpath(tp,1)-cellsize,1);
             xR=min(c_cellpath(tp,1)+cellsize,imwidth);
             yL=max(c_cellpath(tp,2)-cellsize,1);
@@ -138,20 +133,23 @@ for cellNo = CellInd
                 borderY = (yL+shiftY):(cellsize*2+1);
             end
             
-            template(borderY,borderX,tp) = loadimage(filetype,fileformat,imlocation,tp,channelnames,{[yL yR], [xL xR]},[],SourceF);
+            template = zeros(2*cellsize+1,2*cellsize+1);
+            template(borderY,borderX) = loadimage(filetype,fileformat,imlocation,tp,channelnames,{[yL yR], [xL xR]},[],SourceF);
             
-            [~,~,BW] = templateToCentroid(template(:,:,tp));
-            
+            [~,~,BW] = templateToCentroid(template);
+            %[~,~,BWcontour] = templateToCentroid3(template);
             if ~isempty(find(BW==1,1))
-
+                posFrameInd = posFrameInd+1;
                 newsegments(1,tp,1,:,:) = BW; %nuclei
                 newsegments(1,tp,2,:,:) = bwmorph(BW,'dilate',celldilatesize); %cell
                 newsegments(1,tp,3,:,:) = bwmorph(squeeze(newsegments(1,tp,2,:,:)),'erode',1) & ~squeeze(newsegments(1,tp,1,:,:)); % cytosol
-                
             end
         end
     end
-    h5write(fullfile(SourceF,H5filename), datasetname, newsegments, [cellNo firsttp 1 1 1], [1 lasttp-firsttp+1 3 size(template,1) size(template,2)]);
+    if posFrameInd > 0.2*length(cellpath);
+        selected_cells = [selected_cells;cellNo];
+    end
+    h5write(fullfile(SourceF,H5filename), datasetname, newsegments, [cellNo firsttp 1 1 1], [1 lasttp-firsttp+1 3 2*cellsize+1 2*cellsize+1]);
 end
 
 fid = H5F.open(fullfile(SourceF,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
@@ -169,7 +167,7 @@ h5write(fullfile(SourceF,H5filename), selectedcells_name, uint32(selected_cells)
 
 function [x,y,BW] = templateToCentroid(M)
 BWc = zeros(size(M));
-for i=1.2:0.6:3
+for i=1.2:0.6:4
     edgedIm = edge(M,'canny',0,i);
     BW = imfill(edgedIm,'holes');
     BW = bwmorph(BW,'open',1);
@@ -196,6 +194,250 @@ else
         BW = BWc;
     end
 end
+
+
+function [x,y,BW] = templateToCentroid3(M)
+xg = round(size(M,2)/2);
+yg = round(size(M,1)/2);
+M = imadjust(M);
+M(1,:) = 0;
+M(end,:) = 0;
+M(:,1) = 0;
+M(:,end) = 0;
+outBW = modchenvese(M,80,0.05,round(size(M,1)*1));
+se = strel('disk',3);
+outBW = imclose(outBW,se);
+outBW(1,:) = 0;
+outBW(end,:) = 0;
+outBW(:,1) = 0;
+outBW(:,end) = 0;
+
+BW = bwselect(outBW,xg,yg);
+S  = regionprops(BW, 'centroid');
+
+if ~isfield(S,'Centroid') || length(S)>1
+    x = xg;
+    y = yg;
+    
+else
+    x = round(S.Centroid(1));
+    y = round(S.Centroid(2));
+end
+
+
+%   Adapted from code by Yue Wu (yue.wu@tufts.edu)
+%   http://www.mathworks.com/matlabcentral/fileexchange/23445
+function seg = modchenvese(I,num_iter,mu,outerbox)
+I = imadjust(I);
+s = outerbox./min(size(I,1),size(I,2)); % resize scale
+
+n = zeros(size(I));
+midY = round(size(n,1)/2);
+midX = round(size(n,2)/2);
+boxsize = round(size(I,1)*0.1);%round(outerbox/2*.9);
+n(midY-boxsize:midY+boxsize,midX-boxsize:midX+boxsize) = 1;
+I = imresize(I,s);
+mask = imresize(n,s);
+
+phi0 = bwdist(mask)-bwdist(1-mask)+im2double(mask)-.5;
+force = eps;
+
+%-- Display settings
+%figure();
+%subplot(2,2,1); imshow(I); title('Input Image');axis equal;
+%subplot(2,2,2); contour(flipud(phi0), [0 0], 'r','LineWidth',1); title('initial contour');axis equal;
+%subplot(2,2,3); title('Segmentation');axis equal;
+%-- End Display original image and mask
+
+%-- Main loop
+
+
+
+for n=1:num_iter
+    inidx = find(phi0>=0); % frontground index
+    outidx = find(phi0<0); % background index
+    force_image = 0; % initial image force for each layer
+    L = im2double(I); % get one image component
+    
+    c1 = sum(sum(L.*Heaviside(phi0)))/(length(inidx)+eps); % average inside of Phi0
+    c2 = sum(sum(L.*(1-Heaviside(phi0))))/(length(outidx)+eps); % verage outside of Phi0
+    force_image=-(L-c1).^2+(L-c2).^2+force_image;
+    % sum Image Force on all components (used for vector image)
+    % if 'chan' is applied, this loop become one sigle code as a
+    % result of layer = 1
+    
+    
+    % calculate the external force of the image
+    force = mu*kappa(phi0)./max(max(abs(kappa(phi0))))+force_image;
+    
+    % normalized the force
+    force = force./(max(max(abs(force))));
+    
+    % get stepsize dt
+    dt=0.5;
+    
+    % get parameters for checking whether to stop
+    old = phi0;
+    phi0 = phi0+dt.*force;
+    new = phi0;
+    indicator = checkstop(old,new,dt);
+    
+    
+    
+    % intermediate output
+    %if(mod(n,20) == 0)
+    %    showphi(I,phi0,n);
+    %end;
+    if indicator % decide to stop or continue
+        %showphi(I,phi0,n);
+        
+        %make mask from SDF
+        seg = phi0<=0; %-- Get mask from levelset
+        
+        midY = round(size(seg,1)/2);
+        midX = round(size(seg,2)/2);
+        if seg(midY,midX) > 0
+            seg = bwselect(seg,midX,midY);
+        else
+            seg = ~seg;
+            seg = bwselect(seg,midX,midY);
+            %seg = bwselect(~seg,midX,midY);
+        end
+        
+        
+        %subplot(2,2,4); imshow(seg); title('Global Region-Based Segmentation');
+        seg = imresize(seg,1/s);
+        return;
+    end
+end;
+%showphi(I,phi0,n);
+
+%make mask from SDF
+seg = phi0<=0; %-- Get mask from levelset
+
+midY = round(size(seg,1)/2);
+midX = round(size(seg,2)/2);
+
+if seg(midY,midX) > 0
+    seg = bwselect(seg,midX,midY);
+else
+    seg = ~seg;
+    seg = bwselect(seg,midX,midY);
+end
+
+
+%subplot(2,2,4); imshow(seg); title('Global Region-Based Segmentation');
+seg = imresize(seg,1/s);
+
+function showphi(I, phi, i)
+% show curve evolution of phi
+
+% Copyright (c) 2009,
+% Yue Wu @ ECE Department, Tufts University
+% All Rights Reserved
+
+for j = 1:size(phi,3)
+    phi_{j} = phi(:,:,j); %#ok<*AGROW>
+end
+imshow(I,'initialmagnification','fit','displayrange',[0 255]);
+hold on;
+
+if size(phi,3) == 1
+    contour(phi_{1}, [0 0], 'r','LineWidth',4);
+    contour(phi_{1}, [0 0], 'g','LineWidth',1.3);
+else
+    contour(phi_{1}, [0 0], 'r','LineWidth',4);
+    contour(phi_{1}, [0 0], 'x','LineWidth',1.3);
+    contour(phi_{2}, [0 0], 'g','LineWidth',4);
+    contour(phi_{2}, [0 0], 'x','LineWidth',1.3);
+end
+hold off;
+title([num2str(i) ' Iterations']);
+drawnow;
+
+function KG = kappa(I)
+% get curvature information of input image
+% input: 2D image I
+% output: curvature matrix KG
+
+% Copyright (c) 2009,
+% Yue Wu @ ECE Department, Tufts University
+% All Rights Reserved
+
+I = double(I);
+[m,n] = size(I);
+P = padarray(I,[1,1],1,'pre');
+P = padarray(P,[1,1],1,'post');
+
+% central difference
+fy = P(3:end,2:n+1)-P(1:m,2:n+1);
+fx = P(2:m+1,3:end)-P(2:m+1,1:n);
+fyy = P(3:end,2:n+1)+P(1:m,2:n+1)-2*I;
+fxx = P(2:m+1,3:end)+P(2:m+1,1:n)-2*I;
+fxy = 0.25.*(P(3:end,3:end)-P(1:m,3:end)+P(3:end,1:n)-P(1:m,1:n));
+G = (fx.^2+fy.^2).^(0.5);
+K = (fxx.*fy.^2-2*fxy.*fx.*fy+fyy.*fx.^2)./((fx.^2+fy.^2+eps).^(1.5));
+KG = K.*G;
+KG(1,:) = eps;
+KG(end,:) = eps;
+KG(:,1) = eps;
+KG(:,end) = eps;
+KG = KG./max(max(abs(KG)));
+
+function indicator = checkstop(old,new,dt)
+% indicate whether we should performance further iteraions or stop
+
+% Copyright (c) 2009,
+% Yue Wu @ ECE Department, Tufts University
+% All Rights Reserved
+
+layer = size(new,3);
+
+for i = 1:layer
+    old_{i} = old(:,:,i);
+    new_{i} = new(:,:,i);
+end
+
+if layer
+    ind = find(abs(new)<=.5);
+    M = length(ind);
+    Q = sum(abs(new(ind)-old(ind)))./M;
+    if Q<=dt*.18^2 %#ok<*BDSCI>
+        indicator = 1;
+    else
+        indicator = 0;
+    end
+else
+    ind1 = find(abs(old_{1})<1);
+    ind2 = find(abs(old_{2})<1);
+    M1 = length(ind1);
+    M2 = length(ind2);
+    Q1 = sum(abs(new_{1}(ind1)-old_{1}(ind1)))./M1;
+    Q2 = sum(abs(new_{2}(ind2)-old_{2}(ind2)))./M2;
+    if Q1<=dt*.18^2 && Q2<=dt*.18^2
+        indicator = 1;
+    else
+        indicator = 0;
+    end
+end
+return
+
+
+function H=Heaviside(z)
+% Heaviside step function (smoothed version)
+% Copyright (c) 2009,
+% Yue Wu @ ECE Department, Tufts University
+% All Rights Reserved
+
+Epsilon=10^(-5);
+H=zeros(size(z,1),size(z,2));
+idx1=find(z>Epsilon);
+idx2=find(z<Epsilon & z>-Epsilon);
+H(idx1)=1; %#ok<*FNDSB>
+for i=1:length(idx2)
+    H(idx2(i))=1/2*(1+z(idx2(i))/Epsilon+1/pi*sin(pi*z(idx2(i))/Epsilon));
+end;
+
 
 function [notp,stagePos,stageName,waveName] = readndfile(sourcefolder,filename)
 % Search for number of string matches per line.

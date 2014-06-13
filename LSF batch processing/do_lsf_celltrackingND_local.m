@@ -6,7 +6,7 @@ analysisparameter.increment = -1;
 analysisparameter.cellsize = 20;
 analysisparameter.outersize = 40;
 analysisparameter.similarityThres = 0.9;
-maxWholeImShift = 150;
+maxWholeImShift = 200;
 analysisparameter.maxWholeImShift = maxWholeImShift;
 analysisparameter.maxNucMaskShift = 7;
 analysisparameter.nucleiOptimizeLog = 1;
@@ -16,8 +16,8 @@ analysisparameter.minAreaRatio=1.25;
 analysisparameter.minCytosolWidth=5;
 
 %---------------------------------------
-ndfilename ='02272014-r1.nd';
-SourceF = 'Q:\sorger\data\NIC\Pat\02-27-2014';
+ndfilename = '04152014-r1.nd';
+SourceF = 'Q:\sorger\data\NIC\Pat\04-15-2014';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
 [notp,stagePos,stageName,channelnames] = readndfile(SourceF,ndfilename);
@@ -27,11 +27,12 @@ analysisparameter.ndfilename=ndfilename;
 analysisparameter.stageName=stageName;
 analysisparameter.filetype=3;
 
-sites = 2;
-tps = (notp-2):notp;
-analysisparameter.tps = tps;
+sites  = [5 ];
+endTps = [173];
 
 for i = 1:length(sites)
+    tps = [1 endTps(i)];
+    analysisparameter.tps = tps;
     site = sites(i);
     fileformat = [prefix '_%s_s' num2str(site) '_t%g.TIF'];
     L = regexp(stageName{site}, 'r(?<row>\d+)','names');

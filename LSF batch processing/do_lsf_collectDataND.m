@@ -1,4 +1,4 @@
-function do_lsf_collectDataND()
+function do_lsf_collectDataND03232014EKAREV()
 
 % Define parameters related to the process---------
 analysisparam.nucCH = 1;
@@ -47,7 +47,7 @@ prefix = ndfilename(1:(end-3));
 [notp,stagePos,stageName,channelnames] = readndfile(ndpathname,ndfilename);
 
 tps = [1 notp];
-sites = 1:length(stagePos);
+sites = 6	7	8	9	10 15	14	13	12	11 26	27	28	29	30 35	34	33	32	31 46	47	48	49	50];
 
 analysisparam.ndpathname = ndpathname;
 analysisparam.ndfilename = ndfilename;

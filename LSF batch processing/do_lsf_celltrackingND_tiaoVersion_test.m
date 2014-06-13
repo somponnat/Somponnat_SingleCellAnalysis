@@ -2,9 +2,9 @@ function do_lsf_celltrackingND_tiaoVersion_test()
 
 % Define information about input images and necessary parameters-----------
 
-cellsize = 40;
-outersize = 80;
-avgNucDiameter = 20;
+cellsize = 20;
+outersize = 40;
+avgNucDiameter = 17;
 maxWholeImShift = 300;
 maxNucMaskShift = 10;
 similarityThres = 0.9;

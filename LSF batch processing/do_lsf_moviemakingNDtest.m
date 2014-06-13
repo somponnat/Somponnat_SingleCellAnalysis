@@ -4,11 +4,11 @@ function do_lsf_moviemakingNDtest()
 clear all;
 signalshift = 0.001;
 bgsubstractlogic = 0; % 
-illumcorlogic = 1; % Algorithmic illumination correction by high-pass filter
+illumcorlogic = 0; % Algorithmic illumination correction by high-pass filter
 framshift_logic = 0;
-ImageIndex = 1; % 1=nomin/denomin, 2=templateCH, 3=nomin,4=denomin
-intensityrange = [0.0030823 0.0037]; % For other images
-displaygate = [0.32 2.1]; % For FRET Only
+ImageIndex = 2; % 1=nomin/denomin, 2=templateCH, 3=nomin,4=denomin
+intensityrange = [0.003357 0.0049]; % For other images
+displaygate = [0.85 1.3]; % For FRET Only
 filterParam = [2 2]; 
 cellsize = 15;
 timestamplogic = 2; % 1 = frame no, 2 = actual time
@@ -16,24 +16,18 @@ celllocationlogic = 0; % 1 = show location of tracked cells, 0 = only image
 save videoparameters;
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename = '02272014-r1.nd';
-templateCH = 1;
-nominCH = 4;
-denominCH = 3;
-sourcefolder = 'Q:\sorger\data\NIC\Pat\02-27-2014';
+ndfilename = '03312014-r2.nd';
+templateCH = 2;
+nominCH = 1;
+denominCH = 2;
+sourcefolder = 'Q:\sorger\data\NIC\Pat\03-31-2014';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
 [notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
 tps = [1 notp];
 
 sites = 1:length(stagePos);
-sites = [1	2	3	7	8	9,...
-18	17	16	12	11	10,...
-19	20	21	25	26	27,...
-36	35	34	30	29	28,...
-37	38	39	43	44	45,...
-54	53	52	48	47	46,...
-55	56	57	61	62	63];
+
 
 if matlabpool('size') == 0
   matlabpool open;

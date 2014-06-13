@@ -121,54 +121,69 @@ while quantileCutoff > 0.96
 end
 
 % recover seeded nuclei that was not detected by edge
+% if max(nucCent(:)) > 0
+%     bw = blobSegmentThresholdGeneral(im, 'rosin', 1, 1, minNucArea);
+%     tmp = bwdist(bwNuc);
+%     tmp = tmp < 2;
+%     bw = ~tmp & bw;
+%     l = bwlabel(bw);
+%     idx = unique(l(nucCent));
+%     idx(idx == 0) = [];
+%     bwNucTmp = ismember(l, idx);
+%     
+%     if max(bwNucTmp(:)) > 0
+%         [lNucTmp, nNucTmp] = bwlabel(bwNucTmp);
+%         bwNucTmp = false(size(bwNuc));
+%         for n = 1:nNucTmp
+%             nCent = sum(sum(nucCent(lNucTmp == n)));
+%             if nCent <= 1
+%                 bwNucTmp = bwNucTmp | lNucTmp == n;
+%             elseif nCent > 1
+%                 bw = lNucTmp == n;
+%                 distMat = bwdist(nucCent&bw);
+%                 distMat = imimposemin(distMat, nucCent);
+%                 l = watershed(distMat);
+%                 bw = bw & (l > 0);
+%                 bwNucTmp = bwNucTmp | bw;
+%             end
+%         end
+%         bwNuc = bwNuc | bwNucTmp;
+%         nucCent = nucCent & (~bwNuc);
+%     end
+% end
+
+%place a sphere in the spot of missing nuclei
 if max(nucCent(:)) > 0
-    bw = blobSegmentThresholdGeneral(im, 'rosin', 1, 1, minNucArea);
-    tmp = bwdist(bwNuc);
-    tmp = tmp < 2;
-    bw = ~tmp & bw;
-    l = bwlabel(bw);
-    idx = unique(l(nucCent));
-    idx(idx == 0) = [];
-    bwNucTmp = ismember(l, idx);
-    
-    if max(bwNucTmp(:)) > 0
-        [lNucTmp, nNucTmp] = bwlabel(bwNucTmp);
-        bwNucTmp = false(size(bwNuc));
-        for n = 1:nNucTmp
-            nCent = sum(sum(nucCent(lNucTmp == n)));
-            if nCent <= 1
-                bwNucTmp = bwNucTmp | lNucTmp == n;
-            elseif nCent > 1
-                bw = lNucTmp == n;
-                distMat = bwdist(nucCent&bw);
-                distMat = imimposemin(distMat, nucCent);
-                l = watershed(distMat);
-                bw = bw & (l > 0);
-                bwNucTmp = bwNucTmp | bw;
-            end
-        end
-        bwNuc = bwNuc | bwNucTmp;
-        nucCent = nucCent & (~bwNuc);
+    bwNucTmp = imdilate(nucCent, strel('disk',round(avgNucDiameter/2)));
+    tmp=bwdist(bwNuc);
+    tmp=tmp<2;
+    bwNucTmp = ~tmp & bwNucTmp;
+end
+[lNucTmp, nNucTmp] = bwlabel(bwNucTmp);
+bwNucTmp = false(size(bwNuc));
+for n = 1:nNucTmp
+    nCent = sum(sum(nucCent(lNucTmp == n)));
+    if nCent <= 1
+        bwNucTmp = bwNucTmp | lNucTmp == n;
+    elseif nCent > 1
+        bw = lNucTmp == n;
+        distMat = bwdist(nucCent&bw);
+        distMat = imimposemin(distMat, nucCent);
+        l = watershed(distMat);
+        bw = bw & (l > 0);
+        bwNucTmp = bwNucTmp | bw;
     end
 end
 
-% % place a sphere in the spot of missing nuclei
-% if max(nucCent(:)) > 0
-%     bwNucTmp = imdilate(nucCent, strel('disk',round(avgNucDiameter/2)));
-%     tmp=bwdist(bwNuc);
-%     tmp=tmp<2;
-%     bwNucTmp = ~tmp & bwNucTmp;
-% end
-
 % recover non-seeded nuclei
-% bwOtherTmp = blobSegmentThresholdGeneral(im, 'rosin', 1, 1, minNucArea);
-% lOtherTmp = bwlabel(bwOtherTmp);
-% idx = unique(lOtherTmp(bwNuc | bwOther));
-% idx(idx == 0) = [];
-% tmp = ismember(lOtherTmp, idx);
-% bwOtherTmp = bwOtherTmp & ~tmp;
-% bwOther = bwOther | bwOtherTmp;
-% bwOther = bwareaopen(bwOther, minOtherNucArea);
+bwOtherTmp = blobSegmentThresholdGeneral(im, 'rosin', 1, 1, minNucArea);
+lOtherTmp = bwlabel(bwOtherTmp);
+idx = unique(lOtherTmp(bwNuc | bwOther));
+idx(idx == 0) = [];
+tmp = ismember(lOtherTmp, idx);
+bwOtherTmp = bwOtherTmp & ~tmp;
+bwOther = bwOther | bwOtherTmp;
+bwOther = bwareaopen(bwOther, minOtherNucArea);
 
 % recover non-seeded nuclei
 lOther=bwlabel(bwOther);

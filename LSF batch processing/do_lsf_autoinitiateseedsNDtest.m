@@ -12,7 +12,7 @@ sourcefolder = 'Q:\sorger\data\NIC\Pat\02-27-2014';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
 [notp,stagePos,stageName,channelnames] = readndfile(sourcefolder,ndfilename);
-sites = [7	8	9 12	11	10 25	26	27 30	29	28 43	44	45 48	47	46 61	62	63];
+sites = 1:length(stagePos);
 tps = [1 notp];
 if matlabpool('size') == 0
   matlabpool open;

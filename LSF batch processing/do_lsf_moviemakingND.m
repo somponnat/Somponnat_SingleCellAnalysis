@@ -17,11 +17,11 @@ save videoparameters;
 
 %-------------------------------------------------
 % Define information about input images-----------
-ndfilename = '11022013-r1.nd';
+ndfilename = '03292014-r1.nd';
 templateCH = 1;
 nominCH = 2;
 denominCH = 3;
-sourcefolder = 'Q:\sorger\data\NIC\Pat\11-02-2013';
+sourcefolder = 'Q:\sorger\data\NIC\Pat\03-29-2014';
 %------------------------------------------------
 prefix = ndfilename(1:(end-3));
 [notp stagePos stageName channelnames] = readndfile(sourcefolder,ndfilename);

@@ -1,4 +1,5 @@
 function CollectData_commandline(analysisparam)
+
 filetype = analysisparam.filetype;
 ndpathname = analysisparam.ndpathname;
 row = analysisparam.row;

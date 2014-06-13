@@ -62,8 +62,8 @@ end
 
 %myVideo = VideoWriter(fullfile(targetfolder,videoname));
 myVideo = VideoWriter(fullfile(targetfolder,videoname), 'MPEG-4');
-myVideo.FrameRate = 24;
-myVideo.Quality = 82;
+myVideo.FrameRate = 15;
+myVideo.Quality = 90;
 
 open(myVideo);
 

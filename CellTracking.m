@@ -2512,15 +2512,8 @@ if H5L.exists(fid,sisterList_name,'H5P_DEFAULT')
     sisterListinfo = h5info(fullfile(SourceF,H5filename), sisterList_name);
     sisterList_mat = h5read(fullfile(SourceF,H5filename),sisterList_name,[1 1 1], [sisterListinfo.Dataspace.Size(1) sisterListinfo.Dataspace.Size(2) sisterListinfo.Dataspace.Size(3)]);
     
-    if size(sisterList_mat,1) == size(cellpath_mat,1) && size(sisterList_mat,2) == size(cellpath_mat,2) && size(sisterList_mat,3) == size(cellpath_mat,3)
-        
-        for tp=first_tp:sisterListinfo.Dataspace.Size(3)
-            sisterList{tp} = sisterList_mat(:,:,tp);
-        end
-    else
-        for tp=first_tp:cellpathinfo.Dataspace.Size(3)
-            sisterList{tp} = -1*ones(size(cellpath_mat,1),3);
-        end
+    for tp=first_tp:sisterListinfo.Dataspace.Size(3)
+        sisterList{tp} = sisterList_mat(:,:,tp);
     end
 else
     for tp=first_tp:cellpathinfo.Dataspace.Size(3)
@@ -4267,7 +4260,7 @@ if exist(filename,'file')
         if num > 0
             wavename1  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=_)', 'match');
             wavename2  = regexp(tline, '(?<="WaveName\d+", "\w+_)\w+(?=")', 'match');
-            wavename3  = regexp(tline, '(?<="WaveName\d+", ").+(?=")', 'match');
+            wavename3  = regexp(tline, '(?<="WaveName\d+", ")\w+(?=")', 'match');
             if ~isempty(wavename1) && ~isempty(wavename2)
                 waveName{wind} = ['w' num2str(wind) wavename1{1} '-' wavename2{1}];
             else

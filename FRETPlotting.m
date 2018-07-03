@@ -1,7 +1,7 @@
 function varargout = FRETPlotting(varargin)
 % Edit the above text to modify the response to help mytab
 
-% Last Modified by GUIDE v2.5 07-Apr-2014 13:45:24
+% Last Modified by GUIDE v2.5 12-Oct-2015 16:56:58
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -23,6 +23,7 @@ end
 % End initialization code - DO NOT EDIT
 
 function outputim = loadsignalV2(handles,channel,tp,signalformat,blankformat)
+
 totalCHs = handles.totalCHs;
 channelnames = handles.channelnames;
 filetype = handles.filetype;
@@ -225,10 +226,15 @@ outputim = [];
 
 if handles.useblank
     switch filetype
-        case 1
+        case {1,4}
+            if filetype == 1
+                signal_filename = sprintf(signalformat,row,col,field,plane,channel,tp);
+                blank_filename = sprintf(blankformat,row,col,field,plane,channel,tp);
+            else
+                signal_filename = sprintf(signalformat,row,col,field,tp,plane,channel);
+                blank_filename = sprintf(blankformat,row,col,field,tp,plane,channel);
+            end
             
-            signal_filename = sprintf(signalformat,channel,tp);
-            blank_filename = sprintf(blankformat,channel,tp);
             
             if exist(fullfile(handles.ndpathname,signal_filename),'file')
                 signalim = im2double(imread(fullfile(handles.ndpathname,signal_filename)));
@@ -277,9 +283,12 @@ if handles.useblank
 else
     
     switch filetype
-        case 1
-            
-            filename = sprintf(signalformat,channel,tp);
+        case {1,4}
+            if filetype == 1
+                filename = sprintf(signalformat,row,col,field,plane,channel,tp);
+            else
+                filename = sprintf(signalformat,row,col,field,tp,plane,channel);
+            end
             if exist(fullfile(handles.ndpathname,filename),'file')
                 outputim = im2double(imread(fullfile(handles.ndpathname,filename)));
             else
@@ -315,9 +324,13 @@ totalCHs = str2num(get(handles.edit_totalCHs,'String'));
 outputim = [];
 
 switch filetype
-    case 1
-        
-        filename = sprintf(blankformat,channel,tp);
+    case {1,4}
+        if filetype == 1
+            filename = sprintf(blankformat,row,col,field,plane,channel,tp);
+        else
+            filename = sprintf(blankformat,row,col,field,tp,plane,channel);
+        end
+
         if exist(fullfile(handles.ndpathname,filename),'file')
             outputim = im2double(imread(fullfile(handles.ndpathname,filename)));
         else
@@ -348,6 +361,10 @@ function FRETPlotting_OpeningFcn(hObject, ~, handles, varargin)
 % varargin   command line arguments to mytab (see VARARGIN)
 
 % Choose default command line output for mytab
+
+% param 1 - filetype
+% param 2 - fileformat
+% param 3 - 
 handles.output = hObject;
 filetype = [];
 trackinginfo = [];
@@ -391,21 +408,29 @@ end
 
 
 switch filetype
-    case 1 % PE tiff input
+    case {1,4} % PE tiff input: Harmony or Columbus
+        if filetype == 1
+            set(handles.radiobutton_harmony,'Value',1);
+        else
+            set(handles.radiobutton_columbus,'Value',1);
+        end
         
         if isempty(imagelocation)
             set(handles.edit_commu,'String','Required image location (input#3) for PE-tiff format');
             return;
         end
-        filetype = 1;
-        set(handles.radiobutton_petiffs,'Value',1);
+
         row = imagelocation(1);
         col = imagelocation(2);
         field = imagelocation(3);
         plane = imagelocation(4);
         
         if isempty(fileformat)
-            fileformat = 'r%02.0fc%02.0ff%02.0fp%02.0frc%1.0f-ch1sk%ufk1fl1.tiff';
+            if filetype==1
+                fileformat = 'r%02.0fc%02.0ff%02.0fp%02.0frc%1.0f-ch1sk%ufk1fl1.tiff';
+            else
+                fileformat = '%03.0f%03.0f-%u-%03.0f%03.0f%03.0f.tif';
+            end
         end
         
         if ~isempty(channelnames)
@@ -438,7 +463,7 @@ switch filetype
             set(handles.edit_commu,'String','Required filename (input#5) for tiffstack input');
             return;
         end
-        filetype = 2;
+
         set(handles.radiobutton_tiffstack,'Value',1);
         
         totalCHs = length(channelnames);
@@ -481,7 +506,6 @@ switch filetype
             return;
         end
         
-        filetype = 3;
         set(handles.radiobutton_customtiff,'Value',1);
         
         if isempty(imagelocation)
@@ -672,8 +696,6 @@ last_tp = str2num(get(handles.edit_lastframe,'String'));
 totalCHs = str2num(get(handles.edit_totalCHs,'String'));
 fileformat = get(handles.edit_signalformat,'String');
 
-
-
 switch get(handles.popupmenu_nomin,'Value')
     case 1
         nominCH=CH1;
@@ -736,7 +758,7 @@ switch startImageIndex
         if ~isempty(displayIM)
             imshow(displayIM,[],'Parent',handles.axes1);colormap gray;drawnow;
         end
-    case 1
+    case 1 %calculate Math
         displayIM = calculateFRET(handles,c_tp,nominCH,denominCH,[]);
         if ~isempty(displayIM)
             displayratioIm(displayIM,handles);
@@ -750,12 +772,13 @@ handles.bg = [];
 handles.sisterList = [];
 
 H5filename = ['H5OUT_r' num2str(row) '_c' num2str(col) '.h5'];
-fileattrib(fullfile(handles.ndpathname,H5filename),'+w');
+
 cellpath_name = ['/field' num2str(field) '/cellpath'];
 sisterList_name = ['/field' num2str(field) '/sisterList'];
 bg_name = ['/field' num2str(field) '/bg'];
 
 if exist(fullfile(handles.ndpathname,H5filename),'file')
+    fileattrib(fullfile(handles.ndpathname,H5filename),'+w');
     fid = H5F.open(fullfile(handles.ndpathname,H5filename),'H5F_ACC_RDWR','H5P_DEFAULT');
     if H5L.exists(fid,cellpath_name,'H5P_DEFAULT')
         H5F.close(fid);
@@ -1396,7 +1419,7 @@ function varargout = FRETPlotting_OutputFcn(~, ~, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Get default command line output from handles structure
-varargout{1} = handles.output;
+varargout{1} = [];
 
 
 % --- Executes on button press in pushbutton_tofirstframe.
@@ -1789,8 +1812,8 @@ ratioIm =  normN./normD;
 function displayratioIm(ratioIm,handles)
 displaygateL = str2num(get(handles.edit_mathL,'String'));
 displaygateH = str2num(get(handles.edit_mathH,'String'));
-
-imshow(ratioIm,[displaygateL displaygateH],'Parent',handles.axes1);hold on;
+axes(handles.axes1);
+imshow(ratioIm,[displaygateL displaygateH]);hold on;
 switch get(handles.popupmenu_colormap,'Value')
     case 1
         set(gcf,'Colormap',handles.mycmap1)
@@ -2802,12 +2825,19 @@ function uibuttongroup_filetype_SelectionChangeFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 switch get(eventdata.NewValue,'Tag') % Get Tag of selected object.
-    case 'radiobutton_petiffs'
+    case 'radiobutton_harmony'
         handles.filetype = 1;
+        handles.channelnames = [];
+        set(handles.edit_signalformat,'String','r%02.0fc%02.0ff%02.0fp%02.0frc%1.0f-ch1sk%ufk1fl1.tiff');
     case 'radiobutton_tiffstack'
         handles.filetype = 2;
+        handles.channelnames = [];
     case 'radiobutton_customtiff'
         handles.filetype = 3;
+    case 'radiobutton_columbus'
+        handles.filetype = 4; 
+        handles.channelnames = [];
+        set(handles.edit_signalformat,'String','%03.0f%03.0f-%u-%03.0f%03.0f%03.0f.tif');
 end
 guidata(hObject, handles);
 
@@ -4766,7 +4796,12 @@ switch handles.filetype
         else
             set(handles.edit_field,'String','1');
         end
-        
+    case 4
+        row = str2num(get(handles.edit_row,'String'));
+        col = str2num(get(handles.edit_col,'String'));
+        field = str2num(get(handles.edit_field,'String'));
+        plane = str2num(get(handles.edit_plane,'String'));
+        set(handles.edit_signalformat,'String',[num2str(row,'%03.0f') num2str(col,'%03.0f') '-' num2str(field,'%u') '-%03.0f%03.0f%03.0f.tif']);
     case 1
         row = str2num(get(handles.edit_row,'String'));
         col = str2num(get(handles.edit_col,'String'));
@@ -6068,3 +6103,33 @@ function edit_cellCH_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+
+function edit_row_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_row (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_row as text
+%        str2double(get(hObject,'String')) returns contents of edit_row as a double
+
+
+
+function edit_col_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_col (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_col as text
+%        str2double(get(hObject,'String')) returns contents of edit_col as a double
+
+
+
+function edit_field_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_field (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_field as text
+%        str2double(get(hObject,'String')) returns contents of edit_field as a double
